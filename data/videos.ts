@@ -1,0 +1,448 @@
+import { Video } from '@/types';
+
+export const videos: Video[] = [
+  {
+    id: '1',
+    youtubeId: 'CeNKO7HLVTU',
+    title: 'Korean Greetings for Beginners',
+    titleKorean: '한국어 인사말 배우기',
+    description: 'Learn essential Korean greetings and polite expressions used in everyday life. Perfect for absolute beginners starting their Korean language journey.',
+    difficulty: 'beginner',
+    durationSeconds: 480,
+    thumbnail: `https://img.youtube.com/vi/CeNKO7HLVTU/hqdefault.jpg`,
+    tags: ['greetings', 'basics', 'polite expressions', '인사'],
+    transcript: [
+      {
+        timeStart: 0,
+        korean: '안녕하세요! 오늘은 한국어 인사말을 배워봐요.',
+        english: 'Hello! Today let\'s learn Korean greetings.',
+        vocabulary: [
+          { korean: '안녕하세요', english: 'Hello (formal)', romanization: 'annyeonghaseyo' },
+          { korean: '오늘', english: 'today', romanization: 'oneul' },
+          { korean: '배워봐요', english: 'let\'s learn', romanization: 'baewobwayo' },
+        ],
+      },
+      {
+        timeStart: 30,
+        korean: '처음 만나서 반갑습니다.',
+        english: 'Nice to meet you for the first time.',
+        vocabulary: [
+          { korean: '처음', english: 'first time', romanization: 'cheoeum' },
+          { korean: '만나서', english: 'meeting (someone)', romanization: 'mannaseo' },
+          { korean: '반갑습니다', english: 'nice to meet you', romanization: 'bangapseumnida' },
+        ],
+      },
+      {
+        timeStart: 65,
+        korean: '제 이름은 민준이에요. 당신의 이름은 뭐예요?',
+        english: 'My name is Minjun. What is your name?',
+        vocabulary: [
+          { korean: '이름', english: 'name', romanization: 'ireum' },
+          { korean: '당신', english: 'you (formal)', romanization: 'dangsin' },
+          { korean: '뭐예요', english: 'what is it', romanization: 'mwoyeyo' },
+        ],
+      },
+      {
+        timeStart: 105,
+        korean: '잘 지내세요? 네, 잘 지내요.',
+        english: 'How are you? Yes, I\'m doing well.',
+        vocabulary: [
+          { korean: '잘', english: 'well', romanization: 'jal' },
+          { korean: '지내세요', english: 'are you doing (formal)', romanization: 'jinaeseyo' },
+          { korean: '네', english: 'yes', romanization: 'ne' },
+        ],
+      },
+      {
+        timeStart: 145,
+        korean: '감사합니다. 천만에요.',
+        english: 'Thank you. You\'re welcome.',
+        vocabulary: [
+          { korean: '감사합니다', english: 'thank you', romanization: 'gamsahamnida' },
+          { korean: '천만에요', english: 'you\'re welcome', romanization: 'cheonmaneyo' },
+        ],
+      },
+      {
+        timeStart: 180,
+        korean: '안녕히 계세요. 또 만나요!',
+        english: 'Goodbye (to someone staying). See you again!',
+        vocabulary: [
+          { korean: '안녕히', english: 'peacefully/safely', romanization: 'annyeonghi' },
+          { korean: '계세요', english: 'please stay', romanization: 'gyeseyo' },
+          { korean: '또', english: 'again', romanization: 'tto' },
+          { korean: '만나요', english: 'let\'s meet', romanization: 'mannayo' },
+        ],
+      },
+    ],
+  },
+  {
+    id: '2',
+    youtubeId: 'ZGsJBTtm2lo',
+    title: 'Korean Numbers and Counting',
+    titleKorean: '한국어 숫자와 세기',
+    description: 'Master Korean numbers from 1 to 100, learn both native Korean and Sino-Korean number systems used in different contexts.',
+    difficulty: 'beginner',
+    durationSeconds: 600,
+    thumbnail: `https://img.youtube.com/vi/ZGsJBTtm2lo/hqdefault.jpg`,
+    tags: ['numbers', 'counting', 'basics', '숫자'],
+    transcript: [
+      {
+        timeStart: 0,
+        korean: '한국어에는 두 가지 숫자 체계가 있어요.',
+        english: 'In Korean, there are two number systems.',
+        vocabulary: [
+          { korean: '두 가지', english: 'two kinds', romanization: 'du gaji' },
+          { korean: '숫자', english: 'number', romanization: 'sutja' },
+          { korean: '체계', english: 'system', romanization: 'chegye' },
+        ],
+      },
+      {
+        timeStart: 40,
+        korean: '하나, 둘, 셋, 넷, 다섯! 고유어 숫자예요.',
+        english: 'One, two, three, four, five! These are native Korean numbers.',
+        vocabulary: [
+          { korean: '하나', english: 'one (native)', romanization: 'hana' },
+          { korean: '둘', english: 'two (native)', romanization: 'dul' },
+          { korean: '고유어', english: 'native Korean', romanization: 'goyueo' },
+        ],
+      },
+      {
+        timeStart: 85,
+        korean: '일, 이, 삼, 사, 오! 한자 숫자예요.',
+        english: 'One, two, three, four, five! These are Sino-Korean numbers.',
+        vocabulary: [
+          { korean: '일', english: 'one (Sino-Korean)', romanization: 'il' },
+          { korean: '이', english: 'two (Sino-Korean)', romanization: 'i' },
+          { korean: '한자', english: 'Chinese characters', romanization: 'hanja' },
+        ],
+      },
+      {
+        timeStart: 130,
+        korean: '나이를 말할 때는 고유어 숫자를 써요. 저는 스물다섯 살이에요.',
+        english: 'When talking about age, we use native Korean numbers. I am twenty-five years old.',
+        vocabulary: [
+          { korean: '나이', english: 'age', romanization: 'nai' },
+          { korean: '스물다섯', english: 'twenty-five', romanization: 'seumul-daseot' },
+          { korean: '살', english: 'years old', romanization: 'sal' },
+        ],
+      },
+      {
+        timeStart: 180,
+        korean: '전화번호는 한자 숫자를 사용해요. 오, 일, 공, 삼...',
+        english: 'Phone numbers use Sino-Korean numbers. Five, one, zero, three...',
+        vocabulary: [
+          { korean: '전화번호', english: 'phone number', romanization: 'jeonhwabeonho' },
+          { korean: '사용해요', english: 'to use', romanization: 'sayonghaeyo' },
+          { korean: '공', english: 'zero', romanization: 'gong' },
+        ],
+      },
+    ],
+  },
+  {
+    id: '3',
+    youtubeId: 'd1N12NWumRw',
+    title: 'Ordering Food in Korean',
+    titleKorean: '한국어로 음식 주문하기',
+    description: 'Learn how to order food at Korean restaurants. Essential phrases, vocabulary for menus, and polite expressions for dining.',
+    difficulty: 'beginner',
+    durationSeconds: 540,
+    thumbnail: `https://img.youtube.com/vi/d1N12NWumRw/hqdefault.jpg`,
+    tags: ['food', 'restaurant', 'ordering', '음식', '식당'],
+    transcript: [
+      {
+        timeStart: 0,
+        korean: '식당에서 주문할 때 필요한 표현을 배워봐요.',
+        english: 'Let\'s learn expressions needed when ordering at a restaurant.',
+        vocabulary: [
+          { korean: '식당', english: 'restaurant', romanization: 'sikdang' },
+          { korean: '주문', english: 'order', romanization: 'jumun' },
+          { korean: '표현', english: 'expression/phrase', romanization: 'pyohyeon' },
+        ],
+      },
+      {
+        timeStart: 35,
+        korean: '메뉴 좀 주세요. 주문해도 될까요?',
+        english: 'Please give me a menu. May I order now?',
+        vocabulary: [
+          { korean: '메뉴', english: 'menu', romanization: 'menyu' },
+          { korean: '주세요', english: 'please give me', romanization: 'juseyo' },
+          { korean: '될까요', english: 'may I / is it okay', romanization: 'doelkkayo' },
+        ],
+      },
+      {
+        timeStart: 75,
+        korean: '비빔밥 하나하고 된장찌개 하나 주세요.',
+        english: 'Please give me one bibimbap and one doenjang jjigae.',
+        vocabulary: [
+          { korean: '비빔밥', english: 'bibimbap (mixed rice)', romanization: 'bibimbap' },
+          { korean: '하나', english: 'one', romanization: 'hana' },
+          { korean: '된장찌개', english: 'soybean paste stew', romanization: 'doenjang jjigae' },
+        ],
+      },
+      {
+        timeStart: 115,
+        korean: '이거 맵지 않죠? 저는 매운 거 못 먹어요.',
+        english: 'This isn\'t spicy, right? I can\'t eat spicy food.',
+        vocabulary: [
+          { korean: '맵지 않죠', english: 'it\'s not spicy, right', romanization: 'maepji anchyo' },
+          { korean: '매운', english: 'spicy', romanization: 'maeun' },
+          { korean: '못 먹어요', english: 'can\'t eat', romanization: 'mot meogeoyo' },
+        ],
+      },
+      {
+        timeStart: 155,
+        korean: '계산서 주세요. 얼마예요?',
+        english: 'Please bring the bill. How much is it?',
+        vocabulary: [
+          { korean: '계산서', english: 'bill/check', romanization: 'gyesanseo' },
+          { korean: '얼마예요', english: 'how much is it', romanization: 'eolmayeyo' },
+        ],
+      },
+      {
+        timeStart: 195,
+        korean: '정말 맛있어요! 또 올게요.',
+        english: 'It\'s really delicious! I\'ll come again.',
+        vocabulary: [
+          { korean: '정말', english: 'really', romanization: 'jeongmal' },
+          { korean: '맛있어요', english: 'it\'s delicious', romanization: 'masisseoyo' },
+          { korean: '또 올게요', english: 'I\'ll come again', romanization: 'tto olgeyo' },
+        ],
+      },
+    ],
+  },
+  {
+    id: '4',
+    youtubeId: 'YuJSYVb1tKY',
+    title: 'Korean Particles and Grammar Basics',
+    titleKorean: '한국어 조사와 기본 문법',
+    description: 'Understand essential Korean particles (조사) that show the role of nouns in sentences. This foundational grammar lesson covers subject, object, and topic markers.',
+    difficulty: 'intermediate',
+    durationSeconds: 720,
+    thumbnail: `https://img.youtube.com/vi/YuJSYVb1tKY/hqdefault.jpg`,
+    tags: ['grammar', 'particles', 'intermediate', '문법', '조사'],
+    transcript: [
+      {
+        timeStart: 0,
+        korean: '오늘은 한국어의 조사에 대해 배울 거예요.',
+        english: 'Today we will learn about Korean particles.',
+        vocabulary: [
+          { korean: '조사', english: 'particle (grammar)', romanization: 'josa' },
+          { korean: '대해', english: 'about', romanization: 'daehae' },
+          { korean: '배울 거예요', english: 'will learn', romanization: 'baeul geoyeyo' },
+        ],
+      },
+      {
+        timeStart: 45,
+        korean: '은/는 은 주제를 나타내요. 저는 학생이에요.',
+        english: '은/는 marks the topic. I (as for me) am a student.',
+        vocabulary: [
+          { korean: '주제', english: 'topic', romanization: 'juje' },
+          { korean: '나타내요', english: 'indicates/represents', romanization: 'natanaeyo' },
+          { korean: '학생', english: 'student', romanization: 'haksaeng' },
+        ],
+      },
+      {
+        timeStart: 95,
+        korean: '이/가 는 주어를 표시해요. 고양이가 잠을 자요.',
+        english: '이/가 marks the subject. The cat is sleeping.',
+        vocabulary: [
+          { korean: '주어', english: 'subject (grammar)', romanization: 'jueo' },
+          { korean: '표시해요', english: 'marks/indicates', romanization: 'pyosihaeyo' },
+          { korean: '고양이', english: 'cat', romanization: 'goyangi' },
+          { korean: '잠을 자요', english: 'is sleeping', romanization: 'jameul jayo' },
+        ],
+      },
+      {
+        timeStart: 150,
+        korean: '을/를 은 목적어를 나타내요. 저는 책을 읽어요.',
+        english: '을/를 marks the object. I read a book.',
+        vocabulary: [
+          { korean: '목적어', english: 'object (grammar)', romanization: 'mokjeogeo' },
+          { korean: '책', english: 'book', romanization: 'chaek' },
+          { korean: '읽어요', english: 'read', romanization: 'ilgeoyo' },
+        ],
+      },
+      {
+        timeStart: 205,
+        korean: '에 는 장소나 시간을 나타내요. 학교에 가요.',
+        english: '에 indicates place or time. I go to school.',
+        vocabulary: [
+          { korean: '장소', english: 'place/location', romanization: 'jangso' },
+          { korean: '시간', english: 'time', romanization: 'sigan' },
+          { korean: '학교', english: 'school', romanization: 'hakgyo' },
+          { korean: '가요', english: 'go', romanization: 'gayo' },
+        ],
+      },
+      {
+        timeStart: 260,
+        korean: '와/과, 하고 는 "와"를 의미해요. 사과하고 바나나를 먹어요.',
+        english: '와/과 and 하고 mean "and". I eat an apple and a banana.',
+        vocabulary: [
+          { korean: '의미해요', english: 'means', romanization: 'eumihaeyo' },
+          { korean: '사과', english: 'apple', romanization: 'sagwa' },
+          { korean: '바나나', english: 'banana', romanization: 'banana' },
+          { korean: '먹어요', english: 'eat', romanization: 'meogeoyo' },
+        ],
+      },
+    ],
+  },
+  {
+    id: '5',
+    youtubeId: 'MYo8wHBa3Xc',
+    title: 'Korean Conversation Practice: Daily Life',
+    titleKorean: '일상 생활 한국어 회화',
+    description: 'Practice natural Korean conversations about daily routines, work, hobbies, and weekend plans. Build confidence with intermediate level dialogue.',
+    difficulty: 'intermediate',
+    durationSeconds: 660,
+    thumbnail: `https://img.youtube.com/vi/MYo8wHBa3Xc/hqdefault.jpg`,
+    tags: ['conversation', 'daily life', 'intermediate', '회화', '일상'],
+    transcript: [
+      {
+        timeStart: 0,
+        korean: '오늘 뭐 해요? 저는 친구를 만날 거예요.',
+        english: 'What are you doing today? I\'m going to meet a friend.',
+        vocabulary: [
+          { korean: '친구', english: 'friend', romanization: 'chingu' },
+          { korean: '만날 거예요', english: 'going to meet', romanization: 'mannal geoyeyo' },
+        ],
+      },
+      {
+        timeStart: 40,
+        korean: '취미가 뭐예요? 저는 음악 듣는 걸 좋아해요.',
+        english: 'What is your hobby? I like listening to music.',
+        vocabulary: [
+          { korean: '취미', english: 'hobby', romanization: 'chwimi' },
+          { korean: '음악', english: 'music', romanization: 'eumak' },
+          { korean: '듣는 걸', english: 'listening to', romanization: 'deunneun geol' },
+          { korean: '좋아해요', english: 'like', romanization: 'joahaeyo' },
+        ],
+      },
+      {
+        timeStart: 90,
+        korean: '주말에 보통 뭐 해요? 집에서 쉬거나 영화를 봐요.',
+        english: 'What do you usually do on weekends? I rest at home or watch movies.',
+        vocabulary: [
+          { korean: '주말', english: 'weekend', romanization: 'jumal' },
+          { korean: '보통', english: 'usually', romanization: 'botong' },
+          { korean: '쉬거나', english: 'rest or', romanization: 'swigeona' },
+          { korean: '영화', english: 'movie', romanization: 'yeonghwa' },
+        ],
+      },
+      {
+        timeStart: 140,
+        korean: '직업이 뭐예요? 저는 회사원이에요.',
+        english: 'What is your job? I\'m an office worker.',
+        vocabulary: [
+          { korean: '직업', english: 'job/occupation', romanization: 'jigeop' },
+          { korean: '회사원', english: 'office worker', romanization: 'hoesawon' },
+        ],
+      },
+      {
+        timeStart: 185,
+        korean: '회사는 어디에 있어요? 강남에 있어요.',
+        english: 'Where is your company? It\'s in Gangnam.',
+        vocabulary: [
+          { korean: '회사', english: 'company', romanization: 'hoesa' },
+          { korean: '어디에', english: 'where', romanization: 'eodie' },
+          { korean: '강남', english: 'Gangnam (district in Seoul)', romanization: 'Gangnam' },
+        ],
+      },
+      {
+        timeStart: 230,
+        korean: '오늘 날씨가 정말 좋네요! 같이 산책할까요?',
+        english: 'The weather is really nice today! Shall we take a walk together?',
+        vocabulary: [
+          { korean: '날씨', english: 'weather', romanization: 'nalsi' },
+          { korean: '좋네요', english: 'is nice (exclamation)', romanization: 'johneyo' },
+          { korean: '같이', english: 'together', romanization: 'gachi' },
+          { korean: '산책할까요', english: 'shall we take a walk', romanization: 'sanchaekhalkkayo' },
+        ],
+      },
+    ],
+  },
+  {
+    id: '6',
+    youtubeId: 'w6OmErEQgFo',
+    title: 'K-Drama Korean: Emotional Expressions',
+    titleKorean: 'K-드라마 한국어: 감정 표현',
+    description: 'Learn emotional expressions and dramatic phrases commonly heard in Korean dramas. Improve listening comprehension and understand context in K-dramas.',
+    difficulty: 'intermediate',
+    durationSeconds: 580,
+    thumbnail: `https://img.youtube.com/vi/w6OmErEQgFo/hqdefault.jpg`,
+    tags: ['k-drama', 'emotions', 'expressions', '감정', '드라마'],
+    transcript: [
+      {
+        timeStart: 0,
+        korean: '드라마에서 자주 나오는 감정 표현을 배워봐요.',
+        english: 'Let\'s learn emotional expressions that often appear in dramas.',
+        vocabulary: [
+          { korean: '드라마', english: 'drama', romanization: 'deurama' },
+          { korean: '자주', english: 'often/frequently', romanization: 'jaju' },
+          { korean: '감정', english: 'emotion/feeling', romanization: 'gamjeong' },
+        ],
+      },
+      {
+        timeStart: 38,
+        korean: '너 없이는 못 살아. 사랑해.',
+        english: 'I can\'t live without you. I love you.',
+        vocabulary: [
+          { korean: '없이는', english: 'without', romanization: 'eopsineun' },
+          { korean: '못 살아', english: 'can\'t live', romanization: 'mot sara' },
+          { korean: '사랑해', english: 'I love you (informal)', romanization: 'saranghae' },
+        ],
+      },
+      {
+        timeStart: 80,
+        korean: '왜 이래? 너 지금 왜 이러는 거야?',
+        english: 'Why are you like this? Why are you acting like this right now?',
+        vocabulary: [
+          { korean: '왜', english: 'why', romanization: 'wae' },
+          { korean: '이래', english: 'like this (informal)', romanization: 'irae' },
+          { korean: '지금', english: 'now/right now', romanization: 'jigeum' },
+          { korean: '이러는 거야', english: 'why are you doing this', romanization: 'ireuneun geoya' },
+        ],
+      },
+      {
+        timeStart: 125,
+        korean: '정말 화가 나. 더 이상 못 참겠어.',
+        english: 'I\'m really angry. I can\'t take it anymore.',
+        vocabulary: [
+          { korean: '화가 나', english: 'angry (casual)', romanization: 'hwaga na' },
+          { korean: '더 이상', english: 'anymore/no longer', romanization: 'deo isang' },
+          { korean: '못 참겠어', english: 'can\'t endure/stand', romanization: 'mot chamgesseo' },
+        ],
+      },
+      {
+        timeStart: 170,
+        korean: '미안해. 내가 잘못했어. 용서해 줄 수 있어?',
+        english: 'I\'m sorry. I was wrong. Can you forgive me?',
+        vocabulary: [
+          { korean: '미안해', english: 'I\'m sorry (informal)', romanization: 'mianhae' },
+          { korean: '잘못했어', english: 'I was wrong/made a mistake', romanization: 'jalmothaesseo' },
+          { korean: '용서해 줄 수 있어', english: 'can you forgive me', romanization: 'yongseo hae jul su isseo' },
+        ],
+      },
+      {
+        timeStart: 215,
+        korean: '기뻐서 눈물이 나. 너무 행복해.',
+        english: 'I\'m so happy that tears are coming. I\'m so happy.',
+        vocabulary: [
+          { korean: '기뻐서', english: 'because I\'m happy', romanization: 'gippeoseo' },
+          { korean: '눈물', english: 'tears', romanization: 'nunmul' },
+          { korean: '너무', english: 'so much/too', romanization: 'neomu' },
+          { korean: '행복해', english: 'happy (informal)', romanization: 'haengbokhae' },
+        ],
+      },
+      {
+        timeStart: 265,
+        korean: '걱정하지 마. 내가 항상 옆에 있을게.',
+        english: 'Don\'t worry. I\'ll always be by your side.',
+        vocabulary: [
+          { korean: '걱정하지 마', english: 'don\'t worry', romanization: 'geokjeonghaji ma' },
+          { korean: '항상', english: 'always', romanization: 'hangsang' },
+          { korean: '옆에', english: 'beside/next to', romanization: 'yeopae' },
+          { korean: '있을게', english: 'I\'ll be (there)', romanization: 'isseulge' },
+        ],
+      },
+    ],
+  },
+];
