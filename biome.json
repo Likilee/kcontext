@@ -33,6 +33,9 @@
         "useConst": "error",
         "useImportType": "error"
       },
+      "performance": {
+        "noBarrelFile": "error"
+      },
       "suspicious": {
         "noExplicitAny": "warn"
       }

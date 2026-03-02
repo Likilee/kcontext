@@ -9,6 +9,7 @@
     "lint": "cd .. && biome check web/src/",
     "lint:fix": "cd .. && biome check --write web/src/",
     "format": "cd .. && biome format --write web/src/",
+    "lint:arch": "npx sheriff verify",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.4",
+    "@softarc/sheriff-core": "^0.19.6",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

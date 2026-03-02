@@ -32,6 +32,9 @@ jobs:
       - name: Biome check
         run: pnpm lint
 
+      - name: Architecture check (Sheriff)
+        run: pnpm lint:arch
+
       - name: TypeScript type check
         run: pnpm tsc --noEmit
 

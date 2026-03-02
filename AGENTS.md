@@ -23,6 +23,13 @@ Dependencies flow INWARD only: UI → Application → Domain. NEVER the reverse.
 **CRITICAL**: UI components MUST NOT import from `@supabase/*` directly.
 Always go through `application/ports/` interfaces.
 
+**ENFORCED BY**: `@softarc/sheriff-core` — dependency rules are lint-checked via `pnpm lint:arch`.
+Violations block commits (lefthook) and CI.
+
+### Barrel Files (BANNED)
+- ❌ No `index.ts` re-export files — enforced by Biome `noBarrelFile: error`
+- Always import from the specific file: `@/infrastructure/supabase/server`, not `@/infrastructure/supabase`
+
 ### Data Pipeline (CLI — cli/)
 - Stateless, pure-function design (ADR 3 from docs/cli-architecture.md)
 - Each command: explicit input file → explicit output file
