@@ -21,7 +21,7 @@ function KoreanWord({
   vocabulary: VocabularyItem[];
 }) {
   const [popup, setPopup] = useState(false);
-  const match = vocabulary.find((v) => word.includes(v.korean));
+  const match = vocabulary.find((v) => word === v.korean || word.replace(/[.,!?]/g, '') === v.korean);
 
   if (!match) {
     return <span>{word} </span>;

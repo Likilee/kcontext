@@ -1,31 +1,25 @@
 'use client';
-
 import { useState, useMemo } from 'react';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import VideoCard from '@/components/VideoCard';
 import { videos } from '@/data/videos';
 import { Video } from '@/types';
-
 type Difficulty = 'all' | 'beginner' | 'intermediate' | 'advanced';
-
 const difficultyFilters: { value: Difficulty; label: string; korean: string }[] = [
   { value: 'all', label: 'All Levels', korean: '전체' },
   { value: 'beginner', label: 'Beginner', korean: '초급' },
   { value: 'intermediate', label: 'Intermediate', korean: '중급' },
   { value: 'advanced', label: 'Advanced', korean: '고급' },
 ];
-
 const stats = [
   { value: '6', label: 'Videos', korean: '동영상' },
   { value: '38+', label: 'Vocabulary Words', korean: '단어' },
   { value: '3', label: 'Difficulty Levels', korean: '난이도' },
 ];
-
 export default function Home() {
   const [search, setSearch] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty>('all');
-
   const filtered = useMemo<Video[]>(() => {
     return videos.filter((v) => {
       const matchesDifficulty = difficulty === 'all' || v.difficulty === difficulty;
@@ -39,11 +33,9 @@ export default function Home() {
       return matchesDifficulty && matchesSearch;
     });
   }, [search, difficulty]);
-
   return (
     <div className="min-h-screen flex flex-col bg-[#f8f9ff]">
       <Header />
-
       {/* Hero */}
       <section className="bg-gradient-to-br from-indigo-700 via-indigo-600 to-purple-600 text-white py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
@@ -58,9 +50,7 @@ export default function Home() {
           <p className="text-indigo-100 text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
             Watch authentic Korean content with interactive transcripts. Click any word to see its meaning, and practice with vocabulary flashcards.
           </p>
-
           <SearchBar value={search} onChange={setSearch} />
-
           {/* Stats */}
           <div className="flex justify-center gap-8 mt-10">
             {stats.map((s) => (
@@ -75,7 +65,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
       {/* Main content */}
       <main className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-10 flex-1">
         {/* Filters */}
@@ -99,7 +88,6 @@ export default function Home() {
             {filtered.length}개의 동영상 · {filtered.length} videos
           </span>
         </div>
-
         {/* Video grid */}
         {filtered.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -121,7 +109,6 @@ export default function Home() {
           </div>
         )}
       </main>
-
       {/* Footer */}
       <footer className="bg-white border-t border-gray-100 mt-16 py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -142,4 +129,3 @@ export default function Home() {
     </div>
   );
 }
-
