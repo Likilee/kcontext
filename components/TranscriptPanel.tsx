@@ -58,9 +58,12 @@ function TranscriptEntry({ entry }: { entry: Transcript }) {
 
   return (
     <div className="border border-gray-100 rounded-xl overflow-hidden hover:border-indigo-200 transition-colors">
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setExpanded((e) => !e)}
-        className="w-full text-left p-4 flex items-start gap-3 hover:bg-indigo-50/50 transition-colors"
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setExpanded((v) => !v); }}
+        className="w-full text-left p-4 flex items-start gap-3 hover:bg-indigo-50/50 transition-colors cursor-pointer"
       >
         <span className="flex-shrink-0 text-xs font-mono bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-md mt-0.5">
           {formatTime(entry.timeStart)}
@@ -81,7 +84,7 @@ function TranscriptEntry({ entry }: { entry: Transcript }) {
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
-      </button>
+      </div>
 
       {expanded && (
         <div className="px-4 pb-4 border-t border-gray-50 bg-gray-50/50">
