@@ -1,1 +1,114 @@
 @import "tailwindcss";
+
+/*
+ * ==========================================================
+ * Level 1: Primitive Tokens (원시 계층)
+ * SSoT: docs/design-system-and-token-guide.md Section 2
+ * 주의: 이 값들을 컴포넌트에서 직접 참조 금지.
+ *       반드시 Semantic Token을 통해 사용할 것.
+ * ==========================================================
+ */
+@theme {
+  /* Color Palette */
+  --color-gray-000: #FFFFFF;
+  --color-gray-050: #F9FAFB;
+  --color-gray-100: #F3F4F6;
+  --color-gray-400: #9CA3AF;
+  --color-gray-500: #6B7280;
+  --color-gray-700: #374151;
+  --color-gray-800: #1F2937;
+  --color-gray-900: #111827;
+  --color-gray-1000: #000000;
+  --color-yellow-400: #FACC15;
+  --color-yellow-500: #EAB308;
+  --color-blue-600: #2563EB;
+
+  /* Typography Scale */
+  --font-family-sans: "Inter Variable", "Inter", sans-serif;
+  --font-family-kr: "Pretendard Variable", "Pretendard", sans-serif;
+  --font-size-13: 13px;
+  --font-size-16: 16px;
+  --font-size-18: 18px;
+  --font-size-20: 20px;
+  --font-size-28: 28px;
+  --line-height-tight: 1.4;
+  --line-height-relaxed: 1.5;
+
+  /* Spacing & Radius (4px Grid) */
+  --spacing-04: 4px;
+  --spacing-08: 8px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-48: 48px;
+  --radius-04: 4px;
+  --radius-08: 8px;
+  --radius-pill: 9999px;
+
+  /* Motion */
+  --duration-instant: 0ms;
+  --duration-fast: 100ms;
+  --duration-base: 200ms;
+}
+
+/*
+ * ==========================================================
+ * Level 2: Semantic Tokens (의미론적 계층)
+ * SSoT: docs/design-system-and-token-guide.md Section 3
+ * 테마 변경 시 이 매핑만 전환.
+ * ==========================================================
+ */
+:root {
+  /* Background */
+  --bg-base: var(--color-gray-900);
+  --bg-surface: var(--color-gray-800);
+  --bg-surface-hover: var(--color-gray-700);
+
+  /* Text & Icon */
+  --text-primary: var(--color-gray-050);
+  --text-secondary: var(--color-gray-400);
+  --text-disabled: var(--color-gray-500);
+  --text-inverse: var(--color-gray-1000);
+
+  /* Border */
+  --border-subtle: var(--color-gray-800);
+  --border-default: var(--color-gray-700);
+  --border-focus: var(--color-yellow-500);
+
+  /* Brand & Action */
+  --brand-highlight: var(--color-yellow-400);
+  --action-primary: var(--color-yellow-500);
+  --action-link: var(--color-blue-600);
+
+  /* Layout Spacing */
+  --space-layout-screen: var(--spacing-16);
+  --space-layout-section: var(--spacing-48);
+
+  /* Container Inset */
+  --space-inset-base: var(--spacing-16);
+  --space-inset-squish-x: var(--spacing-16);
+  --space-inset-squish-y: var(--spacing-12);
+
+  /* Item & Inline Gap */
+  --space-gap-group: var(--spacing-24);
+  --space-gap-item: var(--spacing-08);
+  --space-gap-micro: var(--spacing-04);
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --space-layout-screen: var(--spacing-24);
+  }
+}
+
+/*
+ * ==========================================================
+ * Base Styles
+ * ==========================================================
+ */
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-family-sans);
+}
