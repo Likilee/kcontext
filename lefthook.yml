@@ -1,0 +1,12 @@
+pre-commit:
+  parallel: true
+  commands:
+    biome-check:
+      glob: "web/src/**/*.{ts,tsx}"
+      run: npx --prefix web biome check --config-path=. {staged_files}
+    ruff-check:
+      glob: "cli/**/*.py"
+      run: cd cli && uv run ruff check .
+    ruff-format:
+      glob: "cli/**/*.py"
+      run: cd cli && uv run ruff format --check .
