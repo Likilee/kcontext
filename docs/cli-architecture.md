@@ -23,17 +23,24 @@
 
 채널 또는 재생목록 URL에서 대량의 영상 ID를 추출하여 표준 출력(stdout)으로 반환.
 
-- Signature: `cli list <url> [--limit LIMIT]`
+- Signature: `cli list <url> [--limit LIMIT] [--youtube-proxy-url URL]`
 - Output: 개행 문자(`\\n`)로 구분된 비디오 ID 목록 (진행 상황 및 에러는 stderr 출력)
 
 ### 3.2 fetch (Extract Data)
 
 단일 영상의 메타데이터와 수동 자막 원본을 추출하여 단일 Raw JSON 파일로 저장.
 
-- Signature: `cli fetch <video_id> -o <output_raw_json_path>`
+- Signature: `cli fetch <video_id> -o <output_raw_json_path> [--youtube-proxy-url URL]`
 - 방어 로직: 수동 한국어 자막이 없을 경우 에러 출력 후 스킵.
 
-### 3.3 build (Transform)
+### 3.3 fetch-list (Batch Extract Data)
+
+영상 ID 목록 파일을 입력받아 각 ID에 대한 Raw JSON을 일괄 생성한다.
+
+- Signature: `cli fetch-list <video_ids_file> -d <output_dir> [--strict] [--youtube-proxy-url URL]`
+- 동작 방식: 내부적으로 `fetch`를 반복 호출하며 `--youtube-proxy-url`을 그대로 전달한다.
+
+### 3.4 build (Transform)
 
 Raw JSON을 입력받아 Track A(DB)와 Track B(Storage) 인프라 스키마에 맞게 3개의 아티팩트로 분해 및 변환.
 
@@ -43,14 +50,22 @@ Raw JSON을 입력받아 Track A(DB)와 Track B(Storage) 인프라 스키마에 
     2. `{video_id}_video.csv` (Track A: 비디오 메타데이터 UPSERT용)
     3. `{video_id}_subtitle.csv` (Track A: 자막 검색 인덱스 원자적 교체용)
 
-### 3.4 push (Load)
+### 3.5 push (Load)
 
 빌드된 3개의 아티팩트 파일을 명시적으로 주입받아 대상 인프라로 전송.
 
 - Signature: `cli push -s <storage_json_path> -vc <video_csv_path> -sc <subtitle_csv_path>`
 - 동작 방식: 비디오 메타데이터는 UPSERT로 갱신하고, 자막 인덱스는 트랜잭션 기반 Atomic Replace(DELETE 후 COPY) 방식으로 전면 교체.
 
-## 4. End-to-End Orchestration (Shell Script)
+## 4. YouTube Proxy Policy
+
+- Env var: `KCONTEXT_YOUTUBE_PROXY_URL`
+- CLI option: `--youtube-proxy-url`
+- 우선순위: CLI option > env var > 미사용
+- 지원 스킴: `http://`, `https://` (torproxy 권장: `http://127.0.0.1:8118`)
+- 실패 정책: 프록시 사용 중 차단/연결 실패 시 즉시 종료(`exit 1`), direct 연결로 자동 폴백하지 않음
+
+## 5. End-to-End Orchestration (Shell Script)
 
 ```bash
 #!/bin/bash

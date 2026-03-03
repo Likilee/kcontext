@@ -2,7 +2,7 @@
 
 import typer
 
-from kcontext_cli.commands import build, fetch, list_cmd, push
+from kcontext_cli.commands import build, fetch, fetch_list, list_cmd, push
 
 app = typer.Typer(
     name="kcontext",
@@ -12,6 +12,7 @@ app = typer.Typer(
 
 app.command(name="list")(list_cmd.list_videos)
 app.command(name="fetch")(fetch.fetch_subtitle)
+app.command(name="fetch-list")(fetch_list.fetch_list)
 app.command(name="build")(build.build_artifacts)
 app.command(name="push")(push.push_data)
 
