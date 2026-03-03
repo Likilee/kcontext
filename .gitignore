@@ -38,3 +38,9 @@ Thumbs.db
 
 # Test
 coverage/
+web/test-results/
+web/playwright-report/
+
+# Supabase local temp files
+supabase/.temp/
+testing/supabase-e2e/supabase/.temp/

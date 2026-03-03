@@ -7,6 +7,67 @@ on:
     branches: [main]
 
 jobs:
+  precommit-parity:
+    name: "Pre-commit parity"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - uses: astral-sh/setup-uv@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install web dependencies
+        run: pnpm -C web install --frozen-lockfile
+
+      - name: Install cli dependencies
+        run: cd cli && uv sync
+
+      - name: Resolve changed files
+        id: changed
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            base_sha="${{ github.event.pull_request.base.sha }}"
+          else
+            base_sha="${{ github.event.before }}"
+          fi
+
+          if [[ -z "$base_sha" || "$base_sha" == "0000000000000000000000000000000000000000" ]]; then
+            base_sha="$(git rev-list --max-parents=0 HEAD)"
+          fi
+
+          git diff --name-only "$base_sha" "${{ github.sha }}" > changed_files.txt
+          count="$(wc -l < changed_files.txt | tr -d ' ')"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+
+      - name: Run lefthook pre-commit on changed files
+        if: steps.changed.outputs.count != '0'
+        run: |
+          args=()
+          while IFS= read -r file; do
+            [[ -z "$file" ]] && continue
+            args+=(--file "$file")
+          done < changed_files.txt
+          npx lefthook run pre-commit "${args[@]}"
+
+      - name: No changed files for hook parity
+        if: steps.changed.outputs.count == '0'
+        run: echo "No changed files detected. Skipping lefthook parity."
+
   lint-and-test-web:
     name: "Web: Lint & Test"
     runs-on: ubuntu-latest
@@ -43,6 +104,51 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  web-e2e-smoke:
+    name: "Web: E2E Smoke"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.67.1
+
+      - name: Install web dependencies
+        run: pnpm -C web install --frozen-lockfile
+
+      - name: Start isolated E2E stack
+        run: make e2e-up
+
+      - name: Run deterministic smoke E2E
+        env:
+          CI: true
+        run: make e2e-smoke
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-smoke-artifacts
+          path: |
+            web/test-results
+            web/playwright-report
+          if-no-files-found: ignore
+
+      - name: Stop isolated E2E stack
+        if: always()
+        run: make e2e-down
 
   lint-cli:
     name: "CLI: Lint"
