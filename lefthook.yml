@@ -13,3 +13,8 @@ pre-commit:
     ruff-format:
       glob: "cli/**/*.py"
       run: cd cli && uv run ruff format --check .
+
+commit-msg:
+  commands:
+    commitlint:
+      run: cd web && pnpm exec commitlint --config ../commitlint.config.cjs --edit {1}

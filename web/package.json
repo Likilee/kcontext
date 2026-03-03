@@ -12,7 +12,12 @@
     "lint:arch": "npx sheriff verify",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "pnpm test:e2e:smoke",
+    "test:e2e:smoke": "playwright test e2e/smoke --workers=1",
+    "test:e2e:real": "playwright test e2e/real",
+    "test:e2e:integration": "pnpm test:e2e:real",
+    "commitlint": "commitlint --config ../commitlint.config.cjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.1.1",
@@ -24,7 +29,10 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@biomejs/biome": "^2.4.4",
+    "@playwright/test": "^1.58.2",
     "@softarc/sheriff-core": "^0.19.6",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
