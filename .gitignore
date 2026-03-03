@@ -32,6 +32,7 @@ Thumbs.db
 
 # Sisyphus (planning artifacts - drafts only, plans are committed)
 .sisyphus/drafts/
+.sisyphus
 
 # Vercel
 .vercel/
