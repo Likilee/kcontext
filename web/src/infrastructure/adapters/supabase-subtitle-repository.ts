@@ -51,6 +51,7 @@ export class SupabaseSubtitleRepository implements SubtitleRepository {
 
     return chunks.map((chunk) => ({
       startTime: chunk.start_time,
+      duration: chunk.duration,
       text: chunk.text,
     }));
   }

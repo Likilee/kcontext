@@ -1,43 +1,41 @@
 "use client";
 
-import type React from "react";
+import type { ReactNode } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { renderHighlightedText } from "./highlighted-text";
 
 interface ChunkViewerProps {
   text: string | null;
   keyword: string;
+  isLoading: boolean;
 }
 
-function escapeRegex(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+export function ChunkViewer({ text, keyword, isLoading }: ChunkViewerProps) {
+  let content: ReactNode = (
+    <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
+      Select a context to start syncing subtitles.
+    </p>
+  );
 
-function highlightKeyword(text: string, keyword: string): React.ReactNode {
-  if (!keyword.trim()) return text;
-  const regex = new RegExp(`(${escapeRegex(keyword)})`, "gi");
-  const parts = text.split(regex);
-  return parts.map((part, i) => {
-    const key = `${i}-${part.slice(0, 8)}`;
-    return regex.test(part) ? (
-      <mark
-        key={key}
-        className="bg-[var(--brand-highlight)] text-[var(--text-inverse)] rounded-[var(--radius-04)] px-[var(--space-gap-micro)]"
-      >
-        {part}
-      </mark>
-    ) : (
-      <span key={key}>{part}</span>
+  if (isLoading) {
+    content = (
+      <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
+        Loading subtitles...
+      </p>
     );
-  });
-}
+  } else if (text !== null) {
+    content = (
+      <p className="break-keep font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-20)] font-medium leading-[var(--line-height-relaxed)] text-[var(--text-primary)]">
+        {renderHighlightedText(text, keyword)}
+      </p>
+    );
+  }
 
-export function ChunkViewer({ text, keyword }: ChunkViewerProps) {
   return (
-    <div data-testid="chunk-viewer" className="p-[var(--space-inset-base)] min-h-[80px]">
-      {text !== null && (
-        <p className="font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-20)] font-medium leading-[var(--line-height-relaxed)] text-[var(--text-primary)] break-keep">
-          {highlightKeyword(text, keyword)}
-        </p>
-      )}
-    </div>
+    <Card data-testid="chunk-viewer">
+      <CardContent className="min-h-[calc(var(--space-layout-section)+var(--space-gap-group))]">
+        {content}
+      </CardContent>
+    </Card>
   );
 }

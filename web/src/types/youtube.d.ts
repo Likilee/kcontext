@@ -4,6 +4,10 @@ declare namespace YT {
     loadVideoById(videoId: string, startSeconds?: number): void;
     seekTo(seconds: number, allowSeekAhead?: boolean): void;
     getCurrentTime(): number;
+    setPlaybackRate(suggestedRate: number): void;
+    getPlaybackRate(): number;
+    playVideo(): void;
+    pauseVideo(): void;
     getPlayerState(): number;
     destroy(): void;
   }

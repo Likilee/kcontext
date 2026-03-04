@@ -23,7 +23,9 @@ export function SearchResultList({
   if (isLoading) {
     return (
       <div className="flex flex-col gap-[var(--space-gap-item)]">
-        <p className="text-[var(--text-secondary)]">Searching...</p>
+        <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
+          Searching...
+        </p>
       </div>
     );
   }
@@ -31,7 +33,9 @@ export function SearchResultList({
   if (error) {
     return (
       <div className="flex flex-col gap-[var(--space-gap-item)]">
-        <p className="text-[var(--text-secondary)]">{error}</p>
+        <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
+          {error}
+        </p>
       </div>
     );
   }
@@ -43,9 +47,9 @@ export function SearchResultList({
   if (results.length === 0) {
     return (
       <div className="flex flex-col gap-[var(--space-gap-item)]">
-        <p className="text-[var(--text-secondary)] text-center">
+        <p className="text-center font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
           Hmm, even native speakers rarely use this exact phrase. Try searching for a shorter
-          keyword!
+          keyword.
         </p>
       </div>
     );

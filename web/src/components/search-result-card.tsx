@@ -1,36 +1,13 @@
 "use client";
 
-import type React from "react";
 import type { SearchResult } from "@/domain/models/subtitle";
+import { renderHighlightedText } from "./highlighted-text";
 
 interface SearchResultCardProps {
   result: SearchResult;
   keyword: string;
   isSelected: boolean;
   onClick: () => void;
-}
-
-function escapeRegex(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function highlightKeyword(text: string, keyword: string): React.ReactNode {
-  if (!keyword.trim()) return text;
-  const regex = new RegExp(`(${escapeRegex(keyword)})`, "gi");
-  const parts = text.split(regex);
-  return parts.map((part, i) => {
-    const key = `${i}-${part.slice(0, 8)}`;
-    return regex.test(part) ? (
-      <mark
-        key={key}
-        className="bg-[var(--brand-highlight)] text-[var(--text-inverse)] rounded-[var(--radius-04)] px-[var(--space-gap-micro)]"
-      >
-        {part}
-      </mark>
-    ) : (
-      <span key={key}>{part}</span>
-    );
-  });
 }
 
 function formatTimestamp(seconds: number): string {
@@ -46,23 +23,21 @@ export function SearchResultCard({ result, keyword, isSelected, onClick }: Searc
       data-testid="search-result-card"
       onClick={onClick}
       className={[
-        "w-full text-left cursor-pointer bg-[var(--bg-surface)] rounded-[var(--radius-08)] p-[var(--space-inset-base)]",
-        "hover:bg-[var(--bg-surface-hover)]",
-        "active:scale-[0.96] transition-transform duration-[var(--duration-fast)]",
-        isSelected ? "ring-1 ring-[var(--border-focus)]" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
+        "w-full cursor-pointer rounded-[var(--radius-08)] border p-[var(--space-inset-base)] text-left transition-transform duration-[var(--duration-fast)] active:scale-[0.96]",
+        isSelected
+          ? "border-[var(--border-focus)] bg-[var(--bg-surface-hover)]"
+          : "border-[var(--border-default)] bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)]",
+      ].join(" ")}
     >
       <div className="flex flex-col gap-[var(--space-gap-micro)]">
         <div className="flex items-center justify-between gap-[var(--space-gap-item)]">
           <p
             data-testid="video-title"
-            className="font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-16)] font-bold text-[var(--text-primary)] truncate"
+            className="truncate font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-16)] font-bold text-[var(--text-primary)]"
           >
             {result.title}
           </p>
-          <span className="text-[length:var(--font-size-13)] text-[var(--text-secondary)] shrink-0">
+          <span className="shrink-0 text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
             {formatTimestamp(result.startTime)}
           </span>
         </div>
@@ -72,8 +47,8 @@ export function SearchResultCard({ result, keyword, isSelected, onClick }: Searc
         >
           {result.channelName}
         </p>
-        <p className="font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-16)] text-[var(--text-primary)]">
-          {highlightKeyword(result.matchedText, keyword)}
+        <p className="break-keep font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-16)] text-[var(--text-primary)]">
+          {renderHighlightedText(result.matchedText, keyword)}
         </p>
       </div>
     </button>

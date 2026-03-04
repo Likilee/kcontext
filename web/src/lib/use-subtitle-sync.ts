@@ -1,22 +1,15 @@
 "use client";
 
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
-
-interface SyncChunk {
-  startTime: number;
-  duration: number;
-  text: string;
-}
+import { useEffect, useRef, useState } from "react";
+import type { SubtitleChunk } from "@/domain/models/subtitle";
 
 interface UseSubtitleSyncReturn {
-  activeChunk: SyncChunk | null;
+  activeChunk: SubtitleChunk | null;
   activeIndex: number;
-  loadTranscript: (videoId: string) => Promise<void>;
-  isLoaded: boolean;
 }
 
-export function findActiveChunkIndex(chunks: SyncChunk[], currentTime: number): number {
+export function findActiveChunkIndex(chunks: SubtitleChunk[], currentTime: number): number {
   if (chunks.length === 0) {
     return -1;
   }
@@ -48,47 +41,27 @@ export function findActiveChunkIndex(chunks: SyncChunk[], currentTime: number): 
 
 export function useSubtitleSync(
   playerRef: React.RefObject<{ getCurrentTime: () => number } | null>,
-  cdnBaseUrl: string,
+  chunks: SubtitleChunk[],
 ): UseSubtitleSyncReturn {
-  const [chunks, setChunks] = useState<SyncChunk[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const [isLoaded, setIsLoaded] = useState(false);
   const rafId = useRef<number>(0);
 
-  const loadTranscript = useCallback(
-    async (videoId: string) => {
-      setIsLoaded(false);
-      const response = await fetch(`${cdnBaseUrl}/subtitles/${videoId}.json`);
-      if (!response.ok) {
-        throw new Error(`Failed to load transcript: ${response.status}`);
-      }
-
-      const data: Array<{ start_time: number; duration: number; text: string }> =
-        (await response.json()) as Array<{ start_time: number; duration: number; text: string }>;
-
-      const mapped: SyncChunk[] = data.map((chunk) => ({
-        startTime: chunk.start_time,
-        duration: chunk.duration,
-        text: chunk.text,
-      }));
-
-      setChunks(mapped);
-      setIsLoaded(true);
-    },
-    [cdnBaseUrl],
-  );
-
   useEffect(() => {
-    if (!isLoaded || chunks.length === 0) {
+    if (chunks.length === 0) {
+      setActiveIndex(-1);
       return;
     }
 
     const tick = () => {
       const player = playerRef.current;
-      if (player) {
-        const currentTime = player.getCurrentTime();
-        const index = findActiveChunkIndex(chunks, currentTime);
-        setActiveIndex((previous) => (previous !== index ? index : previous));
+      if (player && typeof player.getCurrentTime === "function") {
+        try {
+          const currentTime = player.getCurrentTime();
+          const index = findActiveChunkIndex(chunks, currentTime);
+          setActiveIndex((previous) => (previous !== index ? index : previous));
+        } catch {
+          setActiveIndex((previous) => (previous !== -1 ? -1 : previous));
+        }
       }
       rafId.current = requestAnimationFrame(tick);
     };
@@ -98,14 +71,12 @@ export function useSubtitleSync(
     return () => {
       cancelAnimationFrame(rafId.current);
     };
-  }, [chunks, isLoaded, playerRef]);
+  }, [chunks, playerRef]);
 
   const activeChunk = activeIndex >= 0 ? (chunks[activeIndex] ?? null) : null;
 
   return {
     activeChunk,
     activeIndex,
-    loadTranscript,
-    isLoaded,
   };
 }

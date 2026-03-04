@@ -84,7 +84,7 @@ describe("SupabaseSubtitleRepository", () => {
 
       const chunks = await repo.getFullTranscript("vid1");
       expect(chunks).toHaveLength(2);
-      expect(chunks[0]).toEqual({ startTime: 0.0, text: "안녕하세요" });
+      expect(chunks[0]).toEqual({ startTime: 0.0, duration: 2.5, text: "안녕하세요" });
     });
 
     it("should throw on HTTP error", async () => {

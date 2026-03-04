@@ -6,26 +6,63 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "re
 export interface YouTubePlayerHandle {
   getCurrentTime: () => number;
   seekTo: (seconds: number) => void;
+  seekBy: (seconds: number) => void;
+  setPlaybackRate: (rate: number) => void;
 }
 
 interface YouTubePlayerProps {
   videoId: string | null;
   startTime?: number;
+  playbackRate: number;
   onReady?: () => void;
   onStateChange?: (state: number) => void;
 }
 
 export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(
-  function YouTubePlayer({ videoId, startTime, onReady, onStateChange }, ref) {
+  function YouTubePlayer({ videoId, startTime, playbackRate, onReady, onStateChange }, ref) {
     const playerRef = useRef<YT.Player | null>(null);
     const [apiReady, setApiReady] = useState(false);
 
+    const getSafeCurrentTime = () => {
+      const player = playerRef.current;
+      if (!player || typeof player.getCurrentTime !== "function") {
+        return 0;
+      }
+
+      try {
+        const time = player.getCurrentTime();
+        return Number.isFinite(time) ? time : 0;
+      } catch {
+        return 0;
+      }
+    };
+
     useImperativeHandle(ref, () => ({
-      getCurrentTime: () => playerRef.current?.getCurrentTime() ?? 0,
-      seekTo: (s: number) => {
+      getCurrentTime: getSafeCurrentTime,
+      seekTo: (seconds: number) => {
         const player = playerRef.current;
-        if (!player || typeof player.seekTo !== "function") return;
-        player.seekTo(s, true);
+        if (!player || typeof player.seekTo !== "function") {
+          return;
+        }
+
+        player.seekTo(Math.max(0, seconds), true);
+      },
+      seekBy: (seconds: number) => {
+        const player = playerRef.current;
+        if (!player || typeof player.seekTo !== "function") {
+          return;
+        }
+
+        const current = getSafeCurrentTime();
+        player.seekTo(Math.max(0, current + seconds), true);
+      },
+      setPlaybackRate: (rate: number) => {
+        const player = playerRef.current;
+        if (!player || typeof player.setPlaybackRate !== "function") {
+          return;
+        }
+
+        player.setPlaybackRate(rate);
       },
     }));
 
@@ -33,58 +70,85 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       return () => {
         try {
           playerRef.current?.destroy();
-        } catch (_) {
-          // ignore
+        } catch {
+          // ignore cleanup errors
         }
         playerRef.current = null;
       };
     }, []);
 
     useEffect(() => {
-      if (!apiReady || !videoId) return;
+      if (!apiReady || !videoId) {
+        return;
+      }
 
-      if (playerRef.current) {
-        playerRef.current.loadVideoById(videoId, startTime ?? 0);
+      const safeStartTime = Math.max(0, startTime ?? 0);
+      const player = playerRef.current;
+
+      if (player && typeof player.loadVideoById === "function") {
+        player.loadVideoById(videoId, safeStartTime);
+        if (typeof player.setPlaybackRate === "function") {
+          player.setPlaybackRate(playbackRate);
+        }
+        if (typeof player.playVideo === "function") {
+          player.playVideo();
+        }
         return;
       }
 
       if (typeof window.YT === "undefined" || typeof window.YT.Player !== "function") {
-        console.error("YouTubePlayer: YT API is not ready");
         return;
       }
 
-      try {
-        playerRef.current = new window.YT.Player("yt-player-iframe", {
-          videoId,
-          playerVars: {
-            autoplay: 0,
-            controls: 1,
-            modestbranding: 1,
-            rel: 0,
-            cc_load_policy: 0,
-            start: Math.floor(startTime ?? 0),
+      playerRef.current = new window.YT.Player("yt-player-iframe", {
+        videoId,
+        playerVars: {
+          autoplay: 1,
+          controls: 0,
+          cc_load_policy: 0,
+          disablekb: 1,
+          modestbranding: 1,
+          playsinline: 1,
+          rel: 0,
+          start: Math.floor(safeStartTime),
+        },
+        events: {
+          onReady: () => {
+            const readyPlayer = playerRef.current;
+            if (readyPlayer && typeof readyPlayer.seekTo === "function") {
+              readyPlayer.seekTo(safeStartTime, true);
+            }
+            if (typeof playerRef.current?.setPlaybackRate === "function") {
+              playerRef.current.setPlaybackRate(playbackRate);
+            }
+            if (typeof playerRef.current?.playVideo === "function") {
+              playerRef.current.playVideo();
+            }
+            onReady?.();
           },
-          events: {
-            onReady: () => onReady?.(),
-            onStateChange: (e: { data: number }) => onStateChange?.(e.data),
-          },
-        });
-      } catch (e) {
-        // YouTube IFrame API initialization failed (e.g. invalid video ID in test env)
-        console.error("YouTubePlayer: failed to initialize player", e);
+          onStateChange: (event: { data: number }) => onStateChange?.(event.data),
+        },
+      });
+    }, [apiReady, onReady, onStateChange, playbackRate, startTime, videoId]);
+
+    useEffect(() => {
+      const player = playerRef.current;
+      if (!player || typeof player.setPlaybackRate !== "function") {
+        return;
       }
-    }, [apiReady, videoId, startTime, onReady, onStateChange]);
+
+      player.setPlaybackRate(playbackRate);
+    }, [playbackRate]);
 
     const handleScriptLoad = () => {
-      try {
-        if (typeof window.YT !== "undefined" && typeof window.YT.Player === "function") {
-          setApiReady(true);
-        } else {
-          window.onYouTubeIframeAPIReady = () => setApiReady(true);
-        }
-      } catch {
-        window.onYouTubeIframeAPIReady = () => setApiReady(true);
+      if (typeof window.YT !== "undefined" && typeof window.YT.Player === "function") {
+        setApiReady(true);
+        return;
       }
+
+      window.onYouTubeIframeAPIReady = () => {
+        setApiReady(true);
+      };
     };
 
     return (
@@ -96,9 +160,9 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
         />
         <div
           id="yt-player-container"
-          className="aspect-video w-full rounded-[var(--radius-08)] overflow-hidden bg-[var(--bg-base)]"
+          className="aspect-video w-full overflow-hidden bg-[var(--bg-base)]"
         >
-          <div id="yt-player-iframe" className="w-full h-full" />
+          <div id="yt-player-iframe" className="h-full w-full" />
         </div>
       </>
     );

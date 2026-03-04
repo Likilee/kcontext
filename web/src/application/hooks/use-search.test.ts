@@ -31,6 +31,7 @@ interface SearchSnapshot {
 
 interface SearchHarnessHandle {
   search: (keyword: string) => void;
+  reset: () => void;
   selectResult: (result: SearchResult) => void;
   getSnapshot: () => SearchSnapshot;
 }
@@ -43,6 +44,7 @@ const SearchHarness = forwardRef<SearchHarnessHandle, { repository: SubtitleRepo
       ref,
       () => ({
         search: state.search,
+        reset: state.reset,
         selectResult: state.selectResult,
         getSnapshot: () => ({
           results: state.results,
@@ -129,6 +131,7 @@ describe("useSearch", () => {
       expect(repository.searchByKeyword).toHaveBeenCalledWith("안녕");
       expect(ref.current?.getSnapshot().results).toEqual(MOCK_RESULTS);
       expect(ref.current?.getSnapshot().keyword).toBe("안녕");
+      expect(ref.current?.getSnapshot().selectedResult).toEqual(MOCK_RESULTS[0]);
       expect(ref.current?.getSnapshot().error).toBeNull();
     });
   });
@@ -148,6 +151,7 @@ describe("useSearch", () => {
     expect(repository.searchByKeyword).not.toHaveBeenCalled();
     expect(ref.current?.getSnapshot().results).toEqual([]);
     expect(ref.current?.getSnapshot().keyword).toBe("");
+    expect(ref.current?.getSnapshot().selectedResult).toBeNull();
   });
 
   it("captures repository errors and resets results", async () => {
@@ -166,6 +170,7 @@ describe("useSearch", () => {
       expect(ref.current?.getSnapshot().error).toBe("boom");
       expect(ref.current?.getSnapshot().results).toEqual([]);
       expect(ref.current?.getSnapshot().keyword).toBe("실패");
+      expect(ref.current?.getSnapshot().selectedResult).toBeNull();
     });
   });
 
@@ -186,5 +191,31 @@ describe("useSearch", () => {
     });
 
     expect(ref.current?.getSnapshot().selectedResult).toEqual(firstResult);
+  });
+
+  it("clears state when reset is called", async () => {
+    const repository: SubtitleRepository = {
+      searchByKeyword: vi.fn().mockResolvedValue(MOCK_RESULTS),
+      getFullTranscript: vi.fn(),
+    };
+
+    const ref = renderHookHarness(repository);
+
+    act(() => {
+      ref.current?.search("안녕");
+    });
+
+    await waitFor(() => {
+      expect(ref.current?.getSnapshot().results).toEqual(MOCK_RESULTS);
+    });
+
+    act(() => {
+      ref.current?.reset();
+    });
+
+    expect(ref.current?.getSnapshot().results).toEqual([]);
+    expect(ref.current?.getSnapshot().error).toBeNull();
+    expect(ref.current?.getSnapshot().keyword).toBe("");
+    expect(ref.current?.getSnapshot().selectedResult).toBeNull();
   });
 });

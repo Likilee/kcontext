@@ -1,88 +1,93 @@
 "use client";
 
-import { useRef } from "react";
-import { useSearch } from "@/application/hooks/use-search";
-import { ChunkViewer } from "@/components/chunk-viewer";
-import { PlayerControls } from "@/components/player-controls";
+import { useRouter } from "next/navigation";
+import { useCallback, useState } from "react";
 import { SearchBar } from "@/components/search-bar";
-import { SearchResultList } from "@/components/search-result-list";
-import type { YouTubePlayerHandle } from "@/components/youtube-player";
-import { YouTubePlayer } from "@/components/youtube-player";
-import type { SearchResult } from "@/domain/models/subtitle";
-import { SupabaseSubtitleRepository } from "@/infrastructure/adapters/supabase-subtitle-repository";
-import { useSubtitleSync } from "@/lib/use-subtitle-sync";
+import { SuggestionChipList } from "@/components/suggestion-chip-list";
+import { TopNavigation } from "@/components/top-navigation";
 
-const repository = new SupabaseSubtitleRepository();
+const SEARCH_SUGGESTIONS = [
+  "진짜 행복해요",
+  "어쩔티비",
+  "-잖아요",
+  "괜찮아요",
+  "대박",
+  "감사합니다",
+  "죄송합니다",
+  "힘내세요",
+];
 
 export default function HomePage() {
-  const playerRef = useRef<YouTubePlayerHandle | null>(null);
-  const cdnBaseUrl = process.env.NEXT_PUBLIC_CDN_URL ?? "";
+  const router = useRouter();
+  const [searchInput, setSearchInput] = useState("");
 
-  const { results, isLoading, error, search, selectedResult, selectResult, keyword } =
-    useSearch(repository);
+  const navigateToSearch = useCallback(
+    (keyword: string) => {
+      const normalizedKeyword = keyword.trim();
+      if (!normalizedKeyword) {
+        return;
+      }
 
-  const { activeChunk, loadTranscript } = useSubtitleSync(playerRef, cdnBaseUrl);
+      router.push(`/search?q=${encodeURIComponent(normalizedKeyword)}`);
+    },
+    [router],
+  );
 
-  const handleSearch = (kw: string) => {
-    search(kw);
-  };
-
-  const handleSelectResult = (result: SearchResult) => {
-    selectResult(result);
-    void loadTranscript(result.videoId);
-  };
-
-  const handleReplayContext = () => {
-    if (selectedResult && playerRef.current) {
-      playerRef.current.seekTo(selectedResult.startTime);
-    }
-  };
+  const handleSuggestionSelect = useCallback(
+    (suggestion: string) => {
+      setSearchInput(suggestion);
+      navigateToSearch(suggestion);
+    },
+    [navigateToSearch],
+  );
 
   return (
-    <main className="min-h-screen px-[var(--space-layout-screen)] py-[var(--space-layout-section)]">
-      <div className="mb-[var(--space-gap-group)]">
-        <SearchBar onSearch={handleSearch} isLoading={isLoading} />
-      </div>
+    <main className="relative min-h-screen bg-[var(--bg-base)]">
+      <TopNavigation
+        mode="home"
+        searchValue=""
+        onSearchValueChange={() => {
+          // no-op in home mode
+        }}
+        onSearchSubmit={() => {
+          // no-op in home mode
+        }}
+        isSearchLoading={false}
+        onLogoClick={() => {
+          router.push("/");
+        }}
+      />
 
-      <div className="flex flex-col lg:flex-row gap-[var(--space-gap-group)]">
-        <div className="lg:w-[360px] lg:shrink-0 lg:max-h-[calc(100vh-200px)] lg:overflow-y-auto">
-          <SearchResultList
-            results={results}
-            keyword={keyword}
-            selectedResult={selectedResult}
-            onSelectResult={handleSelectResult}
-            isLoading={isLoading}
-            error={error}
-          />
-        </div>
+      <section className="mx-auto flex min-h-[calc(100dvh-var(--space-layout-section))] w-full max-w-3xl flex-col justify-center px-[var(--space-layout-screen)] pb-[calc(var(--space-layout-section)+var(--space-safe-bottom))] pt-[var(--space-layout-section)]">
+        <div className="flex flex-col gap-[var(--space-layout-section)]">
+          <div className="flex flex-col gap-[var(--space-gap-group)] text-center">
+            <h1 className="font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-28)] font-bold leading-[var(--line-height-tight)] text-[var(--text-primary)]">
+              Learn real Korean beyond textbooks.
+              <br />
+              See it in native context.
+            </h1>
+          </div>
 
-        <div className="flex-1 min-w-0">
-          {selectedResult ? (
-            <>
-              <YouTubePlayer
-                ref={playerRef}
-                videoId={selectedResult.videoId}
-                startTime={selectedResult.startTime}
-              />
-              <div className="mt-[var(--space-gap-group)]">
-                <ChunkViewer text={activeChunk?.text ?? null} keyword={keyword} />
-              </div>
-              <div className="mt-[var(--space-gap-item)]">
-                <PlayerControls
-                  onReplayContext={handleReplayContext}
-                  isDisabled={!selectedResult}
-                />
-              </div>
-            </>
-          ) : (
-            <div className="flex items-center justify-center aspect-video rounded-[var(--radius-08)] bg-[var(--bg-surface)]">
-              <p className="text-[var(--text-disabled)] text-[length:var(--font-size-16)]">
-                Search for Korean and select a result to start watching.
-              </p>
-            </div>
-          )}
+          <div className="flex flex-col gap-[var(--space-gap-group)]">
+            <SearchBar
+              value={searchInput}
+              onChange={setSearchInput}
+              onSearch={navigateToSearch}
+              isLoading={false}
+              inputId="hero-search-input"
+              variant="hero"
+              dynamicPlaceholder
+              ariaLabel="Hero search for Korean context"
+            />
+
+            <SuggestionChipList
+              suggestions={SEARCH_SUGGESTIONS}
+              onSelect={handleSuggestionSelect}
+              wrap
+            />
+          </div>
         </div>
-      </div>
+      </section>
     </main>
   );
 }

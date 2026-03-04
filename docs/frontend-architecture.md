@@ -1,86 +1,63 @@
-### 프론트엔드 클린 아키텍처: 의존성 규칙 및 인터페이스
+# 프론트엔드 클린 아키텍처 (2026-03 업데이트)
 
-**핵심 원칙:** 의존성의 방향은 반드시 **외부(UI/프레임워크/DB SDK) ➔ 내부(도메인/포트)** 로만 향해야 합니다. UI 컴포넌트는 Supabase의 존재 자체를 몰라야 합니다.
+## 1. 의존성 원칙
 
-### 1. Domain Layer (순수 비즈니스 모델)
+의존성은 항상 내부로 향합니다.
 
-어떤 외부 라이브러리에도 의존하지 않는 순수한 TypeScript 타입입니다.
+- UI(`web/src/components`, `web/src/app`) -> Application(`web/src/application`) -> Domain(`web/src/domain`)
+- Infrastructure(`web/src/infrastructure`)는 Application Port를 구현합니다.
+- UI는 Supabase SDK를 직접 import하지 않습니다.
 
-```tsx
-// domain/models/Subtitle.ts
-export interface VideoMeta {
-  videoId: string;
-  title: string;
-  channelName: string;
-}
+## 2. App Router 엔트리 분리
 
-export interface SearchResult extends VideoMeta {
-  startTime: number;
-  matchedText: string;
-}
+이번 UI 이식에서 화면 엔트리를 아래처럼 분리합니다.
 
-export interface SubtitleChunk {
-  startTime: number;
-  text: string;
-}
-```
+- Home: `web/src/app/page.tsx`
+- Search/Player: `web/src/app/search/page.tsx`
 
-### 2. Application Layer / Port (포트 - 계약서)
+`/`에서 검색을 실행하면 `/search?q=`로 이동하며, 검색/재생/자막 동기화는 `/search`에서만 처리합니다.
 
-프론트엔드(UI)가 데이터를 가져오기 위해 요구하는 **추상화된 인터페이스(Port)**입니다.
+## 3. 계층 책임
 
-```tsx
-// application/ports/SubtitleRepository.ts
-import { SearchResult, SubtitleChunk } from '../../domain/models/Subtitle';
+### Domain
 
-// 💡 UI 레이어는 오직 이 인터페이스만 바라봅니다.
-export interface SubtitleRepository {
-  searchByKeyword(keyword: string): Promise<SearchResult[]>;
-  getFullTranscript(videoId: string): Promise<SubtitleChunk[]>;
-}
-```
+- `SearchResult`, `SubtitleChunk` 등 핵심 타입 정의.
+- 외부 라이브러리 의존성 없음.
 
-### 3. Infrastructure Layer / Adapter (어댑터 - 부패 방지 계층)
+### Application
 
-비로소 여기서 Supabase SDK와 `fetch` API가 등장합니다. 인터페이스를 구현하며, **DB의 원시 응답(예: snake_case)을 프론트엔드의 도메인 모델(camelCase)로 변환하는 Data Mapper 역할(부패 방지)**을 전담합니다.
+- `useSearch` 훅으로 검색 상태/선택 상태를 관리.
+- UI는 훅이 제공하는 `results`, `selectedResult`, `search()`를 사용.
 
-```tsx
-// infrastructure/adapters/SupabaseSubtitleRepository.ts
-import { supabase } from '@/lib/supabase-client'; // 외부 종속성은 여기에만 격리
-import { SubtitleRepository } from '@/application/ports/SubtitleRepository';
-import { SearchResult, SubtitleChunk } from '@/domain/models/Subtitle';
+### Infrastructure
 
-export class SupabaseSubtitleRepository implements SubtitleRepository {
-  
-  async searchByKeyword(keyword: string): Promise<SearchResult[]> {
-    // 1. 인프라 특화 로직 (Supabase RPC 호출)
-    const { data, error } = await supabase.rpc('search_subtitles', { search_keyword: keyword });
-    if (error) throw new Error(error.message);
+- `SupabaseSubtitleRepository`가 `SubtitleRepository` 포트를 구현.
+- RPC(`search_subtitles`)와 CDN transcript fetch를 담당.
+- snake_case 응답을 camelCase 도메인 모델로 변환.
 
-    // 2. 🛡️ 안티 커럽션 (ACL): DB 스키마 -> 도메인 모델로 변환
-    return data.map((row: any) => ({
-      videoId: row.video_id,
-      title: row.title,
-      channelName: row.channel_name,
-      startTime: row.start_time,
-      matchedText: row.text
-    }));
-  }
+### UI/App
 
-  async getFullTranscript(videoId: string): Promise<SubtitleChunk[]> {
-    // CDN URL 조합 로직도 Adapter 내부로 캡슐화
-    const CDN_URL = process.env.NEXT_PUBLIC_CDN_URL;
-    const response = await fetch(`${CDN_URL}/subtitles/${videoId}.json`);
-    const chunks = await response.json();
-    
-    return chunks.map((chunk: any) => ({
-      startTime: chunk.start_time,
-      text: chunk.text
-    }));
-  }
-}
-```
+- `TopNavigation`, `SearchBar`, `PlayerControls` 등 프레젠테이션/입력 이벤트 처리.
+- `search/page.tsx`에서 키보드 인터랙션과 플레이어 동기화 흐름을 조합.
 
-### 4. UI Layer / Dependency Injection (의존성 주입)
+## 4. shadcn UI 적용 기준
 
-React/Next.js 컴포넌트나 커스텀 훅(`useSearch`)은 `SupabaseSubtitleRepository`를 직접 import 하지 않고, 컨텍스트나 DI 컨테이너를 통해 주입받은 `SubtitleRepository` 인터페이스의 메서드만 실행합니다.
+이번 이식에서는 기존 ad-hoc 버튼/입력 구현 대신 `components/ui` 계층을 기준으로 재구성합니다.
+
+- `ui/button.tsx`
+- `ui/input.tsx`
+- `ui/card.tsx`
+- `ui/utils.ts` (`cn` helper)
+
+모든 화면 컴포넌트는 이 공통 UI 블록을 조합해 스타일 일관성을 유지합니다.
+
+## 5. 현재 구현 파일 참조
+
+- `/Users/kihoon/Documents/Project/dozboon/products/kcontext/web/src/app/page.tsx`
+- `/Users/kihoon/Documents/Project/dozboon/products/kcontext/web/src/app/search/page.tsx`
+- `/Users/kihoon/Documents/Project/dozboon/products/kcontext/web/src/application/hooks/use-search.ts`
+- `/Users/kihoon/Documents/Project/dozboon/products/kcontext/web/src/application/ports/subtitle-repository.ts`
+- `/Users/kihoon/Documents/Project/dozboon/products/kcontext/web/src/infrastructure/adapters/supabase-subtitle-repository.ts`
+- `/Users/kihoon/Documents/Project/dozboon/products/kcontext/web/src/components/ui/button.tsx`
+- `/Users/kihoon/Documents/Project/dozboon/products/kcontext/web/src/components/ui/input.tsx`
+- `/Users/kihoon/Documents/Project/dozboon/products/kcontext/web/src/components/ui/card.tsx`

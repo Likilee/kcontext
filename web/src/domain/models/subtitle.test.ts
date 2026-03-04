@@ -25,8 +25,10 @@ describe("Domain Models", () => {
   it("should define SubtitleChunk shape", () => {
     const chunk: SubtitleChunk = {
       startTime: 0,
+      duration: 2.5,
       text: "테스트 자막",
     };
+    expect(chunk.duration).toBe(2.5);
     expect(chunk.text).toBe("테스트 자막");
   });
 });

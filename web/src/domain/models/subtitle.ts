@@ -11,5 +11,6 @@ export interface SearchResult extends VideoMeta {
 
 export interface SubtitleChunk {
   startTime: number;
+  duration: number;
   text: string;
 }

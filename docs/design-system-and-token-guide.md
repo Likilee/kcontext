@@ -171,3 +171,43 @@
 - motion-duration-instant (0ms): 자막 텍스트 교체 시 적용. 완벽한 싱크를 신뢰하게 만들기 위해 페이드인/아웃을 절대 금지하고 즉각적(Instant)으로 텍스트를 스왑(Swap) 처리합니다.
 - motion-duration-fast (100ms): 버튼 터치 다운 시의 물리적 스케일 축소(Scale: 0.96) 피드백. 햅틱 반응을 시각적으로 대체합니다.
 - motion-duration-base (200ms): 모달 팝업 진입, 토스트 알림 등 상태 변화를 부드럽게 안내할 때만 제한적으로 사용합니다.
+
+## 6. Figma Make 이식 기준 (2026-03 업데이트)
+
+이번 이식 버전에서는 Home과 Search 화면의 시각 구조를 Figma Make 샘플과 맞추되, 토큰 계층 규칙은 유지합니다.
+
+### 6.1 Home Screen 컴포넌트 매핑
+
+- Top Navigation (home mode): 로고만 표시, 글로벌 검색 입력 숨김.
+- Hero Headline: type-hero 기반 중앙 정렬, 모바일 우선 줄바꿈.
+- Hero Search Bar: radius-pill + bg-surface + border-default, focus 시 border-focus.
+- Suggestion Chips: radius-pill + bg-surface + border-default + type-caption.
+
+### 6.2 Search Screen 컴포넌트 매핑
+
+- Top Navigation (search mode): 로고 + compact 검색창 동시 노출.
+- Search Summary + Prev/Next: Card 컨테이너 내 type-caption 문구와 버튼 2열.
+- Player 영역: 16:9 고정 플레이어 후속으로 Chunk Viewer 배치.
+- Chunk Viewer: type-subtitle-chunk + keep-all 강제, 하이라이트는 brand-highlight + text-inverse.
+- Player Controls: Replay 강조 버튼 + seek/speed 보조 버튼 구성.
+
+### 6.3 검색창 상태/애니메이션 토큰 규칙
+
+- Hero placeholder 애니메이션은 type/delete 동일 간격을 사용한다.
+- 추천 값 순환은 입력값이 비어 있을 때만 동작한다.
+- clear 버튼과 submit 버튼의 active 피드백은 motion-duration-fast만 사용한다.
+
+### 6.4 모바일 우선 간격 규칙
+
+- 전체 화면 좌우 여백은 space-layout-screen만 허용한다.
+- 섹션 단위 수직 간격은 space-gap-group 또는 space-layout-section만 허용한다.
+- 조작 버튼 터치 영역은 최소 space-layout-section 기준을 유지한다.
+
+## 7. 현재 구현 파일 참조
+
+- `/Users/kihoon/Documents/Project/dozboon/products/kcontext/web/src/app/globals.css`
+- `/Users/kihoon/Documents/Project/dozboon/products/kcontext/web/src/app/page.tsx`
+- `/Users/kihoon/Documents/Project/dozboon/products/kcontext/web/src/app/search/page.tsx`
+- `/Users/kihoon/Documents/Project/dozboon/products/kcontext/web/src/components/search-bar.tsx`
+- `/Users/kihoon/Documents/Project/dozboon/products/kcontext/web/src/components/top-navigation.tsx`
+- `/Users/kihoon/Documents/Project/dozboon/products/kcontext/web/src/components/player-controls.tsx`

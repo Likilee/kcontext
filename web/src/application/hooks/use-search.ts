@@ -9,6 +9,7 @@ interface UseSearchReturn {
   isLoading: boolean;
   error: string | null;
   search: (keyword: string) => void;
+  reset: () => void;
   selectedResult: SearchResult | null;
   selectResult: (result: SearchResult) => void;
   keyword: string;
@@ -23,27 +24,41 @@ export function useSearch(repository: SubtitleRepository): UseSearchReturn {
 
   const search = useCallback(
     (kw: string) => {
-      if (!kw.trim()) {
+      const normalizedKeyword = kw.trim();
+
+      if (!normalizedKeyword) {
         setResults([]);
         setKeyword("");
+        setError(null);
+        setSelectedResult(null);
         return;
       }
 
-      setKeyword(kw);
+      setKeyword(normalizedKeyword);
       setError(null);
 
       startTransition(async () => {
         try {
-          const data = await repository.searchByKeyword(kw);
+          const data = await repository.searchByKeyword(normalizedKeyword);
           setResults(data);
+          const firstResult = data[0] ?? null;
+          setSelectedResult(firstResult);
         } catch (err) {
           setError(err instanceof Error ? err.message : "Search failed");
           setResults([]);
+          setSelectedResult(null);
         }
       });
     },
     [repository],
   );
+
+  const reset = useCallback(() => {
+    setResults([]);
+    setError(null);
+    setSelectedResult(null);
+    setKeyword("");
+  }, []);
 
   const selectResult = useCallback((result: SearchResult) => {
     setSelectedResult(result);
@@ -54,6 +69,7 @@ export function useSearch(repository: SubtitleRepository): UseSearchReturn {
     isLoading: isPending,
     error,
     search,
+    reset,
     selectedResult,
     selectResult,
     keyword,
