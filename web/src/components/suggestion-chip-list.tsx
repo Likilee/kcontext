@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 
 interface SuggestionChipListProps {
-  suggestions: string[];
+  suggestions: readonly string[];
   onSelect: (keyword: string) => void;
   wrap?: boolean;
 }
