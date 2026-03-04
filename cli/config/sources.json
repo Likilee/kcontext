@@ -1,0 +1,12 @@
+{
+  "sources": [
+    {
+      "name": "sebasi",
+      "url": "https://www.youtube.com/@sebasi15/videos",
+      "target_per_run": 30,
+      "manual_ko_only": true,
+      "probe_max_candidates": 500,
+      "use_proxy": true
+    }
+  ]
+}
