@@ -110,6 +110,53 @@ export KCONTEXT_YOUTUBE_PROXY_URL=http://127.0.0.1:8118
 
 모든 파일은 실행 시 출력되는 `workspace` 디렉터리에 저장됩니다.
 
+## Repeated Operations (Manual)
+
+반복 운영을 위해 루트 스크립트 2개를 사용합니다.
+
+1. 로컬 수집 자동화 (`sources.json` 순회)
+2. 원격 증분 동기화 (신규 `video_id`만)
+
+소스 설정 파일 예시:
+
+```bash
+cat /Users/kihoon/Documents/Project/dozboon/products/kcontext/cli/config/sources.json
+```
+
+로컬 수집:
+
+```bash
+cd /Users/kihoon/Documents/Project/dozboon/products/kcontext
+./scripts/run-local-ingest.sh \
+  --config /Users/kihoon/Documents/Project/dozboon/products/kcontext/cli/config/sources.json \
+  --workspace-root /tmp/kcontext_ingest_runs \
+  --max-sources 999 \
+  --continue-on-error
+```
+
+원격 증분 동기화:
+
+```bash
+# 루트의 .env.remote-sync 파일 생성/갱신 (anon/service_role 자동 조회)
+cd /Users/kihoon/Documents/Project/dozboon/products/kcontext
+./scripts/bootstrap-remote-env.sh --project-ref jtrgghhqjcudqnuxewoh
+
+# .env.remote-sync 의 REMOTE_DB_URL 에 DB password를 반영
+# REMOTE_DB_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres?sslmode=require
+
+./scripts/run-remote-sync.sh \
+  --state-db /Users/kihoon/Documents/Project/dozboon/products/kcontext/cli/.state/remote_sync.sqlite \
+  --batch-size 20 \
+  --max-videos 200
+```
+
+상태 조회:
+
+```bash
+cd /Users/kihoon/Documents/Project/dozboon/products/kcontext
+./scripts/run-remote-sync.sh --status
+```
+
 ## Notes on Proxy Reliability
 
 Tor proxy는 출구 IP가 YouTube에 차단될 수 있습니다. 이 경우 프록시를 써도

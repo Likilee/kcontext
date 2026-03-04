@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+.state/
+.kcontext_manual_ko_probe_cache.json

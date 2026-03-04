@@ -16,9 +16,9 @@ dist/
 *.egg-info/
 
 # Environment
-.env
-.env.local
-.env.*.local
+.env*
+!.env.*.example
+!.env.example
 
 # OS
 .DS_Store
@@ -48,3 +48,5 @@ testing/supabase-e2e/supabase/.temp/
 
 # AI
 .codex
+.vercel
+.env*.local

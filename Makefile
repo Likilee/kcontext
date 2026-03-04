@@ -4,8 +4,24 @@ SHELL := /bin/bash
 E2E_SUPABASE_WORKDIR ?= testing/supabase-e2e
 E2E_SEED_DIR ?= supabase/storage-seed
 E2E_BUCKET ?= subtitles
+INGEST_CONFIG ?= $(CURDIR)/cli/config/sources.json
+INGEST_WORKSPACE_ROOT ?= /tmp/kcontext_ingest_runs
+INGEST_MAX_SOURCES ?= 999
+SYNC_STATE_DB ?= $(CURDIR)/cli/.state/remote_sync.sqlite
+SYNC_BATCH_SIZE ?= 20
+SYNC_MAX_VIDEOS ?= 200
+SYNC_DRY_RUN ?= 0
 
-.PHONY: e2e-up e2e-reset e2e-smoke e2e-real e2e-down
+.PHONY: \
+	e2e-up \
+	e2e-reset \
+	e2e-smoke \
+	e2e-real \
+	e2e-down \
+	ingest-local \
+	sync-remote \
+	sync-all \
+	sync-status
 
 e2e-up:
 	supabase start --workdir "$(E2E_SUPABASE_WORKDIR)" --exclude logflare,imgproxy,vector,supavisor
@@ -45,3 +61,28 @@ e2e-real:
 
 e2e-down:
 	supabase stop --workdir "$(E2E_SUPABASE_WORKDIR)" --no-backup || true
+
+ingest-local:
+	./scripts/run-local-ingest.sh \
+		--config "$(INGEST_CONFIG)" \
+		--workspace-root "$(INGEST_WORKSPACE_ROOT)" \
+		--max-sources "$(INGEST_MAX_SOURCES)" \
+		--continue-on-error
+
+sync-remote:
+	@dry_flag=""; \
+		if [[ "$(SYNC_DRY_RUN)" == "1" ]]; then \
+			dry_flag="--dry-run"; \
+		fi; \
+		./scripts/run-remote-sync.sh \
+			--state-db "$(SYNC_STATE_DB)" \
+			--batch-size "$(SYNC_BATCH_SIZE)" \
+			--max-videos "$(SYNC_MAX_VIDEOS)" \
+			$$dry_flag
+
+sync-all: ingest-local sync-remote
+
+sync-status:
+	./scripts/run-remote-sync.sh \
+		--state-db "$(SYNC_STATE_DB)" \
+		--status
