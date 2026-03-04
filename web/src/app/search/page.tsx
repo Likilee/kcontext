@@ -1,19 +1,43 @@
 import { Suspense } from "react";
 import { SearchPageClient } from "./search-page-client";
 
+function SearchPageSkeleton() {
+  return (
+    <main className="relative min-h-screen bg-[var(--bg-base)] pb-[calc(var(--space-layout-section)+var(--space-safe-bottom))]">
+      <header className="sticky top-0 z-30 border-b border-[var(--border-subtle)] bg-[var(--bg-base)]/95 backdrop-blur-md">
+        <div className="mx-auto w-full max-w-6xl px-[var(--space-layout-screen)] pb-[var(--space-inset-squish-y)] pt-[calc(var(--space-inset-squish-y)+var(--space-safe-top))]">
+          <div className="flex items-center gap-[var(--space-gap-item)]">
+            <div className="h-[var(--font-size-18)] w-24 animate-pulse rounded-[var(--radius-04)] bg-[var(--bg-surface)]" />
+            <div className="h-10 min-w-0 flex-1 animate-pulse rounded-[var(--radius-pill)] border border-[var(--border-default)] bg-[var(--bg-surface)]" />
+          </div>
+        </div>
+      </header>
+
+      <section className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--space-gap-group)] px-[var(--space-layout-screen)] pt-[var(--space-gap-group)]">
+        <div className="h-10 w-full animate-pulse rounded-[var(--radius-pill)] border border-[var(--border-default)] bg-[var(--bg-surface)]" />
+
+        <div className="-mx-[var(--space-layout-screen)] w-[calc(100%+var(--space-layout-screen)+var(--space-layout-screen))] lg:mx-0 lg:w-full">
+          <div className="aspect-video w-full animate-pulse bg-[var(--bg-surface)]" />
+          <div className="flex flex-col gap-[var(--space-gap-item)] rounded-b-[var(--radius-08)] border border-t-0 border-[var(--border-default)] bg-[var(--bg-surface)] p-[var(--space-inset-base)]">
+            <div className="h-[var(--font-size-20)] w-11/12 animate-pulse rounded-[var(--radius-04)] bg-[var(--bg-surface-hover)]" />
+            <div className="h-[var(--font-size-20)] w-8/12 animate-pulse rounded-[var(--radius-04)] bg-[var(--bg-surface-hover)]" />
+          </div>
+        </div>
+
+        <div className="mx-auto flex w-full max-w-md items-center gap-[var(--space-gap-item)]">
+          <div className="h-10 flex-1 animate-pulse rounded-[var(--radius-pill)] bg-[var(--bg-surface)]" />
+          <div className="h-10 flex-1 animate-pulse rounded-[var(--radius-pill)] bg-[var(--bg-surface)]" />
+          <div className="h-10 flex-1 animate-pulse rounded-[var(--radius-pill)] bg-[var(--bg-surface)]" />
+          <div className="h-10 w-20 animate-pulse rounded-[var(--radius-pill)] bg-[var(--bg-surface)]" />
+        </div>
+      </section>
+    </main>
+  );
+}
+
 export default function SearchPage() {
   return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen bg-[var(--bg-base)]">
-          <section className="mx-auto flex w-full max-w-4xl flex-col gap-[var(--space-gap-group)] px-[var(--space-layout-screen)] py-[var(--space-layout-section)]">
-            <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-16)] text-[var(--text-secondary)]">
-              Loading search...
-            </p>
-          </section>
-        </main>
-      }
-    >
+    <Suspense fallback={<SearchPageSkeleton />}>
       <SearchPageClient />
     </Suspense>
   );
