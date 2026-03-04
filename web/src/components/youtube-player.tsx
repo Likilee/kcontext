@@ -23,6 +23,27 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
     const playerRef = useRef<YT.Player | null>(null);
     const [apiReady, setApiReady] = useState(false);
 
+    useEffect(() => {
+      if (typeof window.YT !== "undefined" && typeof window.YT.Player === "function") {
+        setApiReady(true);
+        return;
+      }
+
+      const previousCallback = window.onYouTubeIframeAPIReady;
+      const handleApiReady = () => {
+        previousCallback?.();
+        setApiReady(true);
+      };
+
+      window.onYouTubeIframeAPIReady = handleApiReady;
+
+      return () => {
+        if (window.onYouTubeIframeAPIReady === handleApiReady) {
+          window.onYouTubeIframeAPIReady = previousCallback;
+        }
+      };
+    }, []);
+
     const getSafeCurrentTime = () => {
       const player = playerRef.current;
       if (!player || typeof player.getCurrentTime !== "function") {
@@ -143,20 +164,16 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
     const handleScriptLoad = () => {
       if (typeof window.YT !== "undefined" && typeof window.YT.Player === "function") {
         setApiReady(true);
-        return;
       }
-
-      window.onYouTubeIframeAPIReady = () => {
-        setApiReady(true);
-      };
     };
 
     return (
       <>
         <Script
           src="https://www.youtube.com/iframe_api"
-          strategy="lazyOnload"
+          strategy="afterInteractive"
           onLoad={handleScriptLoad}
+          onReady={handleScriptLoad}
         />
         <div
           id="yt-player-container"
