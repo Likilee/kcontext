@@ -2,15 +2,24 @@
 
 import type { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { cn } from "@/components/ui/utils";
 import { renderHighlightedText } from "./highlighted-text";
 
 interface ChunkViewerProps {
   text: string | null;
   keyword: string;
   isLoading: boolean;
+  className?: string;
+  contentClassName?: string;
 }
 
-export function ChunkViewer({ text, keyword, isLoading }: ChunkViewerProps) {
+export function ChunkViewer({
+  text,
+  keyword,
+  isLoading,
+  className,
+  contentClassName,
+}: ChunkViewerProps) {
   let content: ReactNode = null;
 
   if (isLoading) {
@@ -28,8 +37,10 @@ export function ChunkViewer({ text, keyword, isLoading }: ChunkViewerProps) {
   }
 
   return (
-    <Card data-testid="chunk-viewer">
-      <CardContent className="min-h-[calc(var(--space-layout-section)*2)]">{content}</CardContent>
+    <Card data-testid="chunk-viewer" className={className}>
+      <CardContent className={cn("min-h-[calc(var(--space-layout-section)*2)]", contentClassName)}>
+        {content}
+      </CardContent>
     </Card>
   );
 }

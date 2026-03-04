@@ -6,16 +6,9 @@ import { SearchBar } from "@/components/search-bar";
 import { SuggestionChipList } from "@/components/suggestion-chip-list";
 import { TopNavigation } from "@/components/top-navigation";
 
-const SEARCH_SUGGESTIONS = [
-  "진짜 행복해요",
-  "어쩔티비",
-  "-잖아요",
-  "괜찮아요",
-  "대박",
-  "감사합니다",
-  "죄송합니다",
-  "힘내세요",
-];
+import { SEARCH_KEYWORDS } from "@/lib/search-keywords";
+
+const SEARCH_SUGGESTIONS = SEARCH_KEYWORDS;
 
 export default function HomePage() {
   const router = useRouter();

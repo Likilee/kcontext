@@ -230,7 +230,7 @@ export function SearchPageClient() {
         }}
       />
 
-      <section className="mx-auto flex w-full max-w-4xl flex-col gap-[var(--space-gap-group)] px-[var(--space-layout-screen)] pt-[var(--space-gap-group)]">
+      <section className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--space-gap-group)] px-[var(--space-layout-screen)] pt-[var(--space-gap-group)]">
         {error ? (
           <Card>
             <CardContent>
@@ -261,18 +261,21 @@ export function SearchPageClient() {
               onNext={handleNextResult}
             />
 
-            <YouTubePlayer
-              ref={playerRef}
-              videoId={selectedResult.videoId}
-              startTime={playerStartTime}
-              playbackRate={playbackRate}
-            />
+            <div className="-mx-[var(--space-layout-screen)] w-[calc(100%+var(--space-layout-screen)+var(--space-layout-screen))] lg:mx-0 lg:w-full">
+              <YouTubePlayer
+                ref={playerRef}
+                videoId={selectedResult.videoId}
+                startTime={playerStartTime}
+                playbackRate={playbackRate}
+              />
 
-            <ChunkViewer
-              text={activeChunk?.text ?? null}
-              keyword={keyword}
-              isLoading={isTranscriptLoading}
-            />
+              <ChunkViewer
+                text={activeChunk?.text ?? null}
+                keyword={keyword}
+                isLoading={isTranscriptLoading}
+                className="rounded-t-none border-t-0"
+              />
+            </div>
 
             {transcriptError ? (
               <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">

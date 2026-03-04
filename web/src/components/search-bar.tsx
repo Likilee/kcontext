@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-const HERO_PLACEHOLDER_EXAMPLES = ["진짜 행복해요", "어쩔티비", "-잖아요", "괜찮아요", "대박"];
+import { SEARCH_KEYWORDS } from "@/lib/search-keywords";
+
+const HERO_PLACEHOLDER_EXAMPLES = SEARCH_KEYWORDS;
 const STATIC_PLACEHOLDER = "Search real Korean";
 const HERO_IDLE_PLACEHOLDER = "-";
 const HERO_TYPE_INTERVAL = 80;
@@ -120,6 +122,7 @@ export function SearchBar({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         className={[
+          "[&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden [&::-webkit-search-results-button]:hidden [&::-webkit-search-results-decoration]:hidden",
           isHero
             ? "min-h-[calc(var(--space-layout-section)+var(--space-inset-squish-y))] pr-[calc(var(--space-layout-section)*2)] text-[length:var(--font-size-18)]"
             : "min-h-[var(--space-layout-section)] pr-[calc(var(--space-layout-section)*2)] text-[length:var(--font-size-16)]",
