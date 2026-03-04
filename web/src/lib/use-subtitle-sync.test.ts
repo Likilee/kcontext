@@ -20,16 +20,16 @@ describe("findActiveChunkIndex", () => {
     expect(findActiveChunkIndex(CHUNKS, 2.5)).toBe(1);
   });
 
-  it("returns -1 for time in gap between chunks", () => {
-    expect(findActiveChunkIndex(CHUNKS, 6.0)).toBe(-1);
+  it("returns previous chunk index for time in gap between chunks", () => {
+    expect(findActiveChunkIndex(CHUNKS, 6.0)).toBe(1);
   });
 
   it("returns -1 for time before all chunks", () => {
     expect(findActiveChunkIndex(CHUNKS, -1.0)).toBe(-1);
   });
 
-  it("returns -1 for time after all chunks", () => {
-    expect(findActiveChunkIndex(CHUNKS, 100.0)).toBe(-1);
+  it("returns last chunk index for time after all chunks", () => {
+    expect(findActiveChunkIndex(CHUNKS, 100.0)).toBe(2);
   });
 
   it("returns -1 for empty chunks array", () => {
@@ -39,10 +39,10 @@ describe("findActiveChunkIndex", () => {
   it("handles single chunk correctly", () => {
     const single = [{ startTime: 0, duration: 5, text: "only" }];
     expect(findActiveChunkIndex(single, 2.5)).toBe(0);
-    expect(findActiveChunkIndex(single, 5.0)).toBe(-1);
+    expect(findActiveChunkIndex(single, 5.0)).toBe(0);
   });
 
-  it("returns -1 at exact chunk end boundary (exclusive)", () => {
-    expect(findActiveChunkIndex(CHUNKS, 2.5 + 3.0)).toBe(-1);
+  it("returns previous chunk at exact chunk end boundary", () => {
+    expect(findActiveChunkIndex(CHUNKS, 2.5 + 3.0)).toBe(1);
   });
 });

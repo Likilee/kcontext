@@ -11,11 +11,7 @@ interface ChunkViewerProps {
 }
 
 export function ChunkViewer({ text, keyword, isLoading }: ChunkViewerProps) {
-  let content: ReactNode = (
-    <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
-      Select a context to start syncing subtitles.
-    </p>
-  );
+  let content: ReactNode = null;
 
   if (isLoading) {
     content = (

@@ -16,6 +16,7 @@ export function findActiveChunkIndex(chunks: SubtitleChunk[], currentTime: numbe
 
   let low = 0;
   let high = chunks.length - 1;
+  let candidate = -1;
 
   while (low <= high) {
     const mid = Math.floor((low + high) / 2);
@@ -24,19 +25,16 @@ export function findActiveChunkIndex(chunks: SubtitleChunk[], currentTime: numbe
       return -1;
     }
 
-    const chunkEnd = chunk.startTime + chunk.duration;
-    if (currentTime >= chunk.startTime && currentTime < chunkEnd) {
-      return mid;
+    if (currentTime >= chunk.startTime) {
+      candidate = mid;
+      low = mid + 1;
+      continue;
     }
 
-    if (currentTime < chunk.startTime) {
-      high = mid - 1;
-    } else {
-      low = mid + 1;
-    }
+    high = mid - 1;
   }
 
-  return -1;
+  return candidate;
 }
 
 export function useSubtitleSync(
