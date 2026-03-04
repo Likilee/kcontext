@@ -75,6 +75,9 @@ importers:
       jsdom:
         specifier: ^28.1.0
         version: 28.1.0
+      react-grab:
+        specifier: ^0.1.21
+        version: 0.1.21(@types/react@19.2.14)(react@19.2.3)
       tailwindcss:
         specifier: ^4
         version: 4.2.1
@@ -688,6 +691,9 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
+  '@medv/finder@4.0.2':
+    resolution: {integrity: sha512-RraNY9SCcx4KZV0Dh6BEW6XEW2swkqYca74pkFFRw6hHItSHiy+O/xMnpbofjYbzXj0tSpBGthUF1hHTsr3vIQ==}
+
   '@next/env@16.1.6':
     resolution: {integrity: sha512-N1ySLuZjnAtN3kFnwhAwPvZah8RJxKasD7x1f8shFqhncnWZn4JMfg37diLNuoHsLAlrDfM3g4mawVdtAG8XLQ==}
 
@@ -1078,6 +1084,11 @@ packages:
     peerDependencies:
       '@types/react': ^19.2.0
 
+  '@types/react-reconciler@0.28.9':
+    resolution: {integrity: sha512-HHM3nxyUZ3zAylX8ZEyrDNd2XZOnQ0D5XfunJF5FLQnZbHHYq4UWvW1QfelQNXv1ICNkwYhfxjwfnqivYB6bFg==}
+    peerDependencies:
+      '@types/react': '*'
+
   '@types/react@19.2.14':
     resolution: {integrity: sha512-ilcTH/UniCkMdtexkoCN0bI7pMcJDvmQFPvuPvmEaYA/NSfFTAgdUSLAoVjaRJm7+6PvcM+q1zYOwS4wTYMF9w==}
 
@@ -1155,6 +1166,11 @@ packages:
 
   bidi-js@1.0.3:
     resolution: {integrity: sha512-RKshQI1R3YQ+n9YJz2QQ147P66ELpa1FQEg20Dk8oW9t2KgLbpDLLp9aGZ7y8WHSshDknG0bknqGw5/tyCs5tw==}
+
+  bippy@0.5.30:
+    resolution: {integrity: sha512-8CFmJAHD3gmTLDOCDHuWhjm1nxHSFZdlGoWtak9r53Uxn36ynOjxBLyxXHh/7h/XiKLyPvfdXa0gXWcD9o9lLQ==}
+    peerDependencies:
+      react: '>=17.0.1'
 
   browserslist@4.28.1:
     resolution: {integrity: sha512-ZC5Bd0LgJXgwGqUknZY/vkUQ04r8NXnJZ3yYi4vDmSiZmC/pdSN0NbNRPxZpbtO4uAfDUAFffO8IZoM3Gj8IkA==}
@@ -1677,6 +1693,14 @@ packages:
     peerDependencies:
       react: ^19.2.3
 
+  react-grab@0.1.21:
+    resolution: {integrity: sha512-vju8a/Sv99rREjvR+8RlHqPo0or9RNFRrNT3nSofnGP25LJIQN1nYtT52kCvLsFnSFzxvV5XaXsN5YIMEAMStw==}
+    peerDependencies:
+      react: '>=17.0.0'
+    peerDependenciesMeta:
+      react:
+        optional: true
+
   react-refresh@0.18.0:
     resolution: {integrity: sha512-QgT5//D3jfjJb6Gsjxv0Slpj23ip+HtOpnNgnb2S5zU3CB26G/IDPGoy4RJB42wzFE46DRsstbW6tKHoKbhAxw==}
     engines: {node: '>=0.10.0'}
@@ -1722,12 +1746,25 @@ packages:
     engines: {node: '>=10'}
     hasBin: true
 
+  seroval-plugins@1.5.0:
+    resolution: {integrity: sha512-EAHqADIQondwRZIdeW2I636zgsODzoBDwb3PT/+7TLDWyw1Dy/Xv7iGUIEXXav7usHDE9HVhOU61irI3EnyyHA==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      seroval: ^1.0
+
+  seroval@1.5.0:
+    resolution: {integrity: sha512-OE4cvmJ1uSPrKorFIH9/w/Qwuvi/IMcGbv5RKgcJ/zjA/IohDLU6SVaxFN9FwajbP7nsX0dQqMDes1whk3y+yw==}
+    engines: {node: '>=10'}
+
   sharp@0.34.5:
     resolution: {integrity: sha512-Ou9I5Ft9WNcCbXrU9cMgPBcCK8LiwLqcbywW3t4oDV37n1pzpuNLsYiAV8eODnjbtQlSDwZ2cUEeQz4E54Hltg==}
     engines: {node: ^18.17.0 || ^20.3.0 || >=21.0.0}
 
   siginfo@2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
+
+  solid-js@1.9.11:
+    resolution: {integrity: sha512-WEJtcc5mkh/BnHA6Yrg4whlF8g6QwpmXXRg4P2ztPmcKeHHlH4+djYecBLhSpecZY2RRECXYUwIc/C2r3yzQ4Q==}
 
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
@@ -2486,6 +2523,8 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
+  '@medv/finder@4.0.2': {}
+
   '@next/env@16.1.6': {}
 
   '@next/swc-darwin-arm64@16.1.6':
@@ -2775,6 +2814,10 @@ snapshots:
     dependencies:
       '@types/react': 19.2.14
 
+  '@types/react-reconciler@0.28.9(@types/react@19.2.14)':
+    dependencies:
+      '@types/react': 19.2.14
+
   '@types/react@19.2.14':
     dependencies:
       csstype: 3.2.3
@@ -2865,6 +2908,13 @@ snapshots:
   bidi-js@1.0.3:
     dependencies:
       require-from-string: 2.0.2
+
+  bippy@0.5.30(@types/react@19.2.14)(react@19.2.3):
+    dependencies:
+      '@types/react-reconciler': 0.28.9(@types/react@19.2.14)
+      react: 19.2.3
+    transitivePeerDependencies:
+      - '@types/react'
 
   browserslist@4.28.1:
     dependencies:
@@ -3339,6 +3389,16 @@ snapshots:
       react: 19.2.3
       scheduler: 0.27.0
 
+  react-grab@0.1.21(@types/react@19.2.14)(react@19.2.3):
+    dependencies:
+      '@medv/finder': 4.0.2
+      bippy: 0.5.30(@types/react@19.2.14)(react@19.2.3)
+      solid-js: 1.9.11
+    optionalDependencies:
+      react: 19.2.3
+    transitivePeerDependencies:
+      - '@types/react'
+
   react-refresh@0.18.0: {}
 
   react@19.2.3: {}
@@ -3392,6 +3452,12 @@ snapshots:
 
   semver@7.7.4: {}
 
+  seroval-plugins@1.5.0(seroval@1.5.0):
+    dependencies:
+      seroval: 1.5.0
+
+  seroval@1.5.0: {}
+
   sharp@0.34.5:
     dependencies:
       '@img/colour': 1.1.0
@@ -3425,6 +3491,12 @@ snapshots:
     optional: true
 
   siginfo@2.0.0: {}
+
+  solid-js@1.9.11:
+    dependencies:
+      csstype: 3.2.3
+      seroval: 1.5.0
+      seroval-plugins: 1.5.0(seroval@1.5.0)
 
   source-map-js@1.2.1: {}
 
