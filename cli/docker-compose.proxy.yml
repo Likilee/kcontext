@@ -1,0 +1,7 @@
+services:
+  torproxy:
+    image: dperson/torproxy:latest
+    restart: unless-stopped
+    ports:
+      - "${KCONTEXT_TORPROXY_HTTP_PORT:-8118}:8118"
+      - "${KCONTEXT_TORPROXY_SOCKS_PORT:-9050}:9050"
