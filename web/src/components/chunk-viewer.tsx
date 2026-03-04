@@ -33,9 +33,7 @@ export function ChunkViewer({ text, keyword, isLoading }: ChunkViewerProps) {
 
   return (
     <Card data-testid="chunk-viewer">
-      <CardContent className="min-h-[calc(var(--space-layout-section)+var(--space-gap-group))]">
-        {content}
-      </CardContent>
+      <CardContent className="min-h-[calc(var(--space-layout-section)*2)]">{content}</CardContent>
     </Card>
   );
 }

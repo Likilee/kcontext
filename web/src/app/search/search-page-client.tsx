@@ -4,7 +4,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearch } from "@/application/hooks/use-search";
 import { ChunkViewer } from "@/components/chunk-viewer";
-import { renderHighlightedText } from "@/components/highlighted-text";
 import { PlayerControls } from "@/components/player-controls";
 import { SearchResultNavigation } from "@/components/search-result-navigation";
 import { TopNavigation } from "@/components/top-navigation";
@@ -261,20 +260,6 @@ export function SearchPageClient() {
               onPrevious={handlePreviousResult}
               onNext={handleNextResult}
             />
-
-            <Card>
-              <CardContent>
-                <p className="truncate font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-18)] font-bold leading-[var(--line-height-tight)] text-[var(--text-primary)]">
-                  {selectedResult.title}
-                </p>
-                <p className="mt-[var(--space-gap-micro)] font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
-                  {selectedResult.channelName}
-                </p>
-                <p className="mt-[var(--space-gap-item)] break-keep font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-16)] text-[var(--text-primary)]">
-                  {renderHighlightedText(selectedResult.matchedText, keyword)}
-                </p>
-              </CardContent>
-            </Card>
 
             <YouTubePlayer
               ref={playerRef}

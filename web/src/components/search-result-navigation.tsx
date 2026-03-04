@@ -1,7 +1,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 
 interface SearchResultNavigationProps {
   keyword: string;
@@ -23,33 +22,32 @@ export function SearchResultNavigation({
   const isNextDisabled = totalCount <= 1 || safeCurrent >= totalCount;
 
   return (
-    <Card>
-      <CardContent>
-        <p className="text-center font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
-          "<span className="text-[var(--text-primary)]">{keyword}</span>" in native videos (
-          {safeCurrent}/{totalCount})
-        </p>
-        <div className="mt-[var(--space-gap-item)] grid grid-cols-2 gap-[var(--space-gap-item)]">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onPrevious}
-            disabled={isPreviousDisabled}
-            className="text-[length:var(--font-size-13)]"
-          >
-            Previous
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onNext}
-            disabled={isNextDisabled}
-            className="text-[length:var(--font-size-13)]"
-          >
-            Next
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="flex items-center gap-[var(--space-gap-item)]">
+      <Button
+        type="button"
+        variant="outline"
+        size="compact"
+        onClick={onPrevious}
+        disabled={isPreviousDisabled}
+        className="shrink-0 px-[var(--space-inset-squish-x)] text-[length:var(--font-size-13)]"
+      >
+        Prev
+      </Button>
+
+      <p className="min-w-0 flex-1 truncate text-center font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
+        "<span className="text-[var(--text-primary)]">{keyword}</span>" ({safeCurrent}/{totalCount})
+      </p>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="compact"
+        onClick={onNext}
+        disabled={isNextDisabled}
+        className="shrink-0 px-[var(--space-inset-squish-x)] text-[length:var(--font-size-13)]"
+      >
+        Next
+      </Button>
+    </div>
   );
 }
