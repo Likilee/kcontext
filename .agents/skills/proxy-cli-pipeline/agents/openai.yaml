@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kcontext Proxy Pipeline"
+  short_description: "Run kcontext CLI channel pipeline via proxy."
+  default_prompt: "Use $proxy-cli-pipeline to run the kcontext channel pipeline through proxy-up/check/down and summarize outcomes."

@@ -45,3 +45,6 @@ web/playwright-report/
 # Supabase local temp files
 supabase/.temp/
 testing/supabase-e2e/supabase/.temp/
+
+# AI
+.codex
