@@ -30,7 +30,7 @@ export function ChunkViewer({
     );
   } else if (text !== null) {
     content = (
-      <p className="break-keep font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-20)] font-medium leading-[var(--line-height-relaxed)] text-[var(--text-primary)]">
+      <p className="break-keep text-center font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-20)] font-medium leading-[var(--line-height-relaxed)] text-[var(--text-primary)]">
         {renderHighlightedText(text, keyword)}
       </p>
     );

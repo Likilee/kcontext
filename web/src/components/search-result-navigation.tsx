@@ -34,8 +34,13 @@ export function SearchResultNavigation({
         Prev
       </Button>
 
-      <p className="min-w-0 flex-1 truncate text-center font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
-        "<span className="text-[var(--text-primary)]">{keyword}</span>" ({safeCurrent}/{totalCount})
+      <p className="min-w-0 flex flex-1 items-center justify-center gap-[var(--space-gap-micro)] text-center font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
+        <span className="min-w-0 truncate">
+          "<span className="text-[var(--text-primary)]">{keyword}</span>"
+        </span>
+        <span className="shrink-0">
+          ({safeCurrent}/{totalCount})
+        </span>
       </p>
 
       <Button
