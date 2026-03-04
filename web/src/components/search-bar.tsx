@@ -1,7 +1,7 @@
 "use client";
 
 import type { FormEvent } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -103,11 +103,13 @@ export function SearchBar({
   dynamicPlaceholder = false,
   ariaLabel = "Search real Korean",
 }: SearchBarProps) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const placeholder = useRollingPlaceholder(dynamicPlaceholder && value.length === 0);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSearch(value);
+    inputRef.current?.blur();
   };
 
   const isHero = variant === "hero";
@@ -116,6 +118,7 @@ export function SearchBar({
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
       <Input
+        ref={inputRef}
         id={inputId}
         type="search"
         value={value}

@@ -1,11 +1,16 @@
 import type { InputHTMLAttributes } from "react";
+import { forwardRef } from "react";
 import { cn } from "./utils";
 
 type InputProps = InputHTMLAttributes<HTMLInputElement>;
 
-export function Input({ className, type = "text", ...props }: InputProps) {
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  { className, type = "text", ...props },
+  ref,
+) {
   return (
     <input
+      ref={ref}
       type={type}
       className={cn(
         [
@@ -22,4 +27,4 @@ export function Input({ className, type = "text", ...props }: InputProps) {
       {...props}
     />
   );
-}
+});
