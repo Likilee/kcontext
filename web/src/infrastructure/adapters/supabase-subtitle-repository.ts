@@ -56,7 +56,3 @@ export class SupabaseSubtitleRepository implements SubtitleRepository {
     }));
   }
 }
-
-export function createSubtitleRepository(): SubtitleRepository {
-  return new SupabaseSubtitleRepository();
-}

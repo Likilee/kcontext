@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/components/ui/utils";
 
 interface SuggestionChipListProps {
   suggestions: readonly string[];
@@ -15,10 +16,10 @@ export function SuggestionChipList({
 }: SuggestionChipListProps) {
   return (
     <div
-      className={[
+      className={cn(
         "gap-[var(--space-gap-item)]",
         wrap ? "flex flex-wrap justify-center" : "flex overflow-x-auto pb-[var(--space-gap-micro)]",
-      ].join(" ")}
+      )}
     >
       {suggestions.map((suggestion) => (
         <Button
