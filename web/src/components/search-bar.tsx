@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/components/ui/utils";
 
 import { SEARCH_KEYWORDS } from "@/lib/search-keywords";
 
@@ -124,12 +125,12 @@ export function SearchBar({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className={[
+        className={cn(
           "[&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden [&::-webkit-search-results-button]:hidden [&::-webkit-search-results-decoration]:hidden",
           isHero
             ? "min-h-[calc(var(--space-layout-section)+var(--space-inset-squish-y))] pr-[calc(var(--space-layout-section)*2)] text-[length:var(--font-size-18)]"
             : "h-[calc(var(--space-layout-section)-var(--space-gap-item))] py-[calc(var(--space-inset-squish-y)-var(--space-gap-micro))] pr-[calc(var(--space-layout-section)*2)] text-[length:var(--font-size-16)]",
-        ].join(" ")}
+        )}
         data-kcontext-search-input="true"
         autoComplete="off"
         aria-label={ariaLabel}
@@ -141,12 +142,12 @@ export function SearchBar({
           variant="ghost"
           size="icon"
           onClick={() => onChange("")}
-          className={[
+          className={cn(
             "absolute right-[calc(var(--space-layout-section)+var(--space-gap-micro))] top-1/2 -translate-y-1/2",
             isHero
               ? ""
               : "min-h-[calc(var(--space-layout-section)-var(--space-gap-item))] min-w-[calc(var(--space-layout-section)-var(--space-gap-item))]",
-          ].join(" ")}
+          )}
           aria-label="Clear search input"
         >
           <svg
@@ -170,12 +171,12 @@ export function SearchBar({
         type="submit"
         variant="ghost"
         size="icon"
-        className={[
+        className={cn(
           "absolute right-[var(--space-gap-micro)] top-1/2 -translate-y-1/2",
           isHero
             ? ""
             : "min-h-[calc(var(--space-layout-section)-var(--space-gap-item))] min-w-[calc(var(--space-layout-section)-var(--space-gap-item))]",
-        ].join(" ")}
+        )}
         aria-label="Submit search"
       >
         {isLoading ? (

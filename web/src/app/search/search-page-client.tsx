@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearch } from "@/application/hooks/use-search";
+import { useTranscriptLoader } from "@/application/hooks/use-transcript-loader";
 import { ChunkViewer } from "@/components/chunk-viewer";
 import { PlayerControls } from "@/components/player-controls";
 import { SearchResultNavigation } from "@/components/search-result-navigation";
@@ -10,8 +11,8 @@ import { TopNavigation } from "@/components/top-navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import type { YouTubePlayerHandle } from "@/components/youtube-player";
 import { YouTubePlayer } from "@/components/youtube-player";
-import type { SubtitleChunk } from "@/domain/models/subtitle";
 import { SupabaseSubtitleRepository } from "@/infrastructure/adapters/supabase-subtitle-repository";
+import { useKeyboardShortcuts } from "@/lib/use-keyboard-shortcuts";
 import { useSubtitleSync } from "@/lib/use-subtitle-sync";
 
 const repository = new SupabaseSubtitleRepository();
@@ -26,16 +27,16 @@ export function SearchPageClient() {
   const query = (searchParams.get("q") ?? "").trim();
 
   const playerRef = useRef<YouTubePlayerHandle | null>(null);
-  const transcriptCache = useRef<Map<string, SubtitleChunk[]>>(new Map());
 
   const [searchInput, setSearchInput] = useState(query);
   const [playbackRate, setPlaybackRate] = useState<number>(1);
-  const [transcriptChunks, setTranscriptChunks] = useState<SubtitleChunk[]>([]);
-  const [transcriptError, setTranscriptError] = useState<string | null>(null);
-  const [isTranscriptLoading, setIsTranscriptLoading] = useState(false);
 
   const { results, isLoading, error, search, selectedResult, selectResult, keyword } =
     useSearch(repository);
+  const { transcriptChunks, transcriptError, isTranscriptLoading } = useTranscriptLoader(
+    repository,
+    selectedResult,
+  );
   const { activeChunk } = useSubtitleSync(playerRef, transcriptChunks);
 
   const selectedIndex = useMemo(() => {
@@ -67,63 +68,6 @@ export function SearchPageClient() {
     setSearchInput(query);
     search(query);
   }, [query, search]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!selectedResult) {
-      setTranscriptChunks([]);
-      setTranscriptError(null);
-      setIsTranscriptLoading(false);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    const cached = transcriptCache.current.get(selectedResult.videoId);
-    if (cached) {
-      setTranscriptChunks(cached);
-      setTranscriptError(null);
-      setIsTranscriptLoading(false);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    setIsTranscriptLoading(true);
-    setTranscriptError(null);
-    setTranscriptChunks([]);
-
-    void repository
-      .getFullTranscript(selectedResult.videoId)
-      .then((chunks) => {
-        if (cancelled) {
-          return;
-        }
-
-        transcriptCache.current.set(selectedResult.videoId, chunks);
-        setTranscriptChunks(chunks);
-      })
-      .catch((loadError) => {
-        if (cancelled) {
-          return;
-        }
-
-        setTranscriptChunks([]);
-        setTranscriptError(
-          loadError instanceof Error ? loadError.message : "Failed to load subtitles.",
-        );
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsTranscriptLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedResult]);
 
   const handlePreviousResult = useCallback(() => {
     if (selectedIndex <= 0) {
@@ -177,41 +121,11 @@ export function SearchPageClient() {
     });
   }, []);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      const isTextInput =
-        target?.tagName === "INPUT" ||
-        target?.tagName === "TEXTAREA" ||
-        target?.isContentEditable === true;
-
-      if (isTextInput) {
-        return;
-      }
-
-      if (event.key === "ArrowLeft") {
-        event.preventDefault();
-        handlePreviousResult();
-        return;
-      }
-
-      if (event.key === "ArrowRight") {
-        event.preventDefault();
-        handleNextResult();
-        return;
-      }
-
-      if (event.key === "r" || event.key === "R" || event.key === " ") {
-        event.preventDefault();
-        handleReplayContext();
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-    };
-  }, [handleNextResult, handlePreviousResult, handleReplayContext]);
+  useKeyboardShortcuts({
+    onPrevious: handlePreviousResult,
+    onNext: handleNextResult,
+    onReplay: handleReplayContext,
+  });
 
   const playerStartTime = selectedResult
     ? Math.max(0, selectedResult.startTime - PRE_ROLL_SECONDS)

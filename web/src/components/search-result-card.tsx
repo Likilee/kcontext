@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/components/ui/utils";
 import type { SearchResult } from "@/domain/models/subtitle";
 import { renderHighlightedText } from "./highlighted-text";
 
@@ -22,12 +23,12 @@ export function SearchResultCard({ result, keyword, isSelected, onClick }: Searc
       type="button"
       data-testid="search-result-card"
       onClick={onClick}
-      className={[
+      className={cn(
         "w-full cursor-pointer rounded-[var(--radius-08)] border p-[var(--space-inset-base)] text-left transition-transform duration-[var(--duration-fast)] active:scale-[0.96]",
         isSelected
           ? "border-[var(--border-focus)] bg-[var(--bg-surface-hover)]"
           : "border-[var(--border-default)] bg-[var(--bg-surface)] hover:bg-[var(--bg-surface-hover)]",
-      ].join(" ")}
+      )}
     >
       <div className="flex flex-col gap-[var(--space-gap-micro)]">
         <div className="flex items-center justify-between gap-[var(--space-gap-item)]">
