@@ -29,21 +29,51 @@ MOCK_TRANSCRIPT = [
     {"start": 2.5, "duration": 3.0, "text": "반갑습니다"},
 ]
 
-MOCK_YTDLP_META = f"{VIDEO_ID}\n파이프라인 테스트 영상\n테스트 채널\n20240615\n"
+# yt-dlp --dump-json mock data
+MOCK_DUMP_JSON = {
+    "id": VIDEO_ID,
+    "title": "파이프라인 테스트 영상",
+    "channel": "테스트 채널",
+    "upload_date": "20240615",
+    "subtitles": {
+        "ko": [
+            {"ext": "json3", "url": "https://example.com/subtitle.json3"},
+        ]
+    },
+    "automatic_captions": {},
+}
+
+MOCK_JSON3_DATA = {
+    "events": [
+        {"tStartMs": 0, "dDurationMs": 2500, "segs": [{"utf8": "안녕하세요"}]},
+        {"tStartMs": 2500, "dDurationMs": 3000, "segs": [{"utf8": "반갑습니다"}]},
+    ]
+}
 
 
-def _make_mock_ytt(chunks: list) -> MagicMock:
-    """Build a mock YouTubeTranscriptApi instance."""
-    mock_transcript_obj = MagicMock()
-    mock_transcript_obj.fetch.return_value = chunks
+def _mock_dump_json_result(dump_json=None):
+    """Build a subprocess.CompletedProcess for yt-dlp --dump-json."""
+    if dump_json is None:
+        dump_json = MOCK_DUMP_JSON
+    return subprocess.CompletedProcess(
+        args=[], returncode=0, stdout=json.dumps(dump_json, ensure_ascii=False), stderr=""
+    )
 
-    mock_transcript_list = MagicMock()
-    mock_transcript_list.find_manually_created_transcript.return_value = mock_transcript_obj
 
-    mock_api_instance = MagicMock()
-    mock_api_instance.list.return_value = mock_transcript_list
+def _mock_urllib_open(json3_data=None):
+    """Create a mock opener for urllib.request that returns json3 data."""
+    if json3_data is None:
+        json3_data = MOCK_JSON3_DATA
 
-    return mock_api_instance
+    mock_response = MagicMock()
+    mock_response.read.return_value = json.dumps(json3_data, ensure_ascii=False).encode("utf-8")
+    mock_response.__enter__ = lambda s: s
+    mock_response.__exit__ = MagicMock(return_value=False)
+
+    mock_opener = MagicMock()
+    mock_opener.open.return_value = mock_response
+
+    return mock_opener
 
 
 def _make_mock_conn() -> tuple[MagicMock, MagicMock]:
@@ -77,15 +107,14 @@ class TestE2EPipeline:
         assert result.exit_code == 0
         assert VIDEO_ID in result.output
 
-        # Stage 2: fetch — mock yt-dlp metadata + youtube-transcript-api
-        mock_meta_result = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout=MOCK_YTDLP_META, stderr=""
-        )
-        mock_ytt = _make_mock_ytt(MOCK_TRANSCRIPT)
-
+        # Stage 2: fetch — mock yt-dlp --dump-json + urllib json3 download
+        mock_opener = _mock_urllib_open()
         with (
-            patch("subprocess.run", return_value=mock_meta_result),
-            patch("kcontext_cli.commands.fetch.YouTubeTranscriptApi", return_value=mock_ytt),
+            patch("subprocess.run", return_value=_mock_dump_json_result()),
+            patch(
+                "kcontext_cli.commands.fetch.urllib.request.build_opener",
+                return_value=mock_opener,
+            ),
         ):
             result = runner.invoke(app, ["fetch", VIDEO_ID, "-o", str(raw_json_path)])
         assert result.exit_code == 0
@@ -137,27 +166,10 @@ class TestE2EPipeline:
 
     def test_pipeline_skips_video_without_manual_cc(self, tmp_path: Path) -> None:
         """fetch should fail gracefully when video has no manual Korean CC."""
-        from youtube_transcript_api import NoTranscriptFound
-
         raw_json_path = tmp_path / f"{VIDEO_ID}_raw.json"
 
-        mock_meta_result = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout=MOCK_YTDLP_META, stderr=""
-        )
-        mock_transcript_list = MagicMock()
-        mock_transcript_list.find_manually_created_transcript.side_effect = NoTranscriptFound(
-            VIDEO_ID, ["ko"], []
-        )
-        mock_api_instance = MagicMock()
-        mock_api_instance.list.return_value = mock_transcript_list
-
-        with (
-            patch("subprocess.run", return_value=mock_meta_result),
-            patch(
-                "kcontext_cli.commands.fetch.YouTubeTranscriptApi",
-                return_value=mock_api_instance,
-            ),
-        ):
+        dump_json_no_ko = {**MOCK_DUMP_JSON, "subtitles": {}}
+        with patch("subprocess.run", return_value=_mock_dump_json_result(dump_json_no_ko)):
             result = runner.invoke(app, ["fetch", VIDEO_ID, "-o", str(raw_json_path)])
 
         assert result.exit_code == 1
@@ -171,16 +183,27 @@ class TestE2EPipeline:
         build_dir = tmp_path / "build"
         build_dir.mkdir()
 
-        mock_meta = f"{video_id}\n{korean_text}\n테스트 채널\n20240615\n"
-        mock_meta_result = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout=mock_meta, stderr=""
-        )
-        korean_transcript = [{"start": 0.0, "duration": 2.5, "text": korean_text}]
-        mock_ytt = _make_mock_ytt(korean_transcript)
+        dump_json_korean = {
+            "id": video_id,
+            "title": korean_text,
+            "channel": "테스트 채널",
+            "upload_date": "20240615",
+            "subtitles": {"ko": [{"ext": "json3", "url": "https://example.com/subtitle.json3"}]},
+            "automatic_captions": {},
+        }
+        json3_korean = {
+            "events": [
+                {"tStartMs": 0, "dDurationMs": 2500, "segs": [{"utf8": korean_text}]},
+            ]
+        }
 
+        mock_opener = _mock_urllib_open(json3_korean)
         with (
-            patch("subprocess.run", return_value=mock_meta_result),
-            patch("kcontext_cli.commands.fetch.YouTubeTranscriptApi", return_value=mock_ytt),
+            patch("subprocess.run", return_value=_mock_dump_json_result(dump_json_korean)),
+            patch(
+                "kcontext_cli.commands.fetch.urllib.request.build_opener",
+                return_value=mock_opener,
+            ),
         ):
             result = runner.invoke(app, ["fetch", video_id, "-o", str(raw_json_path)])
         assert result.exit_code == 0

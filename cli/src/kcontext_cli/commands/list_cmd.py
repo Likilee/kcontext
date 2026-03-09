@@ -5,17 +5,10 @@ import subprocess
 from pathlib import Path
 
 import typer
-from youtube_transcript_api import (
-    IpBlocked,
-    NoTranscriptFound,
-    RequestBlocked,
-    YouTubeTranscriptApi,
-)
 
 from kcontext_cli.network.proxy import (
     YOUTUBE_PROXY_OPTION_HELP,
     build_ytdlp_proxy_args,
-    build_ytt_proxy_config,
     resolve_youtube_proxy_url,
 )
 
@@ -66,35 +59,48 @@ def _run_ytdlp_list(url: str, playlist_end: int, youtube_proxy_url: str | None) 
 
 
 def _has_manual_ko_subtitle(video_id: str, youtube_proxy_url: str | None) -> bool:
+    """Check if a video has manually created Korean subtitles using yt-dlp."""
     try:
-        ytt = YouTubeTranscriptApi(proxy_config=build_ytt_proxy_config(youtube_proxy_url))
-        transcript_list = ytt.list(video_id)
-        transcript_list.find_manually_created_transcript(["ko"])
-        return True
-    except NoTranscriptFound:
-        return False
-    except (IpBlocked, RequestBlocked) as err:
-        if youtube_proxy_url is None:
-            typer.echo(
-                "Error: YouTube blocked subtitle probe requests. "
-                "Try --youtube-proxy-url or KCONTEXT_YOUTUBE_PROXY_URL.",
-                err=True,
-            )
-        else:
-            typer.echo(
-                f"Error: YouTube blocked subtitle probe via proxy {youtube_proxy_url}: {err}",
-                err=True,
-            )
+        command = [
+            "yt-dlp",
+            *build_ytdlp_proxy_args(youtube_proxy_url),
+            "--dump-json",
+            "--skip-download",
+            f"https://www.youtube.com/watch?v={video_id}",
+        ]
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except FileNotFoundError as err:
+        typer.echo("Error: yt-dlp is not installed.", err=True)
         raise typer.Exit(code=1) from err
-    except Exception as exc:
+    except subprocess.TimeoutExpired as err:
+        typer.echo(f"Error: yt-dlp timed out probing subtitles for {video_id}", err=True)
+        raise typer.Exit(code=1) from err
+
+    if result.returncode != 0:
+        message = result.stderr.strip()
         if youtube_proxy_url is None:
-            typer.echo(f"Warning: Failed to probe subtitles for {video_id}: {exc}", err=True)
+            typer.echo(f"Warning: Failed to probe subtitles for {video_id}: {message}", err=True)
             return False
         typer.echo(
-            f"Error: Failed to probe subtitles for {video_id} via proxy {youtube_proxy_url}: {exc}",
+            f"Error: Failed to probe subtitles for {video_id} "
+            f"via proxy {youtube_proxy_url}: {message}",
             err=True,
         )
-        raise typer.Exit(code=1) from exc
+        raise typer.Exit(code=1)
+
+    try:
+        video_data = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        typer.echo(f"Warning: Failed to parse yt-dlp output for {video_id}", err=True)
+        return False
+
+    manual_subs = video_data.get("subtitles") or {}
+    return "ko" in manual_subs
 
 
 def _load_probe_cache(cache_file: Path) -> dict[str, bool]:

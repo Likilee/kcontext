@@ -4,7 +4,6 @@ import os
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
-from youtube_transcript_api.proxies import GenericProxyConfig
 
 load_dotenv()
 
@@ -46,10 +45,3 @@ def build_ytdlp_proxy_args(proxy_url: str | None) -> list[str]:
     if proxy_url is None:
         return []
     return ["--proxy", proxy_url]
-
-
-def build_ytt_proxy_config(proxy_url: str | None) -> GenericProxyConfig | None:
-    """Return youtube-transcript-api proxy config."""
-    if proxy_url is None:
-        return None
-    return GenericProxyConfig(http_url=proxy_url, https_url=proxy_url)

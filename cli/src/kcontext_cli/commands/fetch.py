@@ -2,22 +2,17 @@
 
 import json
 import subprocess
+import urllib.request
 from pathlib import Path
 
 import typer
-from youtube_transcript_api import (
-    IpBlocked,
-    NoTranscriptFound,
-    RequestBlocked,
-    YouTubeTranscriptApi,
-)
 
 from kcontext_cli.network.proxy import (
     YOUTUBE_PROXY_OPTION_HELP,
     build_ytdlp_proxy_args,
-    build_ytt_proxy_config,
     resolve_youtube_proxy_url,
 )
+from kcontext_cli.subtitle.parser import parse_json3_to_chunks
 
 
 def _parse_upload_date(upload_date: str) -> str:
@@ -25,82 +20,26 @@ def _parse_upload_date(upload_date: str) -> str:
     return f"{upload_date[:4]}-{upload_date[4:6]}-{upload_date[6:8]}T00:00:00Z"
 
 
-def _fetch_manual_korean_chunks(
+def _fetch_video_data(
     video_id: str,
     youtube_proxy_url: str | None,
-) -> list[dict[str, float | str]]:
-    try:
-        ytt = YouTubeTranscriptApi(proxy_config=build_ytt_proxy_config(youtube_proxy_url))
-        transcript_list = ytt.list(video_id)
-        transcript = transcript_list.find_manually_created_transcript(["ko"])
-        chunks = transcript.fetch()
-    except NoTranscriptFound as err:
-        typer.echo(f"Error: No manual Korean subtitle found for {video_id}", err=True)
-        raise typer.Exit(code=1) from err
-    except (IpBlocked, RequestBlocked) as err:
-        if youtube_proxy_url is None:
-            typer.echo(
-                "Error: YouTube blocked subtitle requests. "
-                "Try --youtube-proxy-url or KCONTEXT_YOUTUBE_PROXY_URL.",
-                err=True,
-            )
-        else:
-            typer.echo(
-                f"Error: YouTube blocked subtitle requests via proxy {youtube_proxy_url}: {err}",
-                err=True,
-            )
-        raise typer.Exit(code=1) from err
-    except Exception as exc:
-        if youtube_proxy_url is None:
-            typer.echo(f"Error: Failed to fetch subtitles: {exc}", err=True)
-        else:
-            typer.echo(
-                f"Error: Failed to fetch subtitles via proxy {youtube_proxy_url}: {exc}",
-                err=True,
-            )
-        raise typer.Exit(code=1) from exc
+) -> dict:
+    """Fetch video metadata and subtitle info using yt-dlp --dump-json.
 
-    transcript_chunks: list[dict[str, float | str]] = []
-    for chunk in chunks:
-        if isinstance(chunk, dict):
-            transcript_chunks.append(
-                {
-                    "start": chunk["start"],
-                    "duration": chunk["duration"],
-                    "text": chunk["text"],
-                }
-            )
-        else:
-            transcript_chunks.append(
-                {
-                    "start": chunk.start,
-                    "duration": chunk.duration,
-                    "text": chunk.text,
-                }
-            )
-    return transcript_chunks
-
-
-def _fetch_video_metadata(
-    video_id: str,
-    youtube_proxy_url: str | None,
-) -> tuple[str, str, str, str]:
+    Returns the full JSON object from yt-dlp, which contains:
+    - id, title, channel, upload_date (metadata)
+    - subtitles (manual subtitles dict, keyed by language)
+    - automatic_captions (auto-generated subtitles dict)
+    """
     try:
         command = [
             "yt-dlp",
             *build_ytdlp_proxy_args(youtube_proxy_url),
-            "--print",
-            "%(id)s",
-            "--print",
-            "%(title)s",
-            "--print",
-            "%(channel)s",
-            "--print",
-            "%(upload_date)s",
+            "--dump-json",
             "--skip-download",
             f"https://www.youtube.com/watch?v={video_id}",
         ]
-        meta_result = subprocess.run(
+        result = subprocess.run(
             command,
             capture_output=True,
             text=True,
@@ -113,24 +52,62 @@ def _fetch_video_metadata(
         typer.echo("Error: yt-dlp timed out.", err=True)
         raise typer.Exit(code=1) from err
 
-    if meta_result.returncode != 0:
-        message = meta_result.stderr.strip()
+    if result.returncode != 0:
+        message = result.stderr.strip()
         if youtube_proxy_url is None:
-            typer.echo(f"Error: Failed to fetch video metadata: {message}", err=True)
+            typer.echo(f"Error: Failed to fetch video data: {message}", err=True)
         else:
             typer.echo(
-                f"Error: Failed to fetch video metadata via proxy {youtube_proxy_url}: {message}",
+                f"Error: Failed to fetch video data via proxy {youtube_proxy_url}: {message}",
                 err=True,
             )
         raise typer.Exit(code=1)
 
-    lines = meta_result.stdout.strip().splitlines()
-    if len(lines) < 4:
-        typer.echo(f"Error: Unexpected yt-dlp output: {meta_result.stdout!r}", err=True)
-        raise typer.Exit(code=1)
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as err:
+        typer.echo(f"Error: Failed to parse yt-dlp JSON output: {err}", err=True)
+        raise typer.Exit(code=1) from err
 
-    vid_id, title, channel_name, upload_date = lines[0], lines[1], lines[2], lines[3]
-    return vid_id, title, channel_name, _parse_upload_date(upload_date)
+
+def _download_json3_subtitle(
+    subtitle_url: str,
+    youtube_proxy_url: str | None,
+) -> dict:
+    """Download json3 subtitle content from the given URL."""
+    try:
+        req = urllib.request.Request(subtitle_url)
+        if youtube_proxy_url is not None:
+            proxy_handler = urllib.request.ProxyHandler(
+                {
+                    "http": youtube_proxy_url,
+                    "https": youtube_proxy_url,
+                }
+            )
+            opener = urllib.request.build_opener(proxy_handler)
+        else:
+            opener = urllib.request.build_opener()
+
+        with opener.open(req, timeout=30) as resp:
+            content = resp.read().decode("utf-8")
+        return json.loads(content)
+    except Exception as exc:
+        if youtube_proxy_url is None:
+            typer.echo(f"Error: Failed to download subtitle: {exc}", err=True)
+        else:
+            typer.echo(
+                f"Error: Failed to download subtitle via proxy {youtube_proxy_url}: {exc}",
+                err=True,
+            )
+        raise typer.Exit(code=1) from exc
+
+
+def _extract_json3_url(subtitles_ko: list[dict]) -> str | None:
+    """Extract json3 format URL from the subtitle entries."""
+    for entry in subtitles_ko:
+        if entry.get("ext") == "json3":
+            return entry.get("url")
+    return None
 
 
 def fetch_subtitle(
@@ -152,11 +129,37 @@ def fetch_subtitle(
     if resolved_proxy_url is not None:
         typer.echo(f"Using YouTube proxy: {resolved_proxy_url}", err=True)
 
-    typer.echo(f"Fetching Korean subtitles for {video_id}...", err=True)
-    transcript_chunks = _fetch_manual_korean_chunks(video_id, resolved_proxy_url)
+    typer.echo(f"Fetching video data for {video_id}...", err=True)
+    video_data = _fetch_video_data(video_id, resolved_proxy_url)
 
-    typer.echo(f"Fetching metadata for {video_id}...", err=True)
-    vid_id, title, channel_name, published_at = _fetch_video_metadata(video_id, resolved_proxy_url)
+    # Check for manual Korean subtitles
+    manual_subs = video_data.get("subtitles") or {}
+    ko_entries = manual_subs.get("ko")
+    if not ko_entries:
+        typer.echo(f"Error: No manual Korean subtitle found for {video_id}", err=True)
+        raise typer.Exit(code=1)
+
+    # Find json3 URL
+    json3_url = _extract_json3_url(ko_entries)
+    if json3_url is None:
+        typer.echo(f"Error: No json3 format subtitle available for {video_id}", err=True)
+        raise typer.Exit(code=1)
+
+    # Download and parse json3
+    typer.echo(f"Downloading Korean subtitles for {video_id}...", err=True)
+    json3_data = _download_json3_subtitle(json3_url, resolved_proxy_url)
+    transcript_chunks = parse_json3_to_chunks(json3_data)
+
+    if not transcript_chunks:
+        typer.echo(f"Error: Subtitle is empty for {video_id}", err=True)
+        raise typer.Exit(code=1)
+
+    # Extract metadata
+    vid_id = video_data.get("id", video_id)
+    title = video_data.get("title", "")
+    channel_name = video_data.get("channel", "")
+    upload_date = video_data.get("upload_date", "")
+    published_at = _parse_upload_date(upload_date) if upload_date else ""
 
     raw_data = {
         "video_id": vid_id,
