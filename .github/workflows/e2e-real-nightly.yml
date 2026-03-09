@@ -35,6 +35,9 @@ jobs:
       - name: Install web dependencies
         run: pnpm -C web install --frozen-lockfile
 
+      - name: Install Playwright Chromium
+        run: pnpm -C web exec playwright install --with-deps chromium
+
       - name: Install cli dependencies
         run: cd cli && uv sync
 
