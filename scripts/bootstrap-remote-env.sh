@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PROJECT_REF="jtrgghhqjcudqnuxewoh"
+PROJECT_REF="bbapvtmiztyozkmgvfgf"
 OUTPUT_FILE=".env.remote-sync"
 
 usage() {
@@ -9,7 +9,7 @@ usage() {
 Usage: $0 [options]
 
 Options:
-  --project-ref <ref>   Supabase project ref (default: jtrgghhqjcudqnuxewoh)
+  --project-ref <ref>   Supabase project ref (default: bbapvtmiztyozkmgvfgf)
   --output <path>       Output env file path (default: .env.remote-sync)
   -h, --help            Show help
 
@@ -90,6 +90,9 @@ if output_path.exists():
         if line.startswith("REMOTE_DB_URL="):
             existing_db_url = line.split("=", 1)[1]
             break
+
+if existing_db_url and f"postgres.{project_ref}:" not in existing_db_url:
+    existing_db_url = ""
 
 pooler_template = f"postgresql://postgres.{project_ref}:SET_DB_PASSWORD_HERE@db.{project_ref}.supabase.co:5432/postgres?sslmode=require"
 pooler_url_file = Path("supabase/.temp/pooler-url")

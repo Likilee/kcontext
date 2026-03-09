@@ -139,7 +139,7 @@ cd /Users/kihoon/Documents/Project/dozboon/products/kcontext
 ```bash
 # 루트의 .env.remote-sync 파일 생성/갱신 (anon/service_role 자동 조회)
 cd /Users/kihoon/Documents/Project/dozboon/products/kcontext
-./scripts/bootstrap-remote-env.sh --project-ref jtrgghhqjcudqnuxewoh
+./scripts/bootstrap-remote-env.sh --project-ref bbapvtmiztyozkmgvfgf
 
 # .env.remote-sync 의 REMOTE_DB_URL 에 DB password를 반영
 # REMOTE_DB_URL=postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres?sslmode=require
