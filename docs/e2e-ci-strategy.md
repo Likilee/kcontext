@@ -22,7 +22,7 @@
 - `e2e-reset` does all of:
   - `supabase db reset` in E2E workdir
   - Storage object clear for `subtitles` bucket
-  - Deterministic seed upload from `supabase/storage-seed`
+  - Deterministic seed upload from `testing/supabase-e2e/supabase/storage-seed`
   - Seed verification (`test_%` videos count check)
 
 ## CI Workflows

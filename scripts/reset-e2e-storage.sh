@@ -2,7 +2,7 @@
 set -euo pipefail
 
 WORKDIR="testing/supabase-e2e"
-SEED_DIR="supabase/storage-seed"
+SEED_DIR="testing/supabase-e2e/supabase/storage-seed"
 BUCKET="subtitles"
 SUPABASE_URL=""
 
@@ -71,7 +71,7 @@ existing_names="$(echo "$LIST_RESPONSE" | python3 -c 'import json,sys; data=json
 
 if [[ -n "$existing_names" ]]; then
   delete_payload="$(
-    printf '%s\n' "$existing_names" | python3 -c 'import json,sys; print(json.dumps([line.strip() for line in sys.stdin if line.strip()]))'
+    printf '%s\n' "$existing_names" | python3 -c 'import json,sys; print(json.dumps({"prefixes": [line.strip() for line in sys.stdin if line.strip()]}))'
   )"
   curl --fail --silent --show-error \
     -X DELETE "${SUPABASE_URL}/storage/v1/object/${BUCKET}" \

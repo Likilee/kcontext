@@ -1,0 +1,22 @@
+[
+  {
+    "start_time": 0.0,
+    "duration": 2.5,
+    "text": "안녕하세요 여러분"
+  },
+  {
+    "start_time": 2.5,
+    "duration": 2.6,
+    "text": "오늘은 정말 좋은 날씨네요"
+  },
+  {
+    "start_time": 5.1,
+    "duration": 2.7,
+    "text": "진짜 행복해요"
+  },
+  {
+    "start_time": 7.8,
+    "duration": 2.0,
+    "text": "그럼 시작해 볼까요"
+  }
+]

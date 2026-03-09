@@ -2,7 +2,7 @@ SHELL := /bin/bash
 .SHELLFLAGS := -eu -o pipefail -c
 
 E2E_SUPABASE_WORKDIR ?= testing/supabase-e2e
-E2E_SEED_DIR ?= supabase/storage-seed
+E2E_SEED_DIR ?= testing/supabase-e2e/supabase/storage-seed
 E2E_BUCKET ?= subtitles
 INGEST_CONFIG ?= $(CURDIR)/cli/config/sources.json
 INGEST_WORKSPACE_ROOT ?= /tmp/kcontext_ingest_runs

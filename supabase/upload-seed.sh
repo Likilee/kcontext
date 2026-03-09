@@ -3,7 +3,7 @@ set -euo pipefail
 
 WORKDIR="."
 SUPABASE_URL=""
-SEED_DIR="supabase/storage-seed"
+SEED_DIR="testing/supabase-e2e/supabase/storage-seed"
 BUCKET="subtitles"
 
 usage() {
