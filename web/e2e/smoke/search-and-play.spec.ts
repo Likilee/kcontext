@@ -10,17 +10,17 @@ async function searchKeyword(page: Page, keyword: string) {
 }
 
 async function waitForSearchState(page: Page): Promise<"results" | "empty"> {
-  const summary = page.getByText("in native videos").first();
+  const chunkViewer = page.locator('[data-testid="chunk-viewer"]');
   const empty = page.getByText(EMPTY_STATE_TEXT).first();
 
   await expect
     .poll(
       async () => {
-        const hasSummary = await summary
+        const hasChunkViewer = await chunkViewer
           .isVisible()
           .then((visible) => visible)
           .catch(() => false);
-        if (hasSummary) {
+        if (hasChunkViewer) {
           return "results";
         }
 
@@ -34,12 +34,12 @@ async function waitForSearchState(page: Page): Promise<"results" | "empty"> {
     )
     .not.toBe("pending");
 
-  const hasSummary = await summary
+  const hasChunkViewer = await chunkViewer
     .isVisible()
     .then((visible) => visible)
     .catch(() => false);
 
-  return hasSummary ? "results" : "empty";
+  return hasChunkViewer ? "results" : "empty";
 }
 
 test.describe("kcontext User Scenarios", () => {
@@ -91,13 +91,14 @@ test.describe("kcontext User Scenarios", () => {
     await expect(emptyMessage).toBeVisible({ timeout: 20_000 });
   });
 
-  test("Scenario 5: Search shows summary or empty state", async ({ page }) => {
+  test("Scenario 5: Search shows navigation summary or empty state", async ({ page }) => {
     await page.goto("/");
     await searchKeyword(page, "안녕하세요");
 
     const state = await waitForSearchState(page);
     if (state === "results") {
-      await expect(page.getByText("in native videos").first()).toBeVisible({ timeout: 15_000 });
+      await expect(page.locator('[data-testid="chunk-viewer"]')).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByText('"안녕하세요"').first()).toBeVisible();
     } else {
       await expect(page.getByText(EMPTY_STATE_TEXT).first()).toBeVisible();
     }
