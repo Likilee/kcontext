@@ -2,7 +2,7 @@
 set -euo pipefail
 
 echo "=================================================="
-echo "kcontext Full Stack Integration Test"
+echo "tubelang Full Stack Integration Test"
 echo "Source: 세바시 강연 (Sebasi Talk)"
 echo "=================================================="
 
@@ -20,7 +20,7 @@ WORKSPACE="/tmp/kcontext_integration_$(date +%s)"
 mkdir -p "$WORKSPACE"
 
 cd cli
-uv run kcontext list "https://www.youtube.com/channel/UCgheNMc3gGHLsT-RISdCzDQ" --limit 3 > "$WORKSPACE/ids.txt" 2>/dev/null || {
+uv run tubelang list "https://www.youtube.com/channel/UCgheNMc3gGHLsT-RISdCzDQ" --limit 3 > "$WORKSPACE/ids.txt" 2>/dev/null || {
   echo "WARNING: list command failed, using empty id list"
   touch "$WORKSPACE/ids.txt"
 }
@@ -28,11 +28,11 @@ uv run kcontext list "https://www.youtube.com/channel/UCgheNMc3gGHLsT-RISdCzDQ" 
 LOADED=0
 while IFS= read -r ID; do
   [ -z "$ID" ] && continue
-  uv run kcontext fetch "$ID" -o "$WORKSPACE/${ID}_raw.json" 2>/dev/null || continue
+  uv run tubelang fetch "$ID" -o "$WORKSPACE/${ID}_raw.json" 2>/dev/null || continue
   [ ! -f "$WORKSPACE/${ID}_raw.json" ] && continue
 
-  uv run kcontext build "$WORKSPACE/${ID}_raw.json" -d "$WORKSPACE" 2>/dev/null
-  uv run kcontext push \
+  uv run tubelang build "$WORKSPACE/${ID}_raw.json" -d "$WORKSPACE" 2>/dev/null
+  uv run tubelang push \
     -s "$WORKSPACE/${ID}_storage.json" \
     -vc "$WORKSPACE/${ID}_video.csv" \
     -sc "$WORKSPACE/${ID}_subtitle.csv" 2>/dev/null || true

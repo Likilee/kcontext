@@ -1,7 +1,7 @@
-# AGENTS.md — kcontext AI Agent Guidelines
+# AGENTS.md — tubelang AI Agent Guidelines
 
 ## Project Overview
-- **Product**: kcontext — 한국어 학습자를 위한 YouTube 자막 기반 문맥 검색 도구
+- **Product**: tubelang — 한국어 학습자를 위한 YouTube 자막 기반 문맥 검색 도구
 - **Tagline**: Real Korean, Right in Context.
 - **Repo Layout**: `web/` (Next.js Frontend) + `cli/` (Python Data Pipeline)
 - **Detailed Specs**: See `docs/` directory for system design, architecture, database schema, design system
@@ -101,7 +101,7 @@ cd web && pnpm lint         # Biome lint
 cd web && pnpm lint:fix     # Biome auto-fix
 
 # CLI (Python)
-cd cli && uv run kcontext --help    # CLI help
+cd cli && uv run tubelang --help    # CLI help
 cd cli && uv run ruff check .       # Python lint
 cd cli && uv run ruff format .      # Python format
 ```

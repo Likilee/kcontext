@@ -2,7 +2,7 @@
 
 ### 1.1 Brand Name & Tagline
 
-- Name: kcontext (소문자 표기 지향. 무겁고 권위적인 교육 플랫폼이 아닌, 빠르고 매끄럽게 작동하는 모던 유틸리티 툴임을 시각적으로 강조)
+- Name: tubelang (소문자 표기 지향. 무겁고 권위적인 교육 플랫폼이 아닌, 빠르고 매끄럽게 작동하는 모던 유틸리티 툴임을 시각적으로 강조)
 - Main Tagline: Real Korean, Right in Context.
 - Sub Tagline: Stop memorizing textbooks. Start experiencing conversations.
 
@@ -19,7 +19,7 @@
 
 ## 2. Brand Persona
 
-kcontext를 의인화한다면 "스마트하고 센스 있는 서울의 로컬 친구 겸 유능한 튜터링 조수"이다.
+tubelang를 의인화한다면 "스마트하고 센스 있는 서울의 로컬 친구 겸 유능한 튜터링 조수"이다.
 
 - 권위적이거나 학술적인 언어학 교사가 아니다. 복잡한 문법 용어를 늘어놓기보다 "한국인들은 실제로 이럴 때 이 말을 써!"라며 직관적인 영상 증거를 즉시 찾아 보여주는 실용주의자다.
 - K-Pop 슬랭을 과도하게 남발하는 가벼운 캐릭터가 아니며, 글로벌 SaaS 도구로서의 빠르고 정확한 신뢰감을 밑바탕에 둔다.

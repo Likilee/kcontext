@@ -1,9 +1,9 @@
-# kcontext 디자인 시스템 및 토큰 가이드 (Design System & Token Guide)
+# tubelang 디자인 시스템 및 토큰 가이드 (Design System & Token Guide)
 
 **Document Status:** Approved (Final)
-**Product Name:** kcontext
+**Product Name:** tubelang
 
-본 문서는 kcontext의 브랜드 철학을 시각적으로 구현하고, 프론트엔드 시스템의 확장성과 반응형 레이아웃 유지보수성을 극대화하기 위해 디자인 토큰(Design Tokens) 기반의 시스템 위계를 정의합니다. 모든 UI 요소의 스타일링은 임의의 수치 입력을 원천 차단하고 아래 정의된 3단계 토큰의 흐름만을 엄격하게 따릅니다.
+본 문서는 tubelang의 브랜드 철학을 시각적으로 구현하고, 프론트엔드 시스템의 확장성과 반응형 레이아웃 유지보수성을 극대화하기 위해 디자인 토큰(Design Tokens) 기반의 시스템 위계를 정의합니다. 모든 UI 요소의 스타일링은 임의의 수치 입력을 원천 차단하고 아래 정의된 3단계 토큰의 흐름만을 엄격하게 따릅니다.
 
 ## 1. Token Hierarchy (토큰 위계 정의)
 

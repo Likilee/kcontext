@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { getRequestSiteConfig } from "../request-site-config";
 import { SearchPageClient } from "./search-page-client";
 
 function SearchPageSkeleton() {
@@ -7,7 +8,7 @@ function SearchPageSkeleton() {
       <header className="sticky top-0 z-30 border-b border-[var(--border-subtle)] bg-[var(--bg-base)]/95 backdrop-blur-md">
         <div className="mx-auto w-full max-w-6xl px-[var(--space-layout-screen)] pb-[var(--space-inset-squish-y)] pt-[calc(var(--space-inset-squish-y)+var(--space-safe-top))]">
           <div className="flex items-center gap-[var(--space-gap-item)]">
-            <div className="h-[var(--font-size-18)] w-24 animate-pulse rounded-[var(--radius-04)] bg-[var(--bg-surface)]" />
+            <div className="h-[calc(var(--font-size-20)+var(--space-gap-item))] w-40 animate-pulse rounded-[var(--radius-04)] bg-[var(--bg-surface)] lg:h-[calc(var(--font-size-28)+var(--space-gap-item))]" />
             <div className="h-10 min-w-0 flex-1 animate-pulse rounded-[var(--radius-pill)] border border-[var(--border-default)] bg-[var(--bg-surface)]" />
           </div>
         </div>
@@ -35,10 +36,12 @@ function SearchPageSkeleton() {
   );
 }
 
-export default function SearchPage() {
+export default async function SearchPage() {
+  const siteConfig = await getRequestSiteConfig();
+
   return (
     <Suspense fallback={<SearchPageSkeleton />}>
-      <SearchPageClient />
+      <SearchPageClient siteConfig={siteConfig} />
     </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 # MVP 화면 및 기능 기획서 (Core UX Specification)
 
-**Document Status:** Approved (MVP Core UX) **Product Name:** kcontext
+**Document Status:** Approved (MVP Core UX) **Product Name:** tubelang
 
 본 문서는 로그인, 북마크 저장, 결제 검증(Fake Door), 제휴 마케팅 등의 부가적인 비즈니스 로직을 완전히 걷어내고, 서비스의 가장 본질적인 핵심 가치인 **초고속 문맥 검색과 완벽한 자막 동기화 시청(Search & Sync)** 경험에만 100% 집중한 MVP(Minimum Viable Product) 화면 및 기능 명세서입니다.
 
@@ -13,7 +13,7 @@
 ### 1.1. 상단 네비게이션 바 (GNB)
 
 - 위치 및 배경: 화면 최상단 고정(Sticky). 스크롤 시 bg-base 기반에 블러(Blur) 효과를 적용하여 시각적 깊이감 제공. 좌우 여백은 space-layout-screen 강제 적용.
-- 로고 (좌측): kcontext 텍스트 로고(text-primary, type-heading). 터치 시 홈 화면으로 라우팅되며 기존 검색 상태를 초기화.
+- 로고 (좌측): tubelang 로고(text-primary, type-heading). 터치 시 홈 화면으로 라우팅되며 기존 검색 상태를 초기화.
 - 글로벌 검색창 (우측/중앙 확장 - 핵심 연속 탐색 UI):
     - 홈 화면에서는 숨김 처리되며, '검색 결과 및 플레이어 화면' 진입 시 GNB 영역에 노출.
     - 영상을 시청하다가 다른 단어나 문법이 궁금해졌을 때, 뒤로 가기나 홈으로 돌아갈 필요 없이 즉시 새로운 검색을 실행할 수 있도록 지원.

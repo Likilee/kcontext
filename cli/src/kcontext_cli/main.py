@@ -1,12 +1,12 @@
-"""kcontext CLI - YouTube subtitle data pipeline."""
+"""tubelang CLI - YouTube subtitle data pipeline."""
 
 import typer
 
 from kcontext_cli.commands import build, fetch, fetch_list, list_cmd, push
 
 app = typer.Typer(
-    name="kcontext",
-    help="kcontext data pipeline: fetch, build, push YouTube subtitle data to Supabase.",
+    name="tubelang",
+    help="tubelang data pipeline: fetch, build, push YouTube subtitle data to Supabase.",
     no_args_is_help=True,
 )
 

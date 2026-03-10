@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { YouTubePlayerHandle } from "@/components/youtube-player";
 import { YouTubePlayer } from "@/components/youtube-player";
 import { SupabaseSubtitleRepository } from "@/infrastructure/adapters/supabase-subtitle-repository";
+import type { SiteConfig } from "@/lib/site-config";
 import { useKeyboardShortcuts } from "@/lib/use-keyboard-shortcuts";
 import { useSubtitleSync } from "@/lib/use-subtitle-sync";
 
@@ -21,7 +22,11 @@ const PRE_ROLL_SECONDS = 0.7;
 const EMPTY_RESULT_TEXT =
   "Hmm, even native speakers rarely use this exact phrase. Try searching for a shorter keyword.";
 
-export function SearchPageClient() {
+interface SearchPageClientProps {
+  siteConfig: SiteConfig;
+}
+
+export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const query = (searchParams.get("q") ?? "").trim();
@@ -135,6 +140,7 @@ export function SearchPageClient() {
     <main className="relative min-h-screen bg-[var(--bg-base)] pb-[calc(var(--space-layout-section)+var(--space-safe-bottom))]">
       <TopNavigation
         mode="search"
+        siteConfig={siteConfig}
         searchValue={searchInput}
         onSearchValueChange={setSearchInput}
         onSearchSubmit={executeSearch}

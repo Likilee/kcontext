@@ -1,4 +1,4 @@
-# kcontext CLI
+# tubelang CLI
 
 YouTube 자막 데이터를 `list -> fetch -> build -> push` 파이프라인으로 적재하는 CLI입니다.
 
@@ -51,30 +51,30 @@ export KCONTEXT_YOUTUBE_PROXY_URL=http://127.0.0.1:8118
 
 ```bash
 # channel/playlist에서 video ID 추출
-uv run kcontext list "https://www.youtube.com/@sebasi15/videos" --limit 50
+uv run tubelang list "https://www.youtube.com/@sebasi15/videos" --limit 50
 
 # 프록시 사용
-uv run kcontext list "https://www.youtube.com/@sebasi15/videos" \
+uv run tubelang list "https://www.youtube.com/@sebasi15/videos" \
   --limit 50 \
   --youtube-proxy-url http://127.0.0.1:8118
 
 # 수동 한국어 자막 영상만 추출
-uv run kcontext list "https://www.youtube.com/@sebasi15/videos" \
+uv run tubelang list "https://www.youtube.com/@sebasi15/videos" \
   --manual-ko-only \
   --limit 50 \
   --probe-max-candidates 500
 
 # 단일 fetch
-uv run kcontext fetch "VIDEO_ID" -o /tmp/VIDEO_ID_raw.json
+uv run tubelang fetch "VIDEO_ID" -o /tmp/VIDEO_ID_raw.json
 
 # 일괄 fetch
-uv run kcontext fetch-list /tmp/video_ids.txt -d /tmp/raw
+uv run tubelang fetch-list /tmp/video_ids.txt -d /tmp/raw
 
 # build
-uv run kcontext build /tmp/VIDEO_ID_raw.json -d /tmp/build
+uv run tubelang build /tmp/VIDEO_ID_raw.json -d /tmp/build
 
 # push
-uv run kcontext push \
+uv run tubelang push \
   -s /tmp/build/VIDEO_ID_storage.json \
   -vc /tmp/build/VIDEO_ID_video.csv \
   -sc /tmp/build/VIDEO_ID_subtitle.csv

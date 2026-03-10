@@ -65,15 +65,15 @@ curl -s -x http://127.0.0.1:8118 https://httpbin.org/ip
 # 방법 1) 환경변수 (권장)
 export KCONTEXT_YOUTUBE_PROXY_URL=http://127.0.0.1:8118
 
-uv run kcontext list "https://www.youtube.com/@sebasi15/videos" --limit 3 > /tmp/kcontext_manual/video_ids.txt
+uv run tubelang list "https://www.youtube.com/@sebasi15/videos" --limit 3 > /tmp/kcontext_manual/video_ids.txt
 VIDEO_ID="$(head -n 1 /tmp/kcontext_manual/video_ids.txt)"
-uv run kcontext fetch "$VIDEO_ID" -o "/tmp/kcontext_manual/${VIDEO_ID}_raw.json"
-uv run kcontext fetch-list /tmp/kcontext_manual/video_ids.txt -d /tmp/kcontext_manual
+uv run tubelang fetch "$VIDEO_ID" -o "/tmp/kcontext_manual/${VIDEO_ID}_raw.json"
+uv run tubelang fetch-list /tmp/kcontext_manual/video_ids.txt -d /tmp/kcontext_manual
 ```
 
 ```bash
 # 방법 2) 명령 옵션 (환경변수보다 우선)
-uv run kcontext list "https://www.youtube.com/@sebasi15/videos" --limit 3 \
+uv run tubelang list "https://www.youtube.com/@sebasi15/videos" --limit 3 \
   --youtube-proxy-url http://127.0.0.1:8118
 ```
 
@@ -99,7 +99,7 @@ uv run pytest -q
 ```bash
 cd /Users/kihoon/Documents/Project/dozboon/products/kcontext/cli
 mkdir -p /tmp/kcontext_manual
-uv run kcontext list "https://www.youtube.com/@sebasi15/videos" --limit 3 > /tmp/kcontext_manual/video_ids.txt
+uv run tubelang list "https://www.youtube.com/@sebasi15/videos" --limit 3 > /tmp/kcontext_manual/video_ids.txt
 cat /tmp/kcontext_manual/video_ids.txt
 ```
 
@@ -111,7 +111,7 @@ cat /tmp/kcontext_manual/video_ids.txt
 수동 한국어 자막 있는 영상만 받고 싶으면:
 
 ```bash
-uv run kcontext list "https://www.youtube.com/@sebasi15/videos" \
+uv run tubelang list "https://www.youtube.com/@sebasi15/videos" \
   --limit 3 \
   --manual-ko-only \
   --probe-max-candidates 30 > /tmp/kcontext_manual/video_ids.txt
@@ -121,7 +121,7 @@ uv run kcontext list "https://www.youtube.com/@sebasi15/videos" \
 
 ```bash
 VIDEO_ID="$(head -n 1 /tmp/kcontext_manual/video_ids.txt)"
-uv run kcontext fetch "$VIDEO_ID" -o "/tmp/kcontext_manual/${VIDEO_ID}_raw.json"
+uv run tubelang fetch "$VIDEO_ID" -o "/tmp/kcontext_manual/${VIDEO_ID}_raw.json"
 ```
 
 통과 기준:
@@ -146,7 +146,7 @@ PY
 여러 ID를 한 번에 가져오려면:
 
 ```bash
-uv run kcontext fetch-list /tmp/kcontext_manual/video_ids.txt -d /tmp/kcontext_manual
+uv run tubelang fetch-list /tmp/kcontext_manual/video_ids.txt -d /tmp/kcontext_manual
 ```
 
 옵션:
@@ -156,7 +156,7 @@ uv run kcontext fetch-list /tmp/kcontext_manual/video_ids.txt -d /tmp/kcontext_m
 ### Step C. build
 
 ```bash
-uv run kcontext build "/tmp/kcontext_manual/${VIDEO_ID}_raw.json" -d /tmp/kcontext_manual
+uv run tubelang build "/tmp/kcontext_manual/${VIDEO_ID}_raw.json" -d /tmp/kcontext_manual
 ls -1 /tmp/kcontext_manual/${VIDEO_ID}_*
 ```
 
@@ -172,7 +172,7 @@ ls -1 /tmp/kcontext_manual/${VIDEO_ID}_*
 ### Step D. push
 
 ```bash
-uv run kcontext push \
+uv run tubelang push \
   -s "/tmp/kcontext_manual/${VIDEO_ID}_storage.json" \
   -vc "/tmp/kcontext_manual/${VIDEO_ID}_video.csv" \
   -sc "/tmp/kcontext_manual/${VIDEO_ID}_subtitle.csv"
@@ -235,7 +235,7 @@ VIDEO_ID="$(head -n 1 /tmp/kcontext_manual/video_ids.txt)"
 ### 1차 업로드
 
 ```bash
-uv run kcontext push \
+uv run tubelang push \
   -s "/tmp/kcontext_manual/${VIDEO_ID}_storage.json" \
   -vc "/tmp/kcontext_manual/${VIDEO_ID}_video.csv" \
   -sc "/tmp/kcontext_manual/${VIDEO_ID}_subtitle.csv"
@@ -258,7 +258,7 @@ PY
 ### 2차 업로드
 
 ```bash
-uv run kcontext push \
+uv run tubelang push \
   -s "/tmp/kcontext_manual/${VIDEO_ID}_storage.json" \
   -vc "/tmp/kcontext_manual/${VIDEO_ID}_video.csv" \
   -sc "/tmp/kcontext_manual/${VIDEO_ID}_subtitle_one_row.csv"
@@ -290,35 +290,35 @@ PY
 ### Case A. list 잘못된 URL
 
 ```bash
-uv run kcontext list "not-a-url"
+uv run tubelang list "not-a-url"
 echo $?
 ```
 
 ### Case B. fetch 잘못된 video_id
 
 ```bash
-uv run kcontext fetch "invalid_id" -o /tmp/kcontext_manual/invalid_raw.json
+uv run tubelang fetch "invalid_id" -o /tmp/kcontext_manual/invalid_raw.json
 echo $?
 ```
 
 ### Case C. build 입력 파일 없음
 
 ```bash
-uv run kcontext build /tmp/kcontext_manual/not-found.json -d /tmp/kcontext_manual
+uv run tubelang build /tmp/kcontext_manual/not-found.json -d /tmp/kcontext_manual
 echo $?
 ```
 
 ### Case D. push 입력 파일 없음
 
 ```bash
-uv run kcontext push -s /tmp/nope_storage.json -vc /tmp/nope_video.csv -sc /tmp/nope_subtitle.csv
+uv run tubelang push -s /tmp/nope_storage.json -vc /tmp/nope_video.csv -sc /tmp/nope_subtitle.csv
 echo $?
 ```
 
 ### Case E. 지원하지 않는 프록시 스킴
 
 ```bash
-uv run kcontext list "https://www.youtube.com/@sebasi15/videos" \
+uv run tubelang list "https://www.youtube.com/@sebasi15/videos" \
   --youtube-proxy-url "socks5://127.0.0.1:9050"
 echo $?
 ```

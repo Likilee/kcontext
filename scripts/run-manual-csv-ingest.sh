@@ -221,7 +221,7 @@ while IFS= read -r VIDEO_ID; do
     "$BUILD_DIR/${VIDEO_ID}_video.csv" \
     "$BUILD_DIR/${VIDEO_ID}_subtitle.csv"
 
-  FETCH_CMD=(uv run kcontext fetch -- "$VIDEO_ID" -o "$RAW_DIR/${VIDEO_ID}_raw.json")
+  FETCH_CMD=(uv run tubelang fetch -o "$RAW_DIR/${VIDEO_ID}_raw.json" -- "$VIDEO_ID")
   if [[ "$USE_PROXY" -eq 1 && -n "$PROXY_URL" ]]; then
     FETCH_CMD+=(--youtube-proxy-url "$PROXY_URL")
   fi
@@ -239,7 +239,7 @@ while IFS= read -r VIDEO_ID; do
     continue
   fi
 
-  if ! (cd "$ROOT_DIR/cli" && uv run kcontext build "$RAW_DIR/${VIDEO_ID}_raw.json" -d "$BUILD_DIR") >"$BUILD_LOG" 2>&1; then
+  if ! (cd "$ROOT_DIR/cli" && uv run tubelang build "$RAW_DIR/${VIDEO_ID}_raw.json" -d "$BUILD_DIR") >"$BUILD_LOG" 2>&1; then
     append_failure "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$VIDEO_ID" "build" "build_failed" "$BUILD_LOG"
     RUN_FAILED=$((RUN_FAILED + 1))
     continue
@@ -247,7 +247,7 @@ while IFS= read -r VIDEO_ID; do
 
   if ! (
     cd "$ROOT_DIR/cli" && \
-      uv run kcontext push \
+      uv run tubelang push \
         -s "$BUILD_DIR/${VIDEO_ID}_storage.json" \
         -vc "$BUILD_DIR/${VIDEO_ID}_video.csv" \
         -sc "$BUILD_DIR/${VIDEO_ID}_subtitle.csv"

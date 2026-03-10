@@ -95,7 +95,7 @@ mkdir -p "$WORKSPACE/raw" "$WORKSPACE/build" "$WORKSPACE/logs"
 
 echo "workspace: $WORKSPACE"
 
-LIST_CMD=(uv run kcontext list "$URL" --limit "$((TARGET * 4))")
+LIST_CMD=(uv run tubelang list "$URL" --limit "$((TARGET * 4))")
 if [[ "$MANUAL_KO_ONLY" -eq 1 ]]; then
   LIST_CMD+=(--manual-ko-only --probe-max-candidates "$PROBE_MAX_CANDIDATES")
 fi
@@ -147,7 +147,7 @@ while IFS= read -r VIDEO_ID; do
 
   echo "[$SUCCESS/$TARGET] $VIDEO_ID"
 
-  FETCH_CMD=(uv run kcontext fetch "$VIDEO_ID" -o "$WORKSPACE/raw/${VIDEO_ID}_raw.json")
+  FETCH_CMD=(uv run tubelang fetch "$VIDEO_ID" -o "$WORKSPACE/raw/${VIDEO_ID}_raw.json")
   if [[ "$USE_PROXY" -eq 1 && -n "$PROXY_URL" ]]; then
     FETCH_CMD+=(--youtube-proxy-url "$PROXY_URL")
   fi
@@ -158,13 +158,13 @@ while IFS= read -r VIDEO_ID; do
     continue
   fi
 
-  if ! uv run kcontext build "$WORKSPACE/raw/${VIDEO_ID}_raw.json" -d "$WORKSPACE/build" > /dev/null 2> "$WORKSPACE/logs/build_${VIDEO_ID}.log"; then
+  if ! uv run tubelang build "$WORKSPACE/raw/${VIDEO_ID}_raw.json" -d "$WORKSPACE/build" > /dev/null 2> "$WORKSPACE/logs/build_${VIDEO_ID}.log"; then
     echo "$VIDEO_ID" >> "$WORKSPACE/failed_ids.txt"
     FAILED=$((FAILED + 1))
     continue
   fi
 
-  if ! uv run kcontext push \
+  if ! uv run tubelang push \
     -s "$WORKSPACE/build/${VIDEO_ID}_storage.json" \
     -vc "$WORKSPACE/build/${VIDEO_ID}_video.csv" \
     -sc "$WORKSPACE/build/${VIDEO_ID}_subtitle.csv" \

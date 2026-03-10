@@ -24,15 +24,16 @@ interface SearchBarProps {
   inputId?: string;
   variant?: "hero" | "compact";
   dynamicPlaceholder?: boolean;
+  placeholderText?: string;
   ariaLabel?: string;
 }
 
-function useRollingPlaceholder(enabled: boolean): string {
-  const [placeholder, setPlaceholder] = useState(STATIC_PLACEHOLDER);
+function useRollingPlaceholder(enabled: boolean, staticPlaceholder: string): string {
+  const [placeholder, setPlaceholder] = useState(staticPlaceholder);
 
   useEffect(() => {
     if (!enabled) {
-      setPlaceholder(STATIC_PLACEHOLDER);
+      setPlaceholder(staticPlaceholder);
       return;
     }
 
@@ -89,7 +90,7 @@ function useRollingPlaceholder(enabled: boolean): string {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [enabled]);
+  }, [enabled, staticPlaceholder]);
 
   return placeholder;
 }
@@ -102,10 +103,14 @@ export function SearchBar({
   inputId,
   variant = "compact",
   dynamicPlaceholder = false,
+  placeholderText = STATIC_PLACEHOLDER,
   ariaLabel = "Search real Korean",
 }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const placeholder = useRollingPlaceholder(dynamicPlaceholder && value.length === 0);
+  const placeholder = useRollingPlaceholder(
+    dynamicPlaceholder && value.length === 0,
+    placeholderText,
+  );
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -131,7 +136,7 @@ export function SearchBar({
             ? "min-h-[calc(var(--space-layout-section)+var(--space-inset-squish-y))] pr-[calc(var(--space-layout-section)*2)] text-[length:var(--font-size-18)]"
             : "h-[calc(var(--space-layout-section)-var(--space-gap-item))] py-[calc(var(--space-inset-squish-y)-var(--space-gap-micro))] pr-[calc(var(--space-layout-section)*2)] text-[length:var(--font-size-16)]",
         )}
-        data-kcontext-search-input="true"
+        data-tubelang-search-input="true"
         autoComplete="off"
         aria-label={ariaLabel}
       />

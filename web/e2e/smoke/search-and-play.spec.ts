@@ -42,7 +42,7 @@ async function waitForSearchState(page: Page): Promise<"results" | "empty"> {
   return hasSummary ? "results" : "empty";
 }
 
-test.describe("kcontext User Scenarios", () => {
+test.describe("Tubelang User Scenarios", () => {
   test("Scenario 1: Home search routes to /search?q=", async ({ page }) => {
     await page.goto("/");
     await searchKeyword(page, "김치찌개");
