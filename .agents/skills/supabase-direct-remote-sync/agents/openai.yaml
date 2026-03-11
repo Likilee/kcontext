@@ -1,0 +1,4 @@
+interface:
+  display_name: "Supabase Direct Sync"
+  short_description: "Sync local Supabase data to remote via DB and S3."
+  default_prompt: "Use $supabase-direct-remote-sync to sync local kcontext video, subtitle, and storage data to the remote Supabase project with a prompted DB password."
