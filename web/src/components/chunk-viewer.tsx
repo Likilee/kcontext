@@ -24,21 +24,32 @@ export function ChunkViewer({
 
   if (isLoading) {
     content = (
-      <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
-        Loading subtitles...
-      </p>
+      <output
+        aria-label="Loading subtitles"
+        aria-live="polite"
+        className="flex h-full flex-col justify-center gap-[var(--space-gap-group)]"
+      >
+        <div className="flex flex-col items-center gap-[var(--space-gap-item)]">
+          <div className="h-[var(--font-size-20)] w-11/12 animate-pulse rounded-[var(--radius-04)] bg-[var(--bg-surface-hover)]" />
+          <div className="h-[var(--font-size-20)] w-8/12 animate-pulse rounded-[var(--radius-04)] bg-[var(--bg-surface-hover)]" />
+        </div>
+      </output>
     );
   } else if (text !== null) {
     content = (
-      <p className="break-keep text-center font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-20)] font-medium leading-[var(--line-height-relaxed)] text-[var(--text-primary)]">
-        {renderHighlightedText(text, keyword)}
-      </p>
+      <div className="grid h-full place-items-center">
+        <div className="max-h-full w-full overflow-y-auto">
+          <p className="break-keep text-center font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-20)] font-medium leading-[var(--line-height-relaxed)] text-[var(--text-primary)]">
+            {renderHighlightedText(text, keyword)}
+          </p>
+        </div>
+      </div>
     );
   }
 
   return (
     <Card data-testid="chunk-viewer" className={className}>
-      <CardContent className={cn("min-h-[calc(var(--space-layout-section)*2)]", contentClassName)}>
+      <CardContent className={cn("h-[calc(var(--space-layout-section)*2)]", contentClassName)}>
         {content}
       </CardContent>
     </Card>
