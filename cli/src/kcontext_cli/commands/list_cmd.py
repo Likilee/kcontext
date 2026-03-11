@@ -9,6 +9,8 @@ import typer
 from kcontext_cli.network.proxy import (
     YOUTUBE_PROXY_OPTION_HELP,
     build_ytdlp_proxy_args,
+    classify_proxy_failure_message,
+    describe_proxy_target,
     resolve_youtube_proxy_url,
 )
 
@@ -46,13 +48,7 @@ def _run_ytdlp_list(url: str, playlist_end: int, youtube_proxy_url: str | None) 
 
     if result.returncode != 0:
         message = result.stderr.strip()
-        if youtube_proxy_url is None:
-            typer.echo(f"Error: yt-dlp failed: {message}", err=True)
-        else:
-            typer.echo(
-                f"Error: yt-dlp failed via proxy {youtube_proxy_url}: {message}",
-                err=True,
-            )
+        _emit_list_failure("yt-dlp failed", message, youtube_proxy_url)
         raise typer.Exit(code=1)
 
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
@@ -86,11 +82,7 @@ def _has_manual_ko_subtitle(video_id: str, youtube_proxy_url: str | None) -> boo
         if youtube_proxy_url is None:
             typer.echo(f"Warning: Failed to probe subtitles for {video_id}: {message}", err=True)
             return False
-        typer.echo(
-            f"Error: Failed to probe subtitles for {video_id} "
-            f"via proxy {youtube_proxy_url}: {message}",
-            err=True,
-        )
+        _emit_list_failure(f"probe subtitles for {video_id}", message, youtube_proxy_url)
         raise typer.Exit(code=1)
 
     try:
@@ -124,6 +116,18 @@ def _save_probe_cache(cache_file: Path, cache: dict[str, bool]) -> None:
     cache_file.parent.mkdir(parents=True, exist_ok=True)
     with open(cache_file, "w", encoding="utf-8") as file_obj:
         json.dump(cache, file_obj, ensure_ascii=False, indent=2, sort_keys=True)
+
+
+def _emit_list_failure(action: str, message: str, youtube_proxy_url: str | None) -> None:
+    error_class = classify_proxy_failure_message(message)
+    prefix = f"Error [{error_class}]" if error_class is not None else "Error"
+
+    if youtube_proxy_url is None:
+        typer.echo(f"{prefix}: {action}: {message}", err=True)
+        return
+
+    proxy_target = describe_proxy_target(youtube_proxy_url) or "<invalid-proxy>"
+    typer.echo(f"{prefix}: {action} via proxy {proxy_target}: {message}", err=True)
 
 
 def list_videos(
@@ -160,7 +164,8 @@ def list_videos(
         raise typer.Exit(code=1) from exc
 
     if resolved_proxy_url is not None:
-        typer.echo(f"Using YouTube proxy: {resolved_proxy_url}", err=True)
+        proxy_target = describe_proxy_target(resolved_proxy_url) or "<invalid-proxy>"
+        typer.echo(f"Using YouTube proxy: {proxy_target}", err=True)
 
     if manual_ko_only:
         candidate_limit = max(limit, probe_max_candidates)

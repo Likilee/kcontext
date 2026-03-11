@@ -281,3 +281,38 @@ def test_list_manual_ko_only_exits_on_proxy_probe_failure():
         )
 
     assert result.exit_code == 1
+
+
+def test_list_redacts_proxy_in_output():
+    mock_result = subprocess.CompletedProcess(args=[], returncode=0, stdout="id1\n", stderr="")
+    proxy_url = "http://user:password@proxy.example.com:10001"
+
+    with patch("subprocess.run", return_value=mock_result):
+        result = runner.invoke(
+            app,
+            ["list", "https://youtube.com/@channel", "--youtube-proxy-url", proxy_url],
+        )
+
+    assert result.exit_code == 0
+    assert "Using YouTube proxy: proxy.example.com:10001" in result.output
+    assert "user:password" not in result.output
+
+
+def test_list_tags_proxy_unreachable_failure():
+    proxy_url = "http://user:password@proxy.example.com:10001"
+    mock_result = subprocess.CompletedProcess(
+        args=[],
+        returncode=1,
+        stdout="",
+        stderr="Connection refused",
+    )
+
+    with patch("subprocess.run", return_value=mock_result):
+        result = runner.invoke(
+            app,
+            ["list", "https://youtube.com/@channel", "--youtube-proxy-url", proxy_url],
+        )
+
+    assert result.exit_code == 1
+    assert "Error [proxy_unreachable]" in result.output
+    assert "proxy.example.com:10001" in result.output

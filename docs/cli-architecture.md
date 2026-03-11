@@ -60,9 +60,12 @@ Raw JSON을 입력받아 Track A(DB)와 Track B(Storage) 인프라 스키마에 
 ## 4. YouTube Proxy Policy
 
 - Env var: `KCONTEXT_YOUTUBE_PROXY_URL`
+- Env var: `KCONTEXT_YOUTUBE_PROXY_PROVIDER=generic|decodo`
+- Decodo env vars: `DECODO_PROXY_SCHEME`, `DECODO_PROXY_HOST`, `DECODO_PROXY_PORT`, `DECODO_PROXY_USERNAME`, `DECODO_PROXY_PASSWORD`
 - CLI option: `--youtube-proxy-url`
-- 우선순위: CLI option > env var > 미사용
+- 우선순위: CLI option > env var > `decodo` provider env 조합 > 미사용
 - 지원 스킴: `http://`, `https://` (torproxy 권장: `http://127.0.0.1:8118`)
+- Decodo provider는 generic URL이 없을 때 env 조합으로 `http://user:pass@host:port`를 생성한다.
 - 실패 정책: 프록시 사용 중 차단/연결 실패 시 즉시 종료(`exit 1`), direct 연결로 자동 폴백하지 않음
 
 ## 5. End-to-End Orchestration (Shell Script)

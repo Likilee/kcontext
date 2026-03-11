@@ -5,7 +5,16 @@ from pathlib import Path
 import typer
 
 from kcontext_cli.commands import fetch
-from kcontext_cli.network.proxy import YOUTUBE_PROXY_OPTION_HELP, resolve_youtube_proxy_url
+from kcontext_cli.fetch_backends.base import (
+    DEFAULT_FETCH_BACKEND,
+    FETCH_BACKEND_OPTION_HELP,
+    normalize_fetch_backend_name,
+)
+from kcontext_cli.network.proxy import (
+    YOUTUBE_PROXY_OPTION_HELP,
+    describe_proxy_target,
+    resolve_youtube_proxy_url,
+)
 
 
 def _load_video_ids(video_ids_file: Path) -> list[str]:
@@ -33,6 +42,11 @@ def fetch_list(
         "--strict",
         help="Exit with code 1 on the first failed fetch.",
     ),
+    fetch_backend: str = typer.Option(
+        DEFAULT_FETCH_BACKEND,
+        "--fetch-backend",
+        help=FETCH_BACKEND_OPTION_HELP,
+    ),
     youtube_proxy_url: str | None = typer.Option(
         None,
         "--youtube-proxy-url",
@@ -41,13 +55,24 @@ def fetch_list(
 ) -> None:
     """Fetch raw JSON files for all video IDs listed in a text file."""
     try:
-        resolved_proxy_url = resolve_youtube_proxy_url(youtube_proxy_url)
+        normalized_backend = normalize_fetch_backend_name(fetch_backend)
     except ValueError as exc:
         typer.echo(f"Error: {exc}", err=True)
         raise typer.Exit(code=1) from exc
 
-    if resolved_proxy_url is not None:
-        typer.echo(f"Using YouTube proxy: {resolved_proxy_url}", err=True)
+    resolved_proxy_url: str | None = None
+    if normalized_backend == "ytdlp":
+        try:
+            resolved_proxy_url = resolve_youtube_proxy_url(youtube_proxy_url)
+        except ValueError as exc:
+            typer.echo(f"Error: {exc}", err=True)
+            raise typer.Exit(code=1) from exc
+
+        if resolved_proxy_url is not None:
+            proxy_target = describe_proxy_target(resolved_proxy_url) or "<invalid-proxy>"
+            typer.echo(f"Using YouTube proxy: {proxy_target}", err=True)
+
+    typer.echo(f"Using fetch backend: {normalized_backend}", err=True)
 
     video_ids = _load_video_ids(video_ids_file)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -63,6 +88,7 @@ def fetch_list(
             fetch.fetch_subtitle(
                 video_id=video_id,
                 output=output_path,
+                fetch_backend=normalized_backend,
                 youtube_proxy_url=resolved_proxy_url,
             )
             success_count += 1

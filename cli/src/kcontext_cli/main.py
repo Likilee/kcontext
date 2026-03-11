@@ -2,7 +2,15 @@
 
 import typer
 
-from kcontext_cli.commands import build, fetch, fetch_list, list_cmd, push
+from kcontext_cli.commands import (
+    build,
+    build_metadata,
+    fetch,
+    fetch_list,
+    list_cmd,
+    push,
+    push_metadata,
+)
 
 app = typer.Typer(
     name="tubelang",
@@ -14,7 +22,9 @@ app.command(name="list")(list_cmd.list_videos)
 app.command(name="fetch")(fetch.fetch_subtitle)
 app.command(name="fetch-list")(fetch_list.fetch_list)
 app.command(name="build")(build.build_artifacts)
+app.command(name="build-metadata")(build_metadata.build_metadata_artifact)
 app.command(name="push")(push.push_data)
+app.command(name="push-metadata")(push_metadata.push_metadata)
 
 if __name__ == "__main__":
     app()
