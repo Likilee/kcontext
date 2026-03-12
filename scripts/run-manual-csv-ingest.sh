@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RAW_CSV_PATH="$ROOT_DIR/docs/manual_ko_subtitle_videos.csv"
 FILTERED_CSV_PATH="$ROOT_DIR/docs/manual_ko_subtitle_videos_filtered.csv"
 CSV_PATH="$FILTERED_CSV_PATH"
-WORKSPACE="$ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_full"
+WORKSPACE="$ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_filtered_full"
 MAX_VIDEOS_PER_RUN=0
 FETCH_BACKEND="ytdlp"
 PROXY_URL="${KCONTEXT_YOUTUBE_PROXY_URL:-}"
@@ -18,7 +18,7 @@ Usage: $0 [options]
 
 Options:
   --csv <path>                 CSV file to ingest (default: $ROOT_DIR/docs/manual_ko_subtitle_videos_filtered.csv)
-  --workspace <path>           Resume workspace (default: $ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_full)
+  --workspace <path>           Resume workspace (default: $ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_filtered_full)
   --max-videos-per-run <n>     Max videos to process this run (default: all remaining)
   --fetch-backend <name>       Fetch backend: ytdlp | decodo-scraper (default: ytdlp)
   --proxy-url <url>            Proxy URL for YouTube requests

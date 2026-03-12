@@ -2,6 +2,7 @@ import pytest
 
 from kcontext_cli.fetch_backends import decodo_scraper_backend
 from kcontext_cli.fetch_backends.base import FetchBackendError
+from kcontext_cli.network.decodo_scraper_api import DecodoScraperApiError, _classify_api_failure
 
 MOCK_SUBTITLES_PAYLOAD = {
     "results": [
@@ -76,7 +77,10 @@ def test_decodo_scraper_fetch_normalizes_payload(mocker) -> None:
         side_effect=[MOCK_SUBTITLES_PAYLOAD, MOCK_METADATA_PAYLOAD],
     )
 
-    result = decodo_scraper_backend.fetch("test_abc123")
+    result = decodo_scraper_backend.fetch(
+        "test_abc123",
+        default_audio_language_code="ko",
+    )
 
     assert result.metadata.video_id == "test_abc123"
     assert result.metadata.title == "Decodo 제목"
@@ -116,7 +120,10 @@ def test_decodo_scraper_requires_uploader_provided_ko(mocker) -> None:
     )
 
     with pytest.raises(FetchBackendError, match="No manual Korean subtitle found"):
-        decodo_scraper_backend.fetch("test_abc123")
+        decodo_scraper_backend.fetch(
+            "test_abc123",
+            default_audio_language_code="ko",
+        )
 
 
 def test_decodo_scraper_rejects_unexpected_metadata_shape(mocker) -> None:
@@ -131,4 +138,44 @@ def test_decodo_scraper_rejects_unexpected_metadata_shape(mocker) -> None:
     )
 
     with pytest.raises(FetchBackendError, match="metadata response is missing results"):
-        decodo_scraper_backend.fetch("test_abc123")
+        decodo_scraper_backend.fetch(
+            "test_abc123",
+            default_audio_language_code="ko",
+        )
+
+
+def test_decodo_scraper_surfaces_decodo_target_failure(mocker) -> None:
+    mocker.patch(
+        "kcontext_cli.fetch_backends.decodo_scraper_backend.resolve_decodo_scraper_api_config",
+        return_value=object(),
+    )
+    mocker.patch(
+        "kcontext_cli.fetch_backends.decodo_scraper_backend.post_scrape_request",
+        side_effect=DecodoScraperApiError(
+            "We were not able to scrape the target. (status_code=613, task_id=7437926550256772097)",
+            error_class="api_target_failed",
+        ),
+    )
+
+    with pytest.raises(FetchBackendError) as exc_info:
+        decodo_scraper_backend.fetch(
+            "test_abc123",
+            default_audio_language_code="ko",
+        )
+
+    assert exc_info.value.error_class == "api_target_failed"
+    assert "status_code=613" in str(exc_info.value)
+    assert "task_id=7437926550256772097" in str(exc_info.value)
+
+
+def test_classify_api_failure_for_decodo_root_failed_status() -> None:
+    payload = {
+        "root": {
+            "status": "failed",
+            "status_code": 613,
+            "message": "We were not able to scrape the target.",
+            "task_id": "7437926550256772097",
+        }
+    }
+
+    assert _classify_api_failure(payload) == "api_target_failed"

@@ -23,6 +23,8 @@ Prompt for the remote DB password every run. Do not persist it to files or shell
 ```
 
 The wrapper always asks for the remote DB password before it runs a sync or status command.
+The default incremental state DB now points at the filtered canonical corpus:
+`/Users/kihoon/Documents/Project/dozboon/products/kcontext/cli/.state/direct_remote_sync_filtered.sqlite`.
 
 ## Workflow
 

@@ -30,7 +30,7 @@ DEFAULT_LOCAL_DB_PASSWORD = "postgres"
 DEFAULT_LOCAL_DB_NAME = "postgres"
 DEFAULT_LOCAL_SUPABASE_URL = "http://127.0.0.1:54321"
 DEFAULT_STORAGE_BUCKET = "subtitles"
-DEFAULT_STATE_DB = ".state/direct_remote_sync.sqlite"
+DEFAULT_STATE_DB = ".state/direct_remote_sync_filtered.sqlite"
 PsycopgConnection = Any
 
 

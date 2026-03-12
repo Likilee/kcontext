@@ -69,7 +69,8 @@ def _extract_manual_ko_subtitle(payload: dict, video_id: str) -> dict:
     content = result.get("content")
     if not isinstance(content, dict):
         raise FetchBackendError(
-            "Decodo scraper subtitles response content is missing.",
+            "Decodo scraper subtitles response content is missing. "
+            f"{_describe_payload_shape(payload)}",
             error_class="api_unexpected_schema",
         )
 
@@ -84,7 +85,8 @@ def _extract_manual_ko_subtitle(payload: dict, video_id: str) -> dict:
     events = manual_ko.get("events")
     if not isinstance(events, list):
         raise FetchBackendError(
-            f"Manual Korean subtitle payload for {video_id} is missing events.",
+            f"Manual Korean subtitle payload for {video_id} is missing events. "
+            f"{_describe_payload_shape(payload)}",
             error_class="api_unexpected_schema",
         )
 
@@ -101,14 +103,16 @@ def _normalize_metadata(
     content = result.get("content")
     if not isinstance(content, dict):
         raise FetchBackendError(
-            "Decodo scraper metadata response content is missing.",
+            "Decodo scraper metadata response content is missing. "
+            f"{_describe_payload_shape(payload)}",
             error_class="api_unexpected_schema",
         )
 
     raw_metadata = content.get("results")
     if not isinstance(raw_metadata, dict):
         raise FetchBackendError(
-            "Decodo scraper metadata response is missing results.",
+            "Decodo scraper metadata response is missing results. "
+            f"{_describe_payload_shape(payload)}",
             error_class="api_unexpected_schema",
         )
 
@@ -141,10 +145,48 @@ def _first_result(payload: dict) -> dict:
     results = payload.get("results")
     if not isinstance(results, list) or not results or not isinstance(results[0], dict):
         raise FetchBackendError(
-            "Decodo scraper response is missing results.",
+            f"Decodo scraper response is missing results. {_describe_payload_shape(payload)}",
             error_class="api_unexpected_schema",
         )
     return results[0]
+
+
+def _describe_payload_shape(payload: object) -> str:
+    if not isinstance(payload, dict):
+        return f"payload_type={type(payload).__name__}"
+
+    top_keys = sorted(str(key) for key in payload)
+    results = payload.get("results")
+    if not isinstance(results, list):
+        return (
+            f"payload_keys={top_keys} "
+            f"results_type={type(results).__name__ if results is not None else 'None'}"
+        )
+
+    if not results:
+        return f"payload_keys={top_keys} results_type=list results_len=0"
+
+    first = results[0]
+    if not isinstance(first, dict):
+        return (
+            f"payload_keys={top_keys} results_type=list results_len={len(results)} "
+            f"first_type={type(first).__name__}"
+        )
+
+    first_keys = sorted(str(key) for key in first)
+    content = first.get("content")
+    if not isinstance(content, dict):
+        return (
+            f"payload_keys={top_keys} results_len={len(results)} "
+            f"first_keys={first_keys} "
+            f"content_type={type(content).__name__ if content is not None else 'None'}"
+        )
+
+    content_keys = sorted(str(key) for key in content)
+    return (
+        f"payload_keys={top_keys} results_len={len(results)} "
+        f"first_keys={first_keys} content_keys={content_keys[:20]}"
+    )
 
 
 def _pick_thumbnail(primary: object, thumbnails: object) -> str | None:

@@ -52,5 +52,5 @@ before restarting ingest.
 - `youtube_rate_limited`: upstream YouTube still returned 429 / blocked the request
 - `ok`: metadata fetch and subtitle fetch both succeeded
 
-The ingest workspace keeps resumable state in `cli/.state/manual_csv_ingest/manual_ko_full`.
+The ingest workspace keeps resumable state in `cli/.state/manual_csv_ingest/manual_ko_filtered_full`.
 Proxy credentials are redacted in CLI logs and summaries.

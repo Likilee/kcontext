@@ -2,12 +2,12 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WORKSPACE="$ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_full"
+WORKSPACE="$ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_filtered_full"
 DECORDO_ENV_FILE="$ROOT_DIR/.env.decodo"
 REMOTE_ENV_FILE="$ROOT_DIR/.env.remote-sync"
 PARALLEL_RUNNER="$ROOT_DIR/scripts/run-manual-csv-ingest-parallel.sh"
 DIRECT_SYNC_WORKER="$ROOT_DIR/.agents/skills/supabase-direct-remote-sync/scripts/direct_remote_sync.py"
-DIRECT_SYNC_STATE_DB="$ROOT_DIR/cli/.state/direct_remote_sync.sqlite"
+DIRECT_SYNC_STATE_DB="$ROOT_DIR/cli/.state/direct_remote_sync_filtered.sqlite"
 SUPERVISOR_DIR="$WORKSPACE/supervisor"
 INGEST_SUMMARY_PATH="$WORKSPACE/run_summary.json"
 INGEST_LOG=""
@@ -28,11 +28,13 @@ Usage: $0 [options]
 
 Options:
   --workspace <path>                    Main ingest workspace
-                                        (default: $ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_full)
+                                        (default: $ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_filtered_full)
   --decodo-env-file <path>              Decodo scraper env file
                                         (default: $ROOT_DIR/.env.decodo)
   --remote-env-file <path>              Remote sync env file
                                         (default: $ROOT_DIR/.env.remote-sync)
+  --remote-state-db <path>              Direct remote sync state DB
+                                        (default: $ROOT_DIR/cli/.state/direct_remote_sync_filtered.sqlite)
   --ingest-concurrency <n>              Initial Decodo worker count (default: 12)
   --ingest-max-videos <n>               Max videos per ingest run (default: 5000)
   --healthcheck-interval-seconds <n>    Progress check interval (default: 300)
@@ -60,6 +62,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --remote-env-file)
       REMOTE_ENV_FILE="$2"
+      shift 2
+      ;;
+    --remote-state-db)
+      DIRECT_SYNC_STATE_DB="$2"
       shift 2
       ;;
     --ingest-concurrency)
