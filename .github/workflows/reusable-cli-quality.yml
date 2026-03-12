@@ -1,0 +1,24 @@
+name: "Reusable - CLI quality"
+
+on:
+  workflow_call:
+
+jobs:
+  cli-quality:
+    name: "CLI: Lint"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-cli
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .

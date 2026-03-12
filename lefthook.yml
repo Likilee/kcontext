@@ -14,6 +14,26 @@ pre-commit:
       glob: "cli/**/*.py"
       run: cd cli && uv run ruff format --check .
 
+pre-push:
+  parallel: false
+  commands:
+    web-lint:
+      run: cd web && pnpm lint
+    web-arch:
+      run: cd web && pnpm lint:arch
+    cli-ruff-check:
+      run: cd cli && uv run ruff check .
+    cli-ruff-format:
+      run: cd cli && uv run ruff format --check .
+    web-typecheck:
+      run: cd web && pnpm tsc --noEmit
+    web-test:
+      run: cd web && pnpm test
+    web-build:
+      run: cd web && pnpm build
+    web-e2e-smoke:
+      run: make e2e-smoke
+
 commit-msg:
   commands:
     commitlint:

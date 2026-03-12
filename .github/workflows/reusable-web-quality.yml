@@ -1,0 +1,33 @@
+name: "Reusable - Web quality"
+
+on:
+  workflow_call:
+
+jobs:
+  web-quality:
+    name: "Web: Lint & Test"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-web
+
+      - name: Biome check
+        run: pnpm lint
+
+      - name: Architecture check (Sheriff)
+        run: pnpm lint:arch
+
+      - name: TypeScript type check
+        run: pnpm tsc --noEmit
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build

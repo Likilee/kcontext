@@ -1,0 +1,25 @@
+name: "Push Main"
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  precommit-parity:
+    name: "Pre-commit parity"
+    uses: ./.github/workflows/reusable-precommit-parity.yml
+    with:
+      base_sha: ${{ github.event.before }}
+      head_sha: ${{ github.sha }}
+
+  web-quality:
+    name: "Web: Lint & Test"
+    uses: ./.github/workflows/reusable-web-quality.yml
+
+  web-e2e-smoke:
+    name: "Web: E2E Smoke"
+    uses: ./.github/workflows/reusable-web-e2e-smoke.yml
+
+  cli-quality:
+    name: "CLI: Lint"
+    uses: ./.github/workflows/reusable-cli-quality.yml

@@ -1,0 +1,15 @@
+name: "Setup supabase"
+description: "Install the Supabase CLI for GitHub Actions jobs."
+
+inputs:
+  version:
+    description: "Supabase CLI version."
+    required: false
+    default: "2.67.1"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: supabase/setup-cli@v1
+      with:
+        version: ${{ inputs.version }}

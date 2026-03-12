@@ -1,0 +1,22 @@
+name: "Setup cli"
+description: "Install Python, uv, and CLI dependencies for GitHub Actions jobs."
+
+inputs:
+  install-dependencies:
+    description: "Install CLI dependencies with uv sync."
+    required: false
+    default: "true"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: astral-sh/setup-uv@v5
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - if: ${{ inputs.install-dependencies == 'true' }}
+      name: Install cli dependencies
+      shell: bash
+      run: cd cli && uv sync

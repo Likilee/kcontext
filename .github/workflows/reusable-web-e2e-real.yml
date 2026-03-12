@@ -1,0 +1,40 @@
+name: "Reusable - Web E2E CLI integration"
+
+on:
+  workflow_call:
+
+jobs:
+  web-e2e-real:
+    name: "Web: Fixture-backed CLI integration"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-web
+        with:
+          install-playwright: "true"
+
+      - uses: ./.github/actions/setup-cli
+
+      - uses: ./.github/actions/setup-supabase
+
+      - name: Run fixture-backed CLI integration flow
+        env:
+          CI: true
+        run: ./scripts/integration-test.sh
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-cli-integration-artifacts
+          path: |
+            web/test-results
+            web/playwright-report
+          if-no-files-found: ignore
+
+      - name: Stop isolated E2E stack
+        if: always()
+        run: make e2e-down
