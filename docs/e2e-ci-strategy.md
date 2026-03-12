@@ -58,8 +58,7 @@
 - `pre-commit`
   - Runs changed-file checks for Biome, Sheriff, and Ruff before commit.
 - `pre-push`
-  - Runs the local CI gate: web lint, architecture check, type check, unit tests, build, CLI Ruff checks, and `make e2e-smoke`.
-  - Smoke E2E runs before every push, including pushes to `main`.
+  - Runs the local CI gate: web lint, architecture check, type check, unit tests, build, and CLI Ruff checks.
 - `commit-msg`
   - Runs commitlint locally.
 
