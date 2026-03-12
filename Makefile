@@ -52,7 +52,7 @@ e2e-smoke: e2e-reset
 		export NEXT_PUBLIC_SUPABASE_URL="$$API_URL"; \
 		export NEXT_PUBLIC_SUPABASE_ANON_KEY="$$ANON_KEY"; \
 		export NEXT_PUBLIC_CDN_URL="$$API_URL/storage/v1/object/public"; \
-		export PLAYWRIGHT_BASE_URL="http://127.0.0.1:3100"; \
+		export PLAYWRIGHT_BASE_URL="http://localhost:3100"; \
 		export CI="true"; \
 		pnpm -C web test:e2e:smoke
 

@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 const EMPTY_STATE_TEXT = "even native speakers rarely use";
+const RESULT_READY_SELECTOR = '[data-testid="replay-context-btn"]';
 
 async function searchKeyword(page: Page, keyword: string) {
   const searchBar = page.locator('input[type="search"]').first();
@@ -10,17 +11,17 @@ async function searchKeyword(page: Page, keyword: string) {
 }
 
 async function waitForSearchState(page: Page): Promise<"results" | "empty"> {
-  const summary = page.getByText("in native videos").first();
+  const resultReady = page.locator(RESULT_READY_SELECTOR);
   const empty = page.getByText(EMPTY_STATE_TEXT).first();
 
   await expect
     .poll(
       async () => {
-        const hasSummary = await summary
+        const hasResult = await resultReady
           .isVisible()
           .then((visible) => visible)
           .catch(() => false);
-        if (hasSummary) {
+        if (hasResult) {
           return "results";
         }
 
@@ -34,12 +35,12 @@ async function waitForSearchState(page: Page): Promise<"results" | "empty"> {
     )
     .not.toBe("pending");
 
-  const hasSummary = await summary
+  const hasResult = await resultReady
     .isVisible()
     .then((visible) => visible)
     .catch(() => false);
 
-  return hasSummary ? "results" : "empty";
+  return hasResult ? "results" : "empty";
 }
 
 test.describe("Tubelang User Scenarios", () => {
@@ -97,7 +98,7 @@ test.describe("Tubelang User Scenarios", () => {
 
     const state = await waitForSearchState(page);
     if (state === "results") {
-      await expect(page.getByText("in native videos").first()).toBeVisible({ timeout: 15_000 });
+      await expect(page.locator(RESULT_READY_SELECTOR)).toBeVisible({ timeout: 15_000 });
     } else {
       await expect(page.getByText(EMPTY_STATE_TEXT).first()).toBeVisible();
     }
