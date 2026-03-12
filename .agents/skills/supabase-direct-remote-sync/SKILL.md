@@ -38,6 +38,14 @@ The wrapper always asks for the remote DB password before it runs a sync or stat
 
 Read [strategy.md](references/strategy.md) when choosing between incremental sync, full re-sync, or storage mode.
 
+## Operational Guidance
+
+- Prefer incremental runs that reuse the same state DB.
+- In practice, `rest` storage mode can time out on very large runs even when the sync is otherwise healthy.
+- Default to `--max-videos 100` to `--max-videos 200` for hosted sync runs unless S3 upload is available.
+- If a large run times out, do not reset state. Re-run with the same state DB and a smaller `--max-videos` value until `pending_estimate = 0`.
+- Always verify with `--status` after each run when syncing a large backlog.
+
 ## Strategy Rules
 
 - Use direct Postgres writes for `video` and `subtitle`.
