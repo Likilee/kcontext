@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { YouTubePlayerHandle } from "@/components/youtube-player";
 import { YouTubePlayer } from "@/components/youtube-player";
 import { SupabaseSubtitleRepository } from "@/infrastructure/adapters/supabase-subtitle-repository";
+import { getKoreanSearchPath, KOREAN_HOME_PATH } from "@/lib/app-routes";
 import type { SiteConfig } from "@/lib/site-config";
 import { useKeyboardShortcuts } from "@/lib/use-keyboard-shortcuts";
 import { useSubtitleSync } from "@/lib/use-subtitle-sync";
@@ -60,11 +61,11 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
       const normalizedKeyword = keywordToSearch.trim();
       setSearchInput(normalizedKeyword);
       if (!normalizedKeyword) {
-        router.push("/");
+        router.push(KOREAN_HOME_PATH);
         return;
       }
 
-      router.push(`/search?q=${encodeURIComponent(normalizedKeyword)}`);
+      router.push(getKoreanSearchPath(normalizedKeyword));
     },
     [router],
   );
@@ -146,7 +147,7 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
         onSearchSubmit={executeSearch}
         isSearchLoading={isLoading}
         onLogoClick={() => {
-          router.push("/");
+          router.push(KOREAN_HOME_PATH);
         }}
       />
 

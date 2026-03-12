@@ -6,7 +6,10 @@ import "./globals.css";
 import { getRequestSiteConfig, getRequestUrl } from "./request-site-config";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const [siteConfig, requestUrl] = await Promise.all([getRequestSiteConfig(), getRequestUrl()]);
+  const [siteConfig, requestUrl] = await Promise.all([
+    getRequestSiteConfig(),
+    getRequestUrl({ usePrimaryHost: true }),
+  ]);
 
   return {
     metadataBase: new URL(siteConfig.baseUrl),

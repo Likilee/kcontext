@@ -32,9 +32,9 @@ export const KOREAN_SITE_CONFIG: SiteConfig = {
   metadataTitle: "Tubelang Korean",
   metadataDescription: "Real Korean, Right in Context.",
   openGraphLocale: "ko_KR",
-  primaryHost: "ko.tubelang.com",
-  developmentHost: "ko.localhost",
-  baseUrl: "https://ko.tubelang.com",
+  primaryHost: "tubelang.com",
+  developmentHost: "localhost",
+  baseUrl: "https://tubelang.com",
   brandAssets: {
     horizontalLogoPath: "/brand/tubelang-ko-horizontal.png",
     verticalLogoPath: "/brand/tubelang-ko-vertical.png",
@@ -50,8 +50,12 @@ export const KOREAN_SITE_CONFIG: SiteConfig = {
 
 export const DEFAULT_SITE_CONFIG = KOREAN_SITE_CONFIG;
 
-const PRODUCTION_REDIRECT_HOSTS = new Set(["tubelang.com", "www.tubelang.com"]);
-const DEVELOPMENT_REDIRECT_HOSTS = new Set(["localhost", "127.0.0.1"]);
+const PRODUCTION_REDIRECT_HOSTS = new Set([
+  "kcontext.vercel.app",
+  "ko.tubelang.com",
+  "www.tubelang.com",
+]);
+const DEVELOPMENT_REDIRECT_HOSTS = new Set(["127.0.0.1", "ko.localhost"]);
 
 export function normalizeHost(host: string | null | undefined): string {
   return (host ?? "").trim().toLowerCase().replace(/:\d+$/, "");
