@@ -28,10 +28,12 @@ export default async function AppleIcon(): Promise<ImageResponse> {
         width: "100%",
       }}
     >
-      <img
-        alt=""
-        src={iconDataUrl}
+      <div
         style={{
+          backgroundImage: `url(${iconDataUrl})`,
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "contain",
           height: 112,
           width: 112,
         }}
