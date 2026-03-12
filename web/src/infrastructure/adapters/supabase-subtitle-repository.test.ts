@@ -34,7 +34,11 @@ describe("SupabaseSubtitleRepository", () => {
         rpc: mockRpc,
       } as unknown as ReturnType<typeof createSupabaseBrowserClient>);
 
-      const results = await repo.searchByKeyword("안녕");
+      const results = await repo.searchByKeyword("안녕", "ko");
+      expect(mockRpc).toHaveBeenCalledWith("search_subtitles", {
+        audio_language_code: "ko",
+        search_keyword: "안녕",
+      });
       expect(results).toHaveLength(1);
       expect(results[0]).toEqual({
         videoId: "vid1",
@@ -55,7 +59,7 @@ describe("SupabaseSubtitleRepository", () => {
         rpc: mockRpc,
       } as unknown as ReturnType<typeof createSupabaseBrowserClient>);
 
-      await expect(repo.searchByKeyword("test")).rejects.toThrow("Search failed");
+      await expect(repo.searchByKeyword("test", "ko")).rejects.toThrow("Search failed");
     });
 
     it("should return empty array for no results", async () => {
@@ -65,7 +69,7 @@ describe("SupabaseSubtitleRepository", () => {
         rpc: mockRpc,
       } as unknown as ReturnType<typeof createSupabaseBrowserClient>);
 
-      const results = await repo.searchByKeyword("없는단어");
+      const results = await repo.searchByKeyword("없는단어", "ko");
       expect(results).toEqual([]);
     });
   });

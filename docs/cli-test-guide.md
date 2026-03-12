@@ -67,8 +67,10 @@ export KCONTEXT_YOUTUBE_PROXY_URL=http://127.0.0.1:8118
 
 uv run tubelang list "https://www.youtube.com/@sebasi15/videos" --limit 3 > /tmp/kcontext_manual/video_ids.txt
 VIDEO_ID="$(head -n 1 /tmp/kcontext_manual/video_ids.txt)"
-uv run tubelang fetch "$VIDEO_ID" -o "/tmp/kcontext_manual/${VIDEO_ID}_raw.json"
-uv run tubelang fetch-list /tmp/kcontext_manual/video_ids.txt -d /tmp/kcontext_manual
+uv run tubelang fetch "$VIDEO_ID" -o "/tmp/kcontext_manual/${VIDEO_ID}_raw.json" \
+  --default-audio-language-code ko
+uv run tubelang fetch-list /tmp/kcontext_manual/video_ids.txt -d /tmp/kcontext_manual \
+  --default-audio-language-code ko
 ```
 
 ```bash
@@ -121,7 +123,8 @@ uv run tubelang list "https://www.youtube.com/@sebasi15/videos" \
 
 ```bash
 VIDEO_ID="$(head -n 1 /tmp/kcontext_manual/video_ids.txt)"
-uv run tubelang fetch "$VIDEO_ID" -o "/tmp/kcontext_manual/${VIDEO_ID}_raw.json"
+uv run tubelang fetch "$VIDEO_ID" -o "/tmp/kcontext_manual/${VIDEO_ID}_raw.json" \
+  --default-audio-language-code ko
 ```
 
 통과 기준:
@@ -146,7 +149,8 @@ PY
 여러 ID를 한 번에 가져오려면:
 
 ```bash
-uv run tubelang fetch-list /tmp/kcontext_manual/video_ids.txt -d /tmp/kcontext_manual
+uv run tubelang fetch-list /tmp/kcontext_manual/video_ids.txt -d /tmp/kcontext_manual \
+  --default-audio-language-code ko
 ```
 
 옵션:
@@ -156,7 +160,8 @@ uv run tubelang fetch-list /tmp/kcontext_manual/video_ids.txt -d /tmp/kcontext_m
 ### Step C. build
 
 ```bash
-uv run tubelang build "/tmp/kcontext_manual/${VIDEO_ID}_raw.json" -d /tmp/kcontext_manual
+uv run tubelang build "/tmp/kcontext_manual/${VIDEO_ID}_raw.json" -d /tmp/kcontext_manual \
+  --default-audio-language-code ko
 ls -1 /tmp/kcontext_manual/${VIDEO_ID}_*
 ```
 
@@ -175,7 +180,8 @@ ls -1 /tmp/kcontext_manual/${VIDEO_ID}_*
 uv run tubelang push \
   -s "/tmp/kcontext_manual/${VIDEO_ID}_storage.json" \
   -vc "/tmp/kcontext_manual/${VIDEO_ID}_video.csv" \
-  -sc "/tmp/kcontext_manual/${VIDEO_ID}_subtitle.csv"
+  -sc "/tmp/kcontext_manual/${VIDEO_ID}_subtitle.csv" \
+  --default-audio-language-code ko
 ```
 
 통과 기준:
@@ -238,7 +244,8 @@ VIDEO_ID="$(head -n 1 /tmp/kcontext_manual/video_ids.txt)"
 uv run tubelang push \
   -s "/tmp/kcontext_manual/${VIDEO_ID}_storage.json" \
   -vc "/tmp/kcontext_manual/${VIDEO_ID}_video.csv" \
-  -sc "/tmp/kcontext_manual/${VIDEO_ID}_subtitle.csv"
+  -sc "/tmp/kcontext_manual/${VIDEO_ID}_subtitle.csv" \
+  --default-audio-language-code ko
 ```
 
 ### 2차 업로드 전 자막 행 수를 줄인 파일 준비
@@ -261,7 +268,8 @@ PY
 uv run tubelang push \
   -s "/tmp/kcontext_manual/${VIDEO_ID}_storage.json" \
   -vc "/tmp/kcontext_manual/${VIDEO_ID}_video.csv" \
-  -sc "/tmp/kcontext_manual/${VIDEO_ID}_subtitle_one_row.csv"
+  -sc "/tmp/kcontext_manual/${VIDEO_ID}_subtitle_one_row.csv" \
+  --default-audio-language-code ko
 ```
 
 검증:
@@ -297,21 +305,24 @@ echo $?
 ### Case B. fetch 잘못된 video_id
 
 ```bash
-uv run tubelang fetch "invalid_id" -o /tmp/kcontext_manual/invalid_raw.json
+uv run tubelang fetch "invalid_id" -o /tmp/kcontext_manual/invalid_raw.json \
+  --default-audio-language-code ko
 echo $?
 ```
 
 ### Case C. build 입력 파일 없음
 
 ```bash
-uv run tubelang build /tmp/kcontext_manual/not-found.json -d /tmp/kcontext_manual
+uv run tubelang build /tmp/kcontext_manual/not-found.json -d /tmp/kcontext_manual \
+  --default-audio-language-code ko
 echo $?
 ```
 
 ### Case D. push 입력 파일 없음
 
 ```bash
-uv run tubelang push -s /tmp/nope_storage.json -vc /tmp/nope_video.csv -sc /tmp/nope_subtitle.csv
+uv run tubelang push -s /tmp/nope_storage.json -vc /tmp/nope_video.csv -sc /tmp/nope_subtitle.csv \
+  --default-audio-language-code ko
 echo $?
 ```
 

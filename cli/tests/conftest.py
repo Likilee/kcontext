@@ -7,6 +7,7 @@ SAMPLE_RAW_JSON = {
     "title": "테스트 영상 제목",
     "channel_name": "테스트 채널",
     "published_at": "2024-06-15T00:00:00Z",
+    "audio_language_code": "ko",
     "transcript": [
         {"start": 0.0, "duration": 2.5, "text": "안녕하세요 여러분"},
         {"start": 2.5, "duration": 3.0, "text": "오늘은 정말 좋은 날씨네요"},

@@ -7,6 +7,7 @@ import pathlib  # noqa: TC003
 
 import typer
 
+from kcontext_cli.audio_language import AUDIO_LANGUAGE_CODE_OPTION_HELP
 from kcontext_cli.fetch_backends import decodo_scraper_backend, ytdlp_backend
 from kcontext_cli.fetch_backends.base import (
     DEFAULT_FETCH_BACKEND,
@@ -41,6 +42,11 @@ def fetch_subtitle(
         "--youtube-proxy-url",
         help=YOUTUBE_PROXY_OPTION_HELP,
     ),
+    default_audio_language_code: str = typer.Option(
+        ...,
+        "--default-audio-language-code",
+        help=AUDIO_LANGUAGE_CODE_OPTION_HELP,
+    ),
 ) -> None:
     """Fetch video metadata and Korean subtitles, write raw JSON."""
     try:
@@ -67,9 +73,17 @@ def fetch_subtitle(
 
     try:
         if normalized_backend == "ytdlp":
-            fetched = ytdlp_backend.fetch(video_id=video_id, youtube_proxy_url=resolved_proxy_url)
+            fetched = ytdlp_backend.fetch(
+                video_id=video_id,
+                youtube_proxy_url=resolved_proxy_url,
+                default_audio_language_code=default_audio_language_code,
+            )
         else:
-            fetched = decodo_scraper_backend.fetch(video_id=video_id, youtube_proxy_url=None)
+            fetched = decodo_scraper_backend.fetch(
+                video_id=video_id,
+                youtube_proxy_url=None,
+                default_audio_language_code=default_audio_language_code,
+            )
     except FetchBackendError as exc:
         _emit_fetch_failure(
             exc.message,
@@ -88,6 +102,7 @@ def fetch_subtitle(
         "title": fetched.metadata.title,
         "channel_name": fetched.metadata.channel_name,
         "published_at": fetched.metadata.published_at,
+        "audio_language_code": fetched.metadata.audio_language_code,
         "transcript": fetched.transcript,
     }
     metadata_raw_data = fetched.metadata.to_metadata_raw_dict()

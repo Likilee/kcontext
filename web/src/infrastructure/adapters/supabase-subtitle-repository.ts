@@ -17,9 +17,10 @@ interface CdnSubtitleChunk {
 }
 
 export class SupabaseSubtitleRepository implements SubtitleRepository {
-  async searchByKeyword(keyword: string): Promise<SearchResult[]> {
+  async searchByKeyword(keyword: string, audioLanguageCode: string): Promise<SearchResult[]> {
     const supabase = createSupabaseBrowserClient();
     const { data, error } = await supabase.rpc("search_subtitles", {
+      audio_language_code: audioLanguageCode,
       search_keyword: keyword,
     });
 

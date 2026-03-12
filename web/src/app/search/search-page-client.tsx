@@ -36,9 +36,12 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
 
   const [searchInput, setSearchInput] = useState(query);
   const [playbackRate, setPlaybackRate] = useState<number>(1);
+  const audioLanguageCode = siteConfig.learningLanguageCode;
 
-  const { results, isLoading, error, search, selectedResult, selectResult, keyword } =
-    useSearch(repository);
+  const { results, isLoading, error, search, selectedResult, selectResult, keyword } = useSearch(
+    repository,
+    audioLanguageCode,
+  );
   const { transcriptChunks, transcriptError, isTranscriptLoading } = useTranscriptLoader(
     repository,
     selectedResult,

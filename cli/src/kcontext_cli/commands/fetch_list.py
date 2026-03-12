@@ -4,6 +4,7 @@ from pathlib import Path
 
 import typer
 
+from kcontext_cli.audio_language import AUDIO_LANGUAGE_CODE_OPTION_HELP
 from kcontext_cli.commands import fetch
 from kcontext_cli.fetch_backends.base import (
     DEFAULT_FETCH_BACKEND,
@@ -52,6 +53,11 @@ def fetch_list(
         "--youtube-proxy-url",
         help=YOUTUBE_PROXY_OPTION_HELP,
     ),
+    default_audio_language_code: str = typer.Option(
+        ...,
+        "--default-audio-language-code",
+        help=AUDIO_LANGUAGE_CODE_OPTION_HELP,
+    ),
 ) -> None:
     """Fetch raw JSON files for all video IDs listed in a text file."""
     try:
@@ -90,6 +96,7 @@ def fetch_list(
                 output=output_path,
                 fetch_backend=normalized_backend,
                 youtube_proxy_url=resolved_proxy_url,
+                default_audio_language_code=default_audio_language_code,
             )
             success_count += 1
         except typer.Exit as exc:

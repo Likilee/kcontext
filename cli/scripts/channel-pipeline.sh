@@ -34,6 +34,7 @@ USE_PROXY=1
 MANUAL_KO_ONLY=1
 PROBE_MAX_CANDIDATES=500
 SKIP_EXISTING=1
+DEFAULT_AUDIO_LANGUAGE_CODE="${DEFAULT_AUDIO_LANGUAGE_CODE:-ko}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -147,7 +148,11 @@ while IFS= read -r VIDEO_ID; do
 
   echo "[$SUCCESS/$TARGET] $VIDEO_ID"
 
-  FETCH_CMD=(uv run tubelang fetch "$VIDEO_ID" -o "$WORKSPACE/raw/${VIDEO_ID}_raw.json")
+  FETCH_CMD=(
+    uv run tubelang fetch "$VIDEO_ID"
+    -o "$WORKSPACE/raw/${VIDEO_ID}_raw.json"
+    --default-audio-language-code "$DEFAULT_AUDIO_LANGUAGE_CODE"
+  )
   if [[ "$USE_PROXY" -eq 1 && -n "$PROXY_URL" ]]; then
     FETCH_CMD+=(--youtube-proxy-url "$PROXY_URL")
   fi
@@ -158,7 +163,7 @@ while IFS= read -r VIDEO_ID; do
     continue
   fi
 
-  if ! uv run tubelang build "$WORKSPACE/raw/${VIDEO_ID}_raw.json" -d "$WORKSPACE/build" > /dev/null 2> "$WORKSPACE/logs/build_${VIDEO_ID}.log"; then
+  if ! uv run tubelang build "$WORKSPACE/raw/${VIDEO_ID}_raw.json" -d "$WORKSPACE/build" --default-audio-language-code "$DEFAULT_AUDIO_LANGUAGE_CODE" > /dev/null 2> "$WORKSPACE/logs/build_${VIDEO_ID}.log"; then
     echo "$VIDEO_ID" >> "$WORKSPACE/failed_ids.txt"
     FAILED=$((FAILED + 1))
     continue
@@ -168,6 +173,7 @@ while IFS= read -r VIDEO_ID; do
     -s "$WORKSPACE/build/${VIDEO_ID}_storage.json" \
     -vc "$WORKSPACE/build/${VIDEO_ID}_video.csv" \
     -sc "$WORKSPACE/build/${VIDEO_ID}_subtitle.csv" \
+    --default-audio-language-code "$DEFAULT_AUDIO_LANGUAGE_CODE" \
     > /dev/null 2> "$WORKSPACE/logs/push_${VIDEO_ID}.log"; then
     echo "$VIDEO_ID" >> "$WORKSPACE/failed_ids.txt"
     FAILED=$((FAILED + 1))

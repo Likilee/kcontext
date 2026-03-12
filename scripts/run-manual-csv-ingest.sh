@@ -2,19 +2,22 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-CSV_PATH="$ROOT_DIR/docs/manual_ko_subtitle_videos.csv"
+RAW_CSV_PATH="$ROOT_DIR/docs/manual_ko_subtitle_videos.csv"
+FILTERED_CSV_PATH="$ROOT_DIR/docs/manual_ko_subtitle_videos_filtered.csv"
+CSV_PATH="$FILTERED_CSV_PATH"
 WORKSPACE="$ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_full"
 MAX_VIDEOS_PER_RUN=0
 FETCH_BACKEND="ytdlp"
 PROXY_URL="${KCONTEXT_YOUTUBE_PROXY_URL:-}"
 USE_PROXY=1
+DEFAULT_AUDIO_LANGUAGE_CODE="${DEFAULT_AUDIO_LANGUAGE_CODE:-ko}"
 
 usage() {
   cat <<EOF
 Usage: $0 [options]
 
 Options:
-  --csv <path>                 CSV file to ingest (default: $ROOT_DIR/docs/manual_ko_subtitle_videos.csv)
+  --csv <path>                 CSV file to ingest (default: $ROOT_DIR/docs/manual_ko_subtitle_videos_filtered.csv)
   --workspace <path>           Resume workspace (default: $ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_full)
   --max-videos-per-run <n>     Max videos to process this run (default: all remaining)
   --fetch-backend <name>       Fetch backend: ytdlp | decodo-scraper (default: ytdlp)
@@ -68,6 +71,14 @@ if [[ ! -f "$CSV_PATH" ]]; then
   echo "Error: CSV file not found: $CSV_PATH" >&2
   exit 1
 fi
+
+(
+  cd "$ROOT_DIR/cli"
+  uv run python -m kcontext_cli.manual_csv_source \
+    --selected "$CSV_PATH" \
+    --raw "$RAW_CSV_PATH" \
+    --filtered "$FILTERED_CSV_PATH"
+)
 
 if ! [[ "$MAX_VIDEOS_PER_RUN" =~ ^[0-9]+$ ]]; then
   echo "Error: --max-videos-per-run must be a non-negative integer." >&2
@@ -275,6 +286,7 @@ while IFS= read -r VIDEO_ID; do
     uv run tubelang fetch
     -o "$RAW_DIR/${VIDEO_ID}_raw.json"
     --fetch-backend "$FETCH_BACKEND"
+    --default-audio-language-code "$DEFAULT_AUDIO_LANGUAGE_CODE"
     -- "$VIDEO_ID"
   )
   if [[ "$FETCH_BACKEND" == "ytdlp" && "$USE_PROXY" -eq 1 && -n "$PROXY_URL" ]]; then
@@ -344,7 +356,11 @@ while IFS= read -r VIDEO_ID; do
   fi
 
   echo "[${RUN_PROCESSED}/${RUN_LIMIT}] ${VIDEO_ID}: build"
-  if ! (cd "$ROOT_DIR/cli" && uv run tubelang build "$RAW_DIR/${VIDEO_ID}_raw.json" -d "$BUILD_DIR") >"$BUILD_LOG" 2>&1; then
+  if ! (
+    cd "$ROOT_DIR/cli" && \
+      uv run tubelang build "$RAW_DIR/${VIDEO_ID}_raw.json" -d "$BUILD_DIR" \
+        --default-audio-language-code "$DEFAULT_AUDIO_LANGUAGE_CODE"
+  ) >"$BUILD_LOG" 2>&1; then
     append_failure "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$VIDEO_ID" "build" "build_failed" "$BUILD_LOG"
     RUN_FAILED=$((RUN_FAILED + 1))
     echo "[${RUN_PROCESSED}/${RUN_LIMIT}] ${VIDEO_ID}: build failed build_failed (log: ${BUILD_LOG})" >&2
@@ -357,7 +373,8 @@ while IFS= read -r VIDEO_ID; do
       uv run tubelang push \
         -s "$BUILD_DIR/${VIDEO_ID}_storage.json" \
         -vc "$BUILD_DIR/${VIDEO_ID}_video.csv" \
-        -sc "$BUILD_DIR/${VIDEO_ID}_subtitle.csv"
+        -sc "$BUILD_DIR/${VIDEO_ID}_subtitle.csv" \
+        --default-audio-language-code "$DEFAULT_AUDIO_LANGUAGE_CODE"
   ) >"$PUSH_LOG" 2>&1; then
     append_failure "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$VIDEO_ID" "push" "push_failed" "$PUSH_LOG"
     RUN_FAILED=$((RUN_FAILED + 1))

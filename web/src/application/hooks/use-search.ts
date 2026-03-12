@@ -15,7 +15,10 @@ interface UseSearchReturn {
   keyword: string;
 }
 
-export function useSearch(repository: SubtitleRepository): UseSearchReturn {
+export function useSearch(
+  repository: SubtitleRepository,
+  audioLanguageCode: string,
+): UseSearchReturn {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -39,7 +42,7 @@ export function useSearch(repository: SubtitleRepository): UseSearchReturn {
 
       startTransition(async () => {
         try {
-          const data = await repository.searchByKeyword(normalizedKeyword);
+          const data = await repository.searchByKeyword(normalizedKeyword, audioLanguageCode);
           setResults(data);
           const firstResult = data[0] ?? null;
           setSelectedResult(firstResult);
@@ -50,7 +53,7 @@ export function useSearch(repository: SubtitleRepository): UseSearchReturn {
         }
       });
     },
-    [repository],
+    [audioLanguageCode, repository],
   );
 
   const reset = useCallback(() => {

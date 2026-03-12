@@ -327,10 +327,14 @@ def fetch_synced_video_ids(state_conn: sqlite3.Connection) -> set[str]:
 def fetch_local_video(
     local_conn: PsycopgConnection,
     video_id: str,
-) -> tuple[str, str, str, Any] | None:
+) -> tuple[str, str, str, Any, str] | None:
     with local_conn.cursor() as cur:
         cur.execute(
-            "SELECT id, title, channel_name, published_at FROM video WHERE id = %s",
+            """
+            SELECT id, title, channel_name, published_at, audio_language_code
+            FROM video
+            WHERE id = %s
+            """,
             (video_id,),
         )
         row = cur.fetchone()
@@ -338,7 +342,7 @@ def fetch_local_video(
     if row is None:
         return None
 
-    return (str(row[0]), str(row[1]), str(row[2]), row[3])
+    return (str(row[0]), str(row[1]), str(row[2]), row[3], str(row[4] or "ko"))
 
 
 def fetch_local_subtitles(
@@ -427,22 +431,23 @@ def upload_remote_storage_json(config: SyncConfig, video_id: str, payload: bytes
 
 def upsert_remote_db(
     remote_conn: PsycopgConnection,
-    video: tuple[str, str, str, Any],
+    video: tuple[str, str, str, Any, str],
     subtitles: list[tuple[str, float, str]],
 ) -> None:
-    video_id, title, channel_name, published_at = video
+    video_id, title, channel_name, published_at, audio_language_code = video
 
     with remote_conn.cursor() as cur:
         cur.execute(
             """
-            INSERT INTO video (id, title, channel_name, published_at)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO video (id, title, channel_name, published_at, audio_language_code)
+            VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (id) DO UPDATE SET
               title = EXCLUDED.title,
               channel_name = EXCLUDED.channel_name,
-              published_at = EXCLUDED.published_at
+              published_at = EXCLUDED.published_at,
+              audio_language_code = EXCLUDED.audio_language_code
             """,
-            (video_id, title, channel_name, published_at),
+            (video_id, title, channel_name, published_at, audio_language_code),
         )
 
         cur.execute("DELETE FROM subtitle WHERE video_id = %s", (video_id,))

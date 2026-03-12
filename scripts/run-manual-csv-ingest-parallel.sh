@@ -2,7 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DEFAULT_CSV_PATH="$ROOT_DIR/docs/manual_ko_subtitle_videos.csv"
+RAW_CSV_PATH="$ROOT_DIR/docs/manual_ko_subtitle_videos.csv"
+DEFAULT_CSV_PATH="$ROOT_DIR/docs/manual_ko_subtitle_videos_filtered.csv"
 WORKSPACE="$ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_full"
 MAX_VIDEOS=500
 CONCURRENCY=4
@@ -29,6 +30,7 @@ Usage: $0 [options]
 Options:
   --workspace <path>       Main workspace to use as source of truth
                            (default: $ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_full)
+                           Default source CSV: $ROOT_DIR/docs/manual_ko_subtitle_videos_filtered.csv
   --max-videos <n>         Maximum number of videos to process in this run (default: 500)
   --concurrency <n>        Number of concurrent workers (default: 4)
   --env-file <path>        Decodo env file to source (default: $ROOT_DIR/.env.decodo)
@@ -96,6 +98,14 @@ if [[ ! -f "$ENV_FILE" ]]; then
   echo "Error: env file not found: $ENV_FILE" >&2
   exit 1
 fi
+
+(
+  cd "$ROOT_DIR/cli"
+  uv run python -m kcontext_cli.manual_csv_source \
+    --selected "$DEFAULT_CSV_PATH" \
+    --raw "$RAW_CSV_PATH" \
+    --filtered "$DEFAULT_CSV_PATH"
+)
 
 mkdir -p "$WORKSPACE" "$WORKSPACE/raw" "$WORKSPACE/build" "$WORKSPACE/logs"
 STATE_LOCK_PATH="$WORKSPACE/.parallel_ingest.lock"
@@ -178,36 +188,33 @@ in_flight_path.write_text("", encoding="utf-8")
 if not failed_path.exists():
     failed_path.write_text("timestamp\tvideo_id\tstage\terror_class\tlog_path\n", encoding="utf-8")
 
-if not planned_path.exists():
-    if not default_csv_path.exists():
+if not default_csv_path.exists():
+    raise SystemExit(f"Error: default CSV was not found: {default_csv_path}")
+
+with default_csv_path.open(encoding="utf-8") as file_obj:
+    reader = csv.DictReader(file_obj)
+    required = {"channel_id", "channel_name", "video_id"}
+    if reader.fieldnames is None or set(reader.fieldnames) != required:
         raise SystemExit(
-            f"Error: planned_ids.txt is missing and default CSV was not found: {default_csv_path}"
+            f"Error: expected CSV columns {sorted(required)}, got {reader.fieldnames!r}"
         )
 
-    with default_csv_path.open(encoding="utf-8") as file_obj:
-        reader = csv.DictReader(file_obj)
-        required = {"channel_id", "channel_name", "video_id"}
-        if reader.fieldnames is None or set(reader.fieldnames) != required:
-            raise SystemExit(
-                f"Error: expected CSV columns {sorted(required)}, got {reader.fieldnames!r}"
-            )
+    seen: set[str] = set()
+    ordered_ids: list[str] = []
+    pattern = re.compile(r"^[A-Za-z0-9_-]{11}$")
+    for line_no, row in enumerate(reader, start=2):
+        video_id = (row.get("video_id") or "").strip()
+        if not pattern.fullmatch(video_id):
+            raise SystemExit(f"Error: invalid video_id {video_id!r} on line {line_no}")
+        if video_id in seen:
+            continue
+        seen.add(video_id)
+        ordered_ids.append(video_id)
 
-        seen: set[str] = set()
-        ordered_ids: list[str] = []
-        pattern = re.compile(r"^[A-Za-z0-9_-]{11}$")
-        for line_no, row in enumerate(reader, start=2):
-            video_id = (row.get("video_id") or "").strip()
-            if not pattern.fullmatch(video_id):
-                raise SystemExit(f"Error: invalid video_id {video_id!r} on line {line_no}")
-            if video_id in seen:
-                continue
-            seen.add(video_id)
-            ordered_ids.append(video_id)
-
-    planned_path.write_text(
-        "\n".join(ordered_ids) + ("\n" if ordered_ids else ""),
-        encoding="utf-8",
-    )
+planned_path.write_text(
+    "\n".join(ordered_ids) + ("\n" if ordered_ids else ""),
+    encoding="utf-8",
+)
 
 planned_ids = [line.strip() for line in planned_path.read_text(encoding="utf-8").splitlines() if line.strip()]
 succeeded_ids = {

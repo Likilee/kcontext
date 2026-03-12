@@ -36,32 +36,35 @@ interface SearchHarnessHandle {
   getSnapshot: () => SearchSnapshot;
 }
 
-const SearchHarness = forwardRef<SearchHarnessHandle, { repository: SubtitleRepository }>(
-  ({ repository }, ref) => {
-    const state = useSearch(repository);
+const SearchHarness = forwardRef<
+  SearchHarnessHandle,
+  { repository: SubtitleRepository; audioLanguageCode: string }
+>(({ repository, audioLanguageCode }, ref) => {
+  const state = useSearch(repository, audioLanguageCode);
 
-    useImperativeHandle(
-      ref,
-      () => ({
-        search: state.search,
-        reset: state.reset,
-        selectResult: state.selectResult,
-        getSnapshot: () => ({
-          results: state.results,
-          isLoading: state.isLoading,
-          error: state.error,
-          selectedResult: state.selectedResult,
-          keyword: state.keyword,
-        }),
+  useImperativeHandle(
+    ref,
+    () => ({
+      search: state.search,
+      reset: state.reset,
+      selectResult: state.selectResult,
+      getSnapshot: () => ({
+        results: state.results,
+        isLoading: state.isLoading,
+        error: state.error,
+        selectedResult: state.selectedResult,
+        keyword: state.keyword,
       }),
-      [state],
-    );
+    }),
+    [state],
+  );
 
-    return null;
-  },
-);
+  return null;
+});
 
 SearchHarness.displayName = "SearchHarness";
+
+const AUDIO_LANGUAGE_CODE = "ko";
 
 const flushMicrotasks = async () => {
   await Promise.resolve();
@@ -96,14 +99,17 @@ describe("useSearch", () => {
     roots.length = 0;
   });
 
-  const renderHookHarness = (repository: SubtitleRepository) => {
+  const renderHookHarness = (
+    repository: SubtitleRepository,
+    audioLanguageCode = AUDIO_LANGUAGE_CODE,
+  ) => {
     const container = document.createElement("div");
     document.body.append(container);
     const root = createRoot(container);
     const ref = createRef<SearchHarnessHandle>();
 
     act(() => {
-      root.render(createElement(SearchHarness, { repository, ref }));
+      root.render(createElement(SearchHarness, { repository, audioLanguageCode, ref }));
     });
 
     roots.push({ root, container });
@@ -128,7 +134,7 @@ describe("useSearch", () => {
     });
 
     await waitFor(() => {
-      expect(repository.searchByKeyword).toHaveBeenCalledWith("안녕");
+      expect(repository.searchByKeyword).toHaveBeenCalledWith("안녕", AUDIO_LANGUAGE_CODE);
       expect(ref.current?.getSnapshot().results).toEqual(MOCK_RESULTS);
       expect(ref.current?.getSnapshot().keyword).toBe("안녕");
       expect(ref.current?.getSnapshot().selectedResult).toEqual(MOCK_RESULTS[0]);

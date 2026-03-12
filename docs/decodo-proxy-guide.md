@@ -31,7 +31,8 @@ cd cli
 set -a
 source ../.env.decodo
 set +a
-uv run tubelang fetch DucXv5xjhW4 -o /tmp/decodo_canary.json
+uv run tubelang fetch DucXv5xjhW4 -o /tmp/decodo_canary.json \
+  --default-audio-language-code ko
 ```
 
 Resume manual CSV ingest through Decodo:
@@ -39,6 +40,10 @@ Resume manual CSV ingest through Decodo:
 ```bash
 ./scripts/run-manual-csv-ingest-via-decodo.sh --max-videos-per-run 3
 ```
+
+Manual CSV ingest now uses `docs/manual_ko_subtitle_videos_filtered.csv` by default.
+If you update `docs/manual_ko_subtitle_videos.csv`, re-run `python3 ./scripts/check_playable.py`
+before restarting ingest.
 
 ## Output and Failure Modes
 

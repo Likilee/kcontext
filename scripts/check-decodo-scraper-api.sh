@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$ROOT_DIR/.env.decodo"
 VIDEO_ID="${DECODO_CANARY_VIDEO_ID:-DucXv5xjhW4}"
+DEFAULT_AUDIO_LANGUAGE_CODE="${DEFAULT_AUDIO_LANGUAGE_CODE:-ko}"
 
 usage() {
   cat <<EOF
@@ -80,7 +81,8 @@ classify_log() {
 
 if ! (
   cd "$ROOT_DIR/cli" && \
-    uv run tubelang fetch "$VIDEO_ID" -o "$RAW_PATH" --fetch-backend decodo-scraper
+    uv run tubelang fetch "$VIDEO_ID" -o "$RAW_PATH" --fetch-backend decodo-scraper \
+      --default-audio-language-code "$DEFAULT_AUDIO_LANGUAGE_CODE"
 ) >"$FETCH_LOG" 2>&1; then
   classify_log "$FETCH_LOG"
   exit 1
@@ -93,7 +95,8 @@ fi
 
 if ! (
   cd "$ROOT_DIR/cli" && \
-    uv run tubelang build-metadata "$METADATA_PATH" -d "$BUILD_DIR"
+    uv run tubelang build-metadata "$METADATA_PATH" -d "$BUILD_DIR" \
+      --default-audio-language-code "$DEFAULT_AUDIO_LANGUAGE_CODE"
 ) >>"$FETCH_LOG" 2>&1; then
   echo "api_unexpected_schema"
   exit 1

@@ -42,6 +42,7 @@ class VideoMetadata:
     title: str
     channel_name: str
     published_at: str
+    audio_language_code: str
     channel_id: str | None = None
     uploader_id: str | None = None
     uploader_url: str | None = None
@@ -59,6 +60,7 @@ class VideoMetadata:
             "title": self.title,
             "channel_name": self.channel_name,
             "published_at": self.published_at,
+            "audio_language_code": self.audio_language_code,
             "channel_id": self.channel_id,
             "uploader_id": self.uploader_id,
             "uploader_url": self.uploader_url,

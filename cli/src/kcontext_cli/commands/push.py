@@ -7,6 +7,11 @@ import typer
 from dotenv import load_dotenv
 from supabase import create_client
 
+from kcontext_cli.audio_language import (
+    AUDIO_LANGUAGE_CODE_OPTION_HELP,
+    resolve_audio_language_code,
+)
+
 load_dotenv()
 
 DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
@@ -25,6 +30,11 @@ def push_data(
     storage_json: Path = STORAGE_JSON_OPTION,
     video_csv: Path = VIDEO_CSV_OPTION,
     subtitle_csv: Path = SUBTITLE_CSV_OPTION,
+    default_audio_language_code: str = typer.Option(
+        ...,
+        "--default-audio-language-code",
+        help=AUDIO_LANGUAGE_CODE_OPTION_HELP,
+    ),
 ) -> None:
     """Upload storage JSON and upsert video/subtitle data into Supabase."""
     for path, name in (
@@ -68,18 +78,38 @@ def push_data(
             for row in reader:
                 if len(row) < 4:
                     continue
-                video_row_id, title, channel_name, published_at = row[0], row[1], row[2], row[3]
+                video_row_id, title, channel_name, published_at = (
+                    row[0],
+                    row[1],
+                    row[2],
+                    row[3],
+                )
+                try:
+                    audio_language_code = resolve_audio_language_code(
+                        row[4] if len(row) >= 5 else None,
+                        default_audio_language_code=default_audio_language_code,
+                    )
+                except ValueError as exc:
+                    typer.echo(f"Error: {exc}", err=True)
+                    raise typer.Exit(code=1) from exc
                 with conn.cursor() as cur:
                     cur.execute(
                         """
-                        INSERT INTO video (id, title, channel_name, published_at)
-                        VALUES (%s, %s, %s, %s)
+                        INSERT INTO video (
+                            id,
+                            title,
+                            channel_name,
+                            published_at,
+                            audio_language_code
+                        )
+                        VALUES (%s, %s, %s, %s, %s)
                         ON CONFLICT (id) DO UPDATE SET
                             title = EXCLUDED.title,
                             channel_name = EXCLUDED.channel_name,
-                            published_at = EXCLUDED.published_at
+                            published_at = EXCLUDED.published_at,
+                            audio_language_code = EXCLUDED.audio_language_code
                         """,
-                        (video_row_id, title, channel_name, published_at),
+                        (video_row_id, title, channel_name, published_at, audio_language_code),
                     )
 
         typer.echo("Replacing subtitles...", err=True)

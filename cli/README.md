@@ -65,19 +65,26 @@ uv run tubelang list "https://www.youtube.com/@sebasi15/videos" \
   --probe-max-candidates 500
 
 # 단일 fetch
-uv run tubelang fetch "VIDEO_ID" -o /tmp/VIDEO_ID_raw.json
+uv run tubelang fetch "VIDEO_ID" \
+  -o /tmp/VIDEO_ID_raw.json \
+  --default-audio-language-code ko
 
 # 일괄 fetch
-uv run tubelang fetch-list /tmp/video_ids.txt -d /tmp/raw
+uv run tubelang fetch-list /tmp/video_ids.txt \
+  -d /tmp/raw \
+  --default-audio-language-code ko
 
 # build
-uv run tubelang build /tmp/VIDEO_ID_raw.json -d /tmp/build
+uv run tubelang build /tmp/VIDEO_ID_raw.json \
+  -d /tmp/build \
+  --default-audio-language-code ko
 
 # push
 uv run tubelang push \
   -s /tmp/build/VIDEO_ID_storage.json \
   -vc /tmp/build/VIDEO_ID_video.csv \
-  -sc /tmp/build/VIDEO_ID_subtitle.csv
+  -sc /tmp/build/VIDEO_ID_subtitle.csv \
+  --default-audio-language-code ko
 ```
 
 ## Batch Pipeline Script
@@ -109,6 +116,37 @@ export KCONTEXT_YOUTUBE_PROXY_URL=http://127.0.0.1:8118
 - `raw/`, `build/`
 
 모든 파일은 실행 시 출력되는 `workspace` 디렉터리에 저장됩니다.
+
+## Manual CSV Ingest Notes
+
+수동 CSV 기반 ingest 스크립트는 기본적으로 아래 필터링된 목록만 사용합니다.
+
+- `/Users/kihoon/Documents/Project/dozboon/products/kcontext/docs/manual_ko_subtitle_videos_filtered.csv`
+
+원본 CSV를 수정했다면 ingest 전에 반드시 재생 가능 목록을 다시 생성하세요.
+
+```bash
+cd /Users/kihoon/Documents/Project/dozboon/products/kcontext
+python3 ./scripts/check_playable.py
+```
+
+원본 `/Users/kihoon/Documents/Project/dozboon/products/kcontext/docs/manual_ko_subtitle_videos.csv` 가
+filtered CSV보다 더 최신이면 manual ingest는 중단되고 `check_playable.py` 재실행을 요구합니다.
+
+임베드 불가 영상 정리:
+
+```bash
+cd /Users/kihoon/Documents/Project/dozboon/products/kcontext
+
+# dry-run
+./scripts/prune-unplayable-videos.sh --target local
+
+# local apply
+./scripts/prune-unplayable-videos.sh --target local --apply
+
+# remote apply (after local verification)
+./scripts/prune-unplayable-videos.sh --target remote --apply
+```
 
 ## Repeated Operations (Manual)
 

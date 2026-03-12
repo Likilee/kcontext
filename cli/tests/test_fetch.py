@@ -9,12 +9,14 @@ from kcontext_cli.fetch_backends.base import FetchResult, VideoMetadata
 from kcontext_cli.main import app
 
 runner = CliRunner()
+DEFAULT_AUDIO_LANGUAGE_CODE = "ko"
 
 MOCK_METADATA_JSON = {
     "id": "test_abc123",
     "title": "테스트 영상 제목",
     "channel": "테스트 채널",
     "upload_date": "20240615",
+    "language": "ko",
     "channel_id": "channel_123",
     "uploader_id": "@tester",
     "uploader_url": "https://youtube.com/@tester",
@@ -66,6 +68,7 @@ def _decodo_fetch_result(video_id: str = "test_abc123") -> FetchResult:
             title="Decodo 테스트 영상",
             channel_name="Decodo 채널",
             published_at="2024-06-15T00:00:00Z",
+            audio_language_code="ko",
             channel_id="channel_456",
             uploader_id="@decodo",
             uploader_url="https://youtube.com/@decodo",
@@ -88,7 +91,17 @@ def test_fetch_success(tmp_path):
     output_file = tmp_path / "out.json"
 
     with patch("subprocess.run", side_effect=_mock_subprocess_fetch_ok()):
-        result = runner.invoke(app, ["fetch", "test_abc123", "-o", str(output_file)])
+        result = runner.invoke(
+            app,
+            [
+                "fetch",
+                "test_abc123",
+                "-o",
+                str(output_file),
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
+        )
 
     assert result.exit_code == 0
     assert output_file.exists()
@@ -97,12 +110,14 @@ def test_fetch_success(tmp_path):
     assert data["title"] == "테스트 영상 제목"
     assert data["channel_name"] == "테스트 채널"
     assert data["published_at"] == "2024-06-15T00:00:00Z"
+    assert data["audio_language_code"] == "ko"
     assert len(data["transcript"]) == 3
 
     metadata_sidecar = tmp_path / "test_abc123_metadata_raw.json"
     assert metadata_sidecar.exists()
     metadata = json.loads(metadata_sidecar.read_text(encoding="utf-8"))
     assert metadata["video_id"] == "test_abc123"
+    assert metadata["audio_language_code"] == "ko"
     assert metadata["channel_id"] == "channel_123"
     assert metadata["duration_sec"] == 123
     assert metadata["thumbnail_url"] == "https://example.com/thumb.jpg"
@@ -113,7 +128,17 @@ def test_fetch_output_preserves_korean(tmp_path):
     output_file = tmp_path / "korean.json"
 
     with patch("subprocess.run", side_effect=_mock_subprocess_fetch_ok()):
-        runner.invoke(app, ["fetch", "test_abc123", "-o", str(output_file)])
+        runner.invoke(
+            app,
+            [
+                "fetch",
+                "test_abc123",
+                "-o",
+                str(output_file),
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
+        )
 
     raw_content = output_file.read_text(encoding="utf-8")
     assert "안녕하세요" in raw_content
@@ -130,7 +155,17 @@ def test_fetch_no_manual_cc(tmp_path):
     )
 
     with patch("subprocess.run", return_value=mock_result):
-        result = runner.invoke(app, ["fetch", "test_abc123", "-o", str(output_file)])
+        result = runner.invoke(
+            app,
+            [
+                "fetch",
+                "test_abc123",
+                "-o",
+                str(output_file),
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
+        )
 
     assert result.exit_code == 1
     assert not output_file.exists()
@@ -143,7 +178,17 @@ def test_fetch_invalid_video_id(tmp_path):
     )
 
     with patch("subprocess.run", return_value=mock_subprocess_result):
-        result = runner.invoke(app, ["fetch", "invalid_id", "-o", str(output_file)])
+        result = runner.invoke(
+            app,
+            [
+                "fetch",
+                "invalid_id",
+                "-o",
+                str(output_file),
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
+        )
 
     assert result.exit_code == 1
     assert not output_file.exists()
@@ -153,7 +198,17 @@ def test_fetch_transcript_schema(tmp_path):
     output_file = tmp_path / "out.json"
 
     with patch("subprocess.run", side_effect=_mock_subprocess_fetch_ok()):
-        runner.invoke(app, ["fetch", "test_abc123", "-o", str(output_file)])
+        runner.invoke(
+            app,
+            [
+                "fetch",
+                "test_abc123",
+                "-o",
+                str(output_file),
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
+        )
 
     data = json.loads(output_file.read_text(encoding="utf-8"))
     first_chunk = data["transcript"][0]
@@ -169,7 +224,17 @@ def test_fetch_ytdlp_not_installed(tmp_path):
     output_file = tmp_path / "out.json"
 
     with patch("subprocess.run", side_effect=FileNotFoundError):
-        result = runner.invoke(app, ["fetch", "test_abc123", "-o", str(output_file)])
+        result = runner.invoke(
+            app,
+            [
+                "fetch",
+                "test_abc123",
+                "-o",
+                str(output_file),
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
+        )
 
     assert result.exit_code == 1
     assert not output_file.exists()
@@ -180,7 +245,17 @@ def test_fetch_empty_subtitle(tmp_path):
     empty_json3 = {"events": []}
 
     with patch("subprocess.run", side_effect=_mock_subprocess_fetch_ok(json3_data=empty_json3)):
-        result = runner.invoke(app, ["fetch", "test_abc123", "-o", str(output_file)])
+        result = runner.invoke(
+            app,
+            [
+                "fetch",
+                "test_abc123",
+                "-o",
+                str(output_file),
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
+        )
 
     assert result.exit_code == 1
     assert not output_file.exists()
@@ -193,7 +268,16 @@ def test_fetch_uses_proxy_for_ytdlp(tmp_path):
     with patch("subprocess.run", side_effect=_mock_subprocess_fetch_ok()) as mock_subprocess:
         result = runner.invoke(
             app,
-            ["fetch", "test_abc123", "-o", str(output_file), "--youtube-proxy-url", proxy_url],
+            [
+                "fetch",
+                "test_abc123",
+                "-o",
+                str(output_file),
+                "--youtube-proxy-url",
+                proxy_url,
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
         )
 
     assert result.exit_code == 0
@@ -210,7 +294,17 @@ def test_fetch_uses_proxy_from_env(tmp_path):
         patch.dict("os.environ", {"KCONTEXT_YOUTUBE_PROXY_URL": proxy_url}, clear=False),
         patch("subprocess.run", side_effect=_mock_subprocess_fetch_ok()) as mock_subprocess,
     ):
-        result = runner.invoke(app, ["fetch", "test_abc123", "-o", str(output_file)])
+        result = runner.invoke(
+            app,
+            [
+                "fetch",
+                "test_abc123",
+                "-o",
+                str(output_file),
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
+        )
 
     assert result.exit_code == 0
     called_args = mock_subprocess.call_args.args[0]
@@ -237,7 +331,17 @@ def test_fetch_uses_decodo_proxy_from_env(tmp_path):
         ),
         patch("subprocess.run", side_effect=_mock_subprocess_fetch_ok()) as mock_subprocess,
     ):
-        result = runner.invoke(app, ["fetch", "test_abc123", "-o", str(output_file)])
+        result = runner.invoke(
+            app,
+            [
+                "fetch",
+                "test_abc123",
+                "-o",
+                str(output_file),
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
+        )
 
     assert result.exit_code == 0
     called_args = mock_subprocess.call_args.args[0]
@@ -260,7 +364,16 @@ def test_fetch_tags_proxy_auth_failure(tmp_path):
     with patch("subprocess.run", return_value=mock_subprocess_result):
         result = runner.invoke(
             app,
-            ["fetch", "test_abc123", "-o", str(output_file), "--youtube-proxy-url", proxy_url],
+            [
+                "fetch",
+                "test_abc123",
+                "-o",
+                str(output_file),
+                "--youtube-proxy-url",
+                proxy_url,
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
         )
 
     assert result.exit_code == 1
@@ -282,6 +395,8 @@ def test_fetch_rejects_non_http_proxy_url(tmp_path):
                 str(output_file),
                 "--youtube-proxy-url",
                 "socks5://127.0.0.1:9050",
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
             ],
         )
 
@@ -306,15 +421,23 @@ def test_fetch_uses_decodo_scraper_backend(tmp_path):
                 str(output_file),
                 "--fetch-backend",
                 "decodo-scraper",
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
             ],
         )
 
     assert result.exit_code == 0
-    mock_backend.assert_called_once_with(video_id="test_abc123", youtube_proxy_url=None)
+    mock_backend.assert_called_once_with(
+        video_id="test_abc123",
+        youtube_proxy_url=None,
+        default_audio_language_code=DEFAULT_AUDIO_LANGUAGE_CODE,
+    )
     data = json.loads(output_file.read_text(encoding="utf-8"))
     assert data["title"] == "Decodo 테스트 영상"
+    assert data["audio_language_code"] == "ko"
     metadata = json.loads((tmp_path / "test_abc123_metadata_raw.json").read_text(encoding="utf-8"))
     assert metadata["source_backend"] == "decodo-scraper"
+    assert metadata["audio_language_code"] == "ko"
     assert metadata["description"] == "Decodo 설명"
 
 
@@ -340,6 +463,8 @@ def test_fetch_decodo_scraper_tags_api_failure(tmp_path):
                 str(output_file),
                 "--fetch-backend",
                 "decodo-scraper",
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
             ],
         )
 
@@ -360,8 +485,37 @@ def test_fetch_rejects_unknown_backend(tmp_path):
                 str(output_file),
                 "--fetch-backend",
                 "unknown-backend",
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
             ],
         )
 
     assert result.exit_code == 1
     mock_subprocess.assert_not_called()
+
+
+def test_fetch_uses_default_audio_language_code_when_provider_omits_it(tmp_path):
+    output_file = tmp_path / "out.json"
+    metadata_without_language = {
+        key: value for key, value in MOCK_METADATA_JSON.items() if key != "language"
+    }
+
+    with patch(
+        "subprocess.run",
+        side_effect=_mock_subprocess_fetch_ok(metadata=metadata_without_language),
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "fetch",
+                "test_abc123",
+                "-o",
+                str(output_file),
+                "--default-audio-language-code",
+                "ko-KR",
+            ],
+        )
+
+    assert result.exit_code == 0
+    data = json.loads(output_file.read_text(encoding="utf-8"))
+    assert data["audio_language_code"] == "ko"

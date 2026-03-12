@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from kcontext_cli.audio_language import resolve_audio_language_code
 from kcontext_cli.fetch_backends.base import (
     FetchBackendError,
     FetchResult,
@@ -20,7 +21,12 @@ DECODO_METADATA_TARGET = "youtube_metadata"
 DECODO_SUBTITLES_TARGET = "youtube_subtitles"
 
 
-def fetch(video_id: str, youtube_proxy_url: str | None = None) -> FetchResult:
+def fetch(
+    video_id: str,
+    youtube_proxy_url: str | None = None,
+    *,
+    default_audio_language_code: str,
+) -> FetchResult:
     """Fetch manual Korean subtitles and metadata via Decodo scraper API."""
     del youtube_proxy_url
 
@@ -49,7 +55,11 @@ def fetch(video_id: str, youtube_proxy_url: str | None = None) -> FetchResult:
     transcript = parse_json3_to_chunks(subtitle_json3)
 
     return FetchResult(
-        metadata=_normalize_metadata(video_id, metadata_payload),
+        metadata=_normalize_metadata(
+            video_id,
+            metadata_payload,
+            default_audio_language_code=default_audio_language_code,
+        ),
         transcript=transcript,
     )
 
@@ -81,7 +91,12 @@ def _extract_manual_ko_subtitle(payload: dict, video_id: str) -> dict:
     return manual_ko
 
 
-def _normalize_metadata(video_id: str, payload: dict) -> VideoMetadata:
+def _normalize_metadata(
+    video_id: str,
+    payload: dict,
+    *,
+    default_audio_language_code: str,
+) -> VideoMetadata:
     result = _first_result(payload)
     content = result.get("content")
     if not isinstance(content, dict):
@@ -105,6 +120,10 @@ def _normalize_metadata(video_id: str, payload: dict) -> VideoMetadata:
         title=str(raw_metadata.get("title") or ""),
         channel_name=str(raw_metadata.get("channel") or raw_metadata.get("uploader") or ""),
         published_at=parse_upload_date(upload_date) if upload_date else "",
+        audio_language_code=resolve_audio_language_code(
+            raw_metadata.get("language"),
+            default_audio_language_code=default_audio_language_code,
+        ),
         channel_id=_optional_str(raw_metadata.get("channel_id")),
         uploader_id=_optional_str(raw_metadata.get("uploader_id")),
         uploader_url=_optional_str(raw_metadata.get("uploader_url")),
