@@ -2,6 +2,27 @@
 
 from __future__ import annotations
 
+import math
+
+
+def _ms_to_seconds(value: object) -> float:
+    """Convert millisecond values to seconds with safe fallback for malformed inputs."""
+    if isinstance(value, bool):
+        return 0.0
+
+    if isinstance(value, str):
+        value = value.strip()
+
+    try:
+        numeric_value = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+    if not math.isfinite(numeric_value):
+        return 0.0
+
+    return round(numeric_value / 1000.0, 3)
+
 
 def parse_json3_to_chunks(json3_data: dict) -> list[dict[str, float | str]]:
     """Convert YouTube json3 subtitle data to a list of transcript chunks.
@@ -30,8 +51,8 @@ def parse_json3_to_chunks(json3_data: dict) -> list[dict[str, float | str]]:
 
         chunks.append(
             {
-                "start": round(t_start_ms / 1000.0, 3),
-                "duration": round(d_duration_ms / 1000.0, 3),
+                "start": _ms_to_seconds(t_start_ms),
+                "duration": _ms_to_seconds(d_duration_ms),
                 "text": text,
             }
         )
