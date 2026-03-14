@@ -179,3 +179,14 @@ def test_classify_api_failure_for_decodo_root_failed_status() -> None:
     }
 
     assert _classify_api_failure(payload) == "api_target_failed"
+
+
+def test_classify_api_failure_for_decodo_top_level_failed_status() -> None:
+    payload = {
+        "status": "failed",
+        "status_code": 613,
+        "message": "We were not able to scrape the target.",
+        "task_id": "7437926550256772097",
+    }
+
+    assert _classify_api_failure(payload) == "api_target_failed"

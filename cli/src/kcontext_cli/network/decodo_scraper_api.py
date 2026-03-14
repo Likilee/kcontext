@@ -114,20 +114,17 @@ def _classify_http_error(status_code: int, body: str) -> str:
 
 
 def _extract_api_failure_message(payload: object) -> str | None:
-    if not isinstance(payload, dict):
+    failure_node = _failure_node(payload)
+    if failure_node is None:
         return None
 
-    root = payload.get("root")
-    if not isinstance(root, dict):
-        return None
-
-    status = str(root.get("status") or "").strip().lower()
+    status = str(failure_node.get("status") or "").strip().lower()
     if status != "failed":
         return None
 
-    status_code = root.get("status_code")
-    task_id = root.get("task_id")
-    message = str(root.get("message") or "Decodo reported a scrape failure.").strip()
+    status_code = failure_node.get("status_code")
+    task_id = failure_node.get("task_id")
+    message = str(failure_node.get("message") or "Decodo reported a scrape failure.").strip()
 
     extras = []
     if status_code not in (None, ""):
@@ -140,15 +137,12 @@ def _extract_api_failure_message(payload: object) -> str | None:
 
 
 def _classify_api_failure(payload: object) -> str:
-    if not isinstance(payload, dict):
+    failure_node = _failure_node(payload)
+    if failure_node is None:
         return "api_unexpected_schema"
 
-    root = payload.get("root")
-    if not isinstance(root, dict):
-        return "api_unexpected_schema"
-
-    normalized_message = str(root.get("message") or "").lower()
-    status_code = int(root.get("status_code") or 0)
+    normalized_message = str(failure_node.get("message") or "").lower()
+    status_code = int(failure_node.get("status_code") or 0)
 
     if status_code == 402:
         return "api_budget_exhausted"
@@ -169,3 +163,17 @@ def _classify_api_failure(payload: object) -> str:
     if "unauthorized" in normalized_message or "forbidden" in normalized_message:
         return "api_auth_failed"
     return "api_target_failed"
+
+
+def _failure_node(payload: object) -> dict[str, object] | None:
+    if not isinstance(payload, dict):
+        return None
+
+    root = payload.get("root")
+    if isinstance(root, dict) and root.get("status") is not None:
+        return root
+
+    if payload.get("status") is not None:
+        return payload
+
+    return None

@@ -400,7 +400,7 @@ latest_direct_report() {
 }
 
 load_remote_env
-if [[ -z "${REMOTE_PROJECT_REF:-}" || -z "${REMOTE_SUPABASE_URL:-}" || -z "${REMOTE_SUPABASE_SERVICE_ROLE_KEY:-}" ]]; then
+if [[ -z "${REMOTE_PROJECT_REF:-}" || -z "${REMOTE_SUPABASE_URL:-}" || -z "${REMOTE_SUPABASE_SECRET_KEY:-}" ]]; then
   echo "Error: .env.remote-sync is missing required values." >&2
   exit 1
 fi

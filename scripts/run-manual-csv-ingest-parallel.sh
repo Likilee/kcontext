@@ -184,7 +184,6 @@ failed_path = workspace / "failed_attempts.tsv"
 summary_path = workspace / "run_summary.json"
 in_flight_path = workspace / ".parallel_in_flight_ids.txt"
 skipped_path = workspace / "skipped_ids.txt"
-skipped_path = workspace / "skipped_ids.txt"
 
 workspace.mkdir(parents=True, exist_ok=True)
 succeeded_path.touch()
