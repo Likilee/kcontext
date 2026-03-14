@@ -41,7 +41,7 @@ Read `docs/github-issue-first-workflow.md` when label semantics or readiness rul
 - Keep `Acceptance criteria` observable and outcome-based.
 - Keep `Verification` concrete; prefer actual repo commands such as `cd web && pnpm test`, `cd web && pnpm lint`, `cd cli && uv run ruff check .`, or `make e2e-smoke`.
 - Write `Dependencies/Links` as `none` when there are no dependencies.
-- Use the exact heading names from [body-templates.md](references/body-templates.md) so the repo workflow can parse the issue consistently. Prefer the Korean headings used there.
+- Use the exact heading names from [body-templates.md](references/body-templates.md) so the repo workflow can parse the issue consistently. Keep the structural headings in English and write the actual content in Korean by default.
 
 ## Create The Issue
 

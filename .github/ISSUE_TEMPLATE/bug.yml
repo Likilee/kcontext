@@ -1,6 +1,6 @@
-name: "버그"
+name: "Bug"
 description: "재현 가능한 오동작, 회귀, 기대 동작 불일치를 등록합니다."
-title: "[버그] "
+title: "[Bug] "
 body:
   - type: markdown
     attributes:
@@ -16,7 +16,7 @@ body:
   - type: dropdown
     id: type
     attributes:
-      label: "유형"
+      label: "Type"
       description: "이 템플릿에서는 `bug`로 고정되며 `type:bug` 라벨로 동기화됩니다."
       options:
         - "bug"
@@ -25,7 +25,7 @@ body:
   - type: dropdown
     id: priority
     attributes:
-      label: "우선순위"
+      label: "Priority"
       description: "`priority:*` 라벨로 동기화됩니다."
       options:
         - "p0"
@@ -36,7 +36,7 @@ body:
   - type: dropdown
     id: area
     attributes:
-      label: "영역"
+      label: "Area"
       description: "기본 1개, 필요하면 최대 2개까지 선택합니다. `area:*` 라벨로 동기화됩니다."
       multiple: true
       options:
@@ -50,7 +50,7 @@ body:
   - type: dropdown
     id: status
     attributes:
-      label: "상태"
+      label: "Status"
       description: "지금 바로 수정 가능한 버그일 때 `ready`를 선택합니다."
       options:
         - "ready"
@@ -61,7 +61,7 @@ body:
   - type: textarea
     id: user-impact
     attributes:
-      label: "사용자 영향"
+      label: "User impact"
       description: "누가 어떤 영향을 받는지 적어주세요."
       placeholder: |
         예시:
@@ -71,7 +71,7 @@ body:
   - type: textarea
     id: repro-steps
     attributes:
-      label: "재현 절차"
+      label: "Repro steps"
       description: "버그를 재현하는 정확한 순서를 적어주세요."
       placeholder: |
         1. 웹 앱을 실행한다.
@@ -82,7 +82,7 @@ body:
   - type: textarea
     id: expected-behavior
     attributes:
-      label: "기대 동작"
+      label: "Expected behavior"
       description: "원래 어떤 동작이 나와야 하는지 적어주세요."
       placeholder: |
         검색 결과에 매칭되는 자막 청크가 렌더링되어야 한다.
@@ -91,7 +91,7 @@ body:
   - type: textarea
     id: actual-behavior
     attributes:
-      label: "실제 동작"
+      label: "Actual behavior"
       description: "현재 어떤 잘못된 동작이 발생하는지 적어주세요."
       placeholder: |
         페이지에 결과가 표시되지 않고 API가 401을 반환한다.
@@ -100,7 +100,7 @@ body:
   - type: textarea
     id: suspected-scope
     attributes:
-      label: "의심 범위"
+      label: "Suspected scope"
       description: "영향이 있을 것으로 보이는 파일, 시스템, 경계를 적어주세요."
       placeholder: |
         - `web/src/app/api/...`
@@ -110,7 +110,7 @@ body:
   - type: textarea
     id: acceptance-criteria
     attributes:
-      label: "완료 기준"
+      label: "Acceptance criteria"
       description: "관찰 가능한 결과를 2~5개 적어주세요."
       placeholder: |
         - [ ] 재현 절차로 더 이상 같은 버그가 발생하지 않는다.
@@ -121,7 +121,7 @@ body:
   - type: textarea
     id: verification
     attributes:
-      label: "검증"
+      label: "Verification"
       description: "수정 내용을 확인할 정확한 명령어 또는 수동 확인 절차를 적어주세요."
       placeholder: |
         - `cd web && pnpm test`
@@ -131,7 +131,7 @@ body:
   - type: textarea
     id: dependencies-links
     attributes:
-      label: "의존성/링크"
+      label: "Dependencies/Links"
       description: "관련 이슈, PR, 문서 링크를 적고, 없으면 `none`이라고 써주세요."
       placeholder: |
         none
@@ -140,7 +140,7 @@ body:
   - type: textarea
     id: logs-screenshots-links
     attributes:
-      label: "로그/스크린샷/링크"
+      label: "Logs/Screenshots/Links"
       description: "로그, 스크린샷, 관련 이슈/PR 링크를 적고, 없으면 `none`이라고 써주세요."
       placeholder: |
         none

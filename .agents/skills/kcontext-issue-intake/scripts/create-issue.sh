@@ -150,10 +150,10 @@ fi
 
 case "${kind}" in
   task)
-    [[ "${title}" == \[Task\]* || "${title}" == \[작업\]* ]] || title="[작업] ${title}"
+    [[ "${title}" == \[Task\]* ]] || title="[Task] ${title}"
     ;;
   bug)
-    [[ "${title}" == \[Bug\]* || "${title}" == \[버그\]* ]] || title="[버그] ${title}"
+    [[ "${title}" == \[Bug\]* ]] || title="[Bug] ${title}"
     ;;
 esac
 

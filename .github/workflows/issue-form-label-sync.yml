@@ -22,25 +22,25 @@ jobs:
             const managedPrefixes = ["area:", "type:", "priority:", "status:"];
             const managedFields = [
               {
-                headings: ["Type", "유형"],
+                heading: "Type",
                 prefix: "type:",
                 allowed: ["feature", "bug", "refactor", "chore", "docs"],
                 multiple: false,
               },
               {
-                headings: ["Priority", "우선순위"],
+                heading: "Priority",
                 prefix: "priority:",
                 allowed: ["p0", "p1", "p2"],
                 multiple: false,
               },
               {
-                headings: ["Area", "영역"],
+                heading: "Area",
                 prefix: "area:",
                 allowed: ["web", "cli", "supabase", "ci", "docs"],
                 multiple: true,
               },
               {
-                headings: ["Status", "상태"],
+                heading: "Status",
                 prefix: "status:",
                 allowed: ["ready", "blocked", "none"],
                 multiple: false,
@@ -80,7 +80,7 @@ jobs:
             const sections = parseSections(body);
             const managedLabels = [];
             const hasManagedHeadings = managedFields.some((field) =>
-              field.headings.some((heading) => sections.has(heading)),
+              sections.has(field.heading),
             );
 
             if (!hasManagedHeadings) {
@@ -89,9 +89,7 @@ jobs:
             }
 
             for (const field of managedFields) {
-              const rawValue = field.headings
-                .map((heading) => sections.get(heading))
-                .find((value) => Boolean(value));
+              const rawValue = sections.get(field.heading);
               if (!rawValue) {
                 continue;
               }
