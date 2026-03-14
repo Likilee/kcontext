@@ -1,0 +1,3 @@
+ALTER TABLE public.video
+ALTER COLUMN title DROP NOT NULL,
+ALTER COLUMN channel_name DROP NOT NULL;

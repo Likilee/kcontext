@@ -88,6 +88,37 @@ describe("search-service", () => {
     ).rejects.toThrow("Search failed: rpc boom");
   });
 
+  it("preserves missing title and channel metadata for UI fallbacks", async () => {
+    mockRpc.mockResolvedValue({
+      data: [
+        {
+          video_id: "vid2",
+          title: null,
+          channel_name: null,
+          start_time: 33,
+          text: "제목이 없어도 검색됩니다",
+        },
+      ],
+      error: null,
+    });
+
+    const response = await searchSubtitles({
+      keyword: "검색",
+      audioLanguageCode: "ko",
+      clientId: "client-3",
+    });
+
+    expect(response.results).toEqual([
+      {
+        videoId: "vid2",
+        title: null,
+        channelName: null,
+        startTime: 33,
+        matchedText: "제목이 없어도 검색됩니다",
+      },
+    ]);
+  });
+
   it("rate limits repeated anonymous searches from the same client", async () => {
     mockRpc.mockResolvedValue({
       data: [],
