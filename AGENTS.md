@@ -9,6 +9,10 @@
 ## GitHub Issue Workflow
 - Non-trivial work starts from a GitHub issue.
 - Codex should prefer issues that already have `status:ready`, clear acceptance criteria, concrete verification steps, and resolved dependencies.
+- Default collaboration language for GitHub is Korean.
+  - Write issue titles/bodies, PR titles/bodies, review comments, and follow-up replies in Korean by default.
+  - Keep code, commands, identifiers, API names, and externally quoted text in their original form when that is clearer.
+  - If an external tool or existing thread contains English, add a short Korean summary rather than switching the whole discussion to English.
 - Use repo workflow labels:
   - `area:*` → `web`, `cli`, `supabase`, `ci`, `docs`
   - `type:*` → `feature`, `bug`, `refactor`, `chore`, `docs`

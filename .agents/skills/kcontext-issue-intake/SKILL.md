@@ -36,10 +36,12 @@ Read `docs/github-issue-first-workflow.md` when label semantics or readiness rul
 
 ## Write The Body
 
+- Write issue titles and bodies in Korean by default.
+- Keep code, commands, identifiers, labels, and external proper nouns in their original form when that is clearer.
 - Keep `Acceptance criteria` observable and outcome-based.
 - Keep `Verification` concrete; prefer actual repo commands such as `cd web && pnpm test`, `cd web && pnpm lint`, `cd cli && uv run ruff check .`, or `make e2e-smoke`.
 - Write `Dependencies/Links` as `none` when there are no dependencies.
-- Use the exact heading names from [body-templates.md](references/body-templates.md) so the repo workflow can parse the issue consistently.
+- Use the exact heading names from [body-templates.md](references/body-templates.md) so the repo workflow can parse the issue consistently. Prefer the Korean headings used there.
 
 ## Create The Issue
 

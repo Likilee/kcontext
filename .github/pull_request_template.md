@@ -1,15 +1,16 @@
-## Summary
+## 요약
+
+- 모든 서술은 기본적으로 한국어로 작성합니다. 코드, 명령어, 식별자, 외부 고유명은 원문 유지 가능
+- 
+
+## 연결된 이슈
+
+- 완전히 해결하는 PR이면 `Closes #<issue-number>`, 일부 단계만 포함하면 `Refs #<issue-number>`를 적어주세요.
+
+## 검증
 
 - 
 
-## Linked Issue
-
-- `Closes #<issue-number>` for a complete fix, or `Refs #<issue-number>` for a partial step
-
-## Verification
-
-- 
-
-## Notes
+## 메모
 
 - 

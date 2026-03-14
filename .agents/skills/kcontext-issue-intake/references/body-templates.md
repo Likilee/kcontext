@@ -1,98 +1,99 @@
 # Issue Body Templates
 
 Use these headings exactly when creating or rewriting issues via `gh` or plain Markdown.
-The repo workflow parses `Type`, `Priority`, `Area`, and `Status` from these headings.
+Write issue titles and body prose in Korean by default, while keeping code, commands, identifiers, labels, and external proper nouns in their original form when clearer.
+The repo workflow parses `유형/Type`, `우선순위/Priority`, `영역/Area`, and `상태/Status` from these headings.
 
 ## Task
 
 ```md
-### Type
+### 유형
 feature
 
-### Priority
+### 우선순위
 p1
 
-### Area
+### 영역
 web
 
-### Status
+### 상태
 ready
 
-### Goal
-Describe the user-facing or repo-facing outcome.
+### 목표
+사용자 관점 또는 저장소 관점에서 기대하는 결과를 적습니다.
 
-### Context
-Explain why the work matters and link any related docs or issues.
+### 배경
+왜 필요한지와 관련 문서 또는 이슈를 적습니다.
 
-### In scope
-- Item 1
-- Item 2
+### 범위 포함
+- 항목 1
+- 항목 2
 
-### Out of scope
-- Item 1
-- Item 2
+### 범위 제외
+- 항목 1
+- 항목 2
 
-### Acceptance criteria
-- [ ] Observable outcome 1
-- [ ] Observable outcome 2
+### 완료 기준
+- [ ] 관찰 가능한 결과 1
+- [ ] 관찰 가능한 결과 2
 
-### Verification
+### 검증
 - `cd web && pnpm lint`
 - `cd web && pnpm test`
 
-### Dependencies/Links
+### 의존성/링크
 none
 
-### Tracking checklist (optional)
+### 트래킹 체크리스트 (선택)
 - [ ] #123
 ```
 
-Use `Status = none` for backlog or tracking issues.
+Use `상태 = none` for backlog or tracking issues.
 
 ## Bug
 
 ```md
-### Type
+### 유형
 bug
 
-### Priority
+### 우선순위
 p1
 
-### Area
+### 영역
 web
 
-### Status
+### 상태
 ready
 
-### User impact
-Describe who is affected and how.
+### 사용자 영향
+누가 어떤 영향을 받는지 적습니다.
 
-### Repro steps
-1. Step 1
-2. Step 2
-3. Step 3
+### 재현 절차
+1. 단계 1
+2. 단계 2
+3. 단계 3
 
-### Expected behavior
-Describe the correct behavior.
+### 기대 동작
+정상적으로 기대하는 동작을 적습니다.
 
-### Actual behavior
-Describe the current incorrect behavior.
+### 실제 동작
+현재 발생하는 잘못된 동작을 적습니다.
 
-### Suspected scope
-- Likely file or system 1
-- Likely file or system 2
+### 의심 범위
+- 관련 가능성이 높은 파일 또는 시스템 1
+- 관련 가능성이 높은 파일 또는 시스템 2
 
-### Acceptance criteria
-- [ ] Observable outcome 1
-- [ ] Observable outcome 2
+### 완료 기준
+- [ ] 관찰 가능한 결과 1
+- [ ] 관찰 가능한 결과 2
 
-### Verification
+### 검증
 - `cd web && pnpm test`
 - `make e2e-smoke`
 
-### Dependencies/Links
+### 의존성/링크
 none
 
-### Logs/Screenshots/Links
+### 로그/스크린샷/링크
 none
 ```

@@ -49,5 +49,5 @@ Use `docs/codex-worktree-bootstrap.md` when the worktree is missing repo-local e
 
 - Re-run the checks that prove the reviewer concern is addressed.
 - Keep the PR summary and issue link accurate if scope changed.
-- Reply with a short mapping from feedback item to change and verification.
+- Reply in Korean by default with a short mapping from feedback item to change and verification.
 - Do not mark work done if unresolved threads still point at a real risk.

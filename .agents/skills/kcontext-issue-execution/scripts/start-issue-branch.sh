@@ -74,8 +74,20 @@ normalize_slug() {
   local original="$1"
   local issue_kind=""
   local slug
+  local issue_prefix=""
 
-  issue_kind="$(printf '%s' "${original}" | sed -En 's/^\[([^]]+)\].*/\1/p' | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//; s/-+/-/g')"
+  issue_prefix="$(printf '%s' "${original}" | sed -En 's/^\[([^]]+)\].*/\1/p')"
+  case "${issue_prefix}" in
+    "작업")
+      issue_kind="task"
+      ;;
+    "버그")
+      issue_kind="bug"
+      ;;
+    *)
+      issue_kind="$(printf '%s' "${issue_prefix}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//; s/-+/-/g')"
+      ;;
+  esac
   raw="$(printf '%s' "${raw}" | sed -E 's/^\[[^]]+\][[:space:]]*//')"
   slug="$(printf '%s' "${raw}" | iconv -c -t ascii//translit 2>/dev/null || true)"
   slug="$(printf '%s' "${slug}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//; s/-+/-/g')"

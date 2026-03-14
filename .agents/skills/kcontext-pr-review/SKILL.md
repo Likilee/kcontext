@@ -34,7 +34,7 @@ You can also target another repository with `--repo owner/name`.
 2. Check whether the linked issue itself looks executable and in scope.
 3. Inspect checks, review state, linked issues, changed files, and unresolved review threads.
 4. Review the code and tests with repo-specific architecture rules in mind.
-5. Respond with findings first. If there are no findings, say that explicitly and note any residual risk.
+5. Respond with findings first in Korean by default. If there are no findings, say that explicitly and note any residual risk.
 
 If review or spot-checking in a Codex worktree needs env-backed commands such as local API checks, transcript fetches, sync flows, or E2E verification, bootstrap env first:
 
@@ -65,3 +65,4 @@ If the user wants you to submit a GitHub review after analysis:
 - Request changes: `gh pr review 123 --request-changes -F /tmp/review.md`
 
 Prefer `--comment` or `--request-changes` unless the PR is clearly ready.
+Write the review body in Korean by default, while keeping code snippets, commands, identifiers, and quoted external text in their original form when clearer.

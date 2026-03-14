@@ -80,6 +80,7 @@ When the issue title is mostly Korean, pass `--slug short-ascii-slug` to keep th
 - Use `Refs #<issue>` for partial steps.
 - Keep PR verification aligned with the issue's `Verification` section.
 - Use the repo PR template at `.github/pull_request_template.md`.
+- Write the PR title/body and any implementation status comments in Korean by default, keeping code, commands, identifiers, and quoted external text in their original form when clearer.
 
 ## Handle Blockers
 
