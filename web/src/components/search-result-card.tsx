@@ -2,6 +2,7 @@
 
 import { cn } from "@/components/ui/utils";
 import type { SearchResult } from "@/domain/models/subtitle";
+import { getDisplayChannelName, getDisplayVideoTitle } from "@/lib/video-meta-fallback";
 import { renderHighlightedText } from "./highlighted-text";
 
 interface SearchResultCardProps {
@@ -18,6 +19,9 @@ function formatTimestamp(seconds: number): string {
 }
 
 export function SearchResultCard({ result, keyword, isSelected, onClick }: SearchResultCardProps) {
+  const displayTitle = getDisplayVideoTitle(result.title);
+  const displayChannelName = getDisplayChannelName(result.channelName);
+
   return (
     <button
       type="button"
@@ -36,7 +40,7 @@ export function SearchResultCard({ result, keyword, isSelected, onClick }: Searc
             data-testid="video-title"
             className="truncate font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-16)] font-bold text-[var(--text-primary)]"
           >
-            {result.title}
+            {displayTitle}
           </p>
           <span className="shrink-0 text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
             {formatTimestamp(result.startTime)}
@@ -46,7 +50,7 @@ export function SearchResultCard({ result, keyword, isSelected, onClick }: Searc
           data-testid="channel-name"
           className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]"
         >
-          {result.channelName}
+          {displayChannelName}
         </p>
         <p className="break-keep font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-16)] text-[var(--text-primary)]">
           {renderHighlightedText(result.matchedText, keyword)}
