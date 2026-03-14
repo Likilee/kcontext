@@ -2,6 +2,7 @@
 
 ## Before Coding
 
+- Start a fresh thread with `[Issue #<number>] <issue title>` when possible.
 - Confirm the issue is `status:ready`.
 - Confirm the issue is not `status:blocked`.
 - Confirm `Acceptance criteria`, `Verification`, and `Dependencies/Links` are present.

@@ -1,4 +1,4 @@
 interface:
   display_name: "Kcontext Issue Execution"
-  short_description: "Work from ready issues and keep links aligned."
-  default_prompt: "Use $kcontext-issue-execution to start from issue #123, create the correct branch, and keep the PR and issue state aligned."
+  short_description: "Start from ready issues with kickoff prompt and branch."
+  default_prompt: "Use $kcontext-issue-execution to start from issue #123, generate the kickoff prompt, create the correct branch, and keep the PR and issue state aligned."

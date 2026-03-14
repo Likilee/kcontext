@@ -75,3 +75,11 @@ Use `--dry-run` first when you want to inspect the final title, labels, and body
 - If the work is too large, convert the original issue into a tracking issue and open smaller child issues.
 - Preserve the original user intent; do not silently narrow scope unless the issue explicitly becomes a tracking issue.
 - When moving an issue to `blocked`, leave the status change to normal `gh` commands or the triage skill so the blocker comment is not skipped.
+
+## Hand Off To Execution
+
+When a new issue is truly `status:ready`, prefer handing it off into a fresh Codex thread instead of continuing in a planning-heavy thread.
+
+- Start the new thread with `[Issue #123] <issue title>`.
+- Use the execution skill's kickoff helper to keep the thread title pattern, branch, and PR linkage aligned.
+- Keep the issue body as the source of truth rather than copying the whole contract into chat.

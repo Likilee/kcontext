@@ -1,6 +1,6 @@
 ---
 name: kcontext-issue-execution
-description: Execute kcontext implementation work from a GitHub issue using the repo's issue-first rules. Use when Codex needs to start from an issue number or issue URL, confirm that the issue is truly `status:ready`, create the canonical `codex/123-short-slug` branch, carry acceptance criteria and verification through implementation, prepare a linked PR with `Closes` or `Refs`, or stop and escalate because the issue is underspecified or blocked.
+description: Execute kcontext implementation work from a GitHub issue using the repo's issue-first rules. Use when Codex needs to start from an issue number or issue URL, confirm that the issue is truly `status:ready`, generate a new-thread kickoff prompt like `[Issue #123] ...`, create the canonical `codex/123-short-slug` branch, carry acceptance criteria and verification through implementation, prepare a linked PR with `Closes` or `Refs`, or stop and escalate because the issue is underspecified or blocked.
 ---
 
 # Kcontext Issue Execution
@@ -10,7 +10,7 @@ description: Execute kcontext implementation work from a GitHub issue using the 
 Use this skill after the issue already exists and the user wants actual implementation work.
 Do not use it to invent new work items from scratch; use the intake skill for that.
 
-Read `docs/github-issue-first-workflow.md` and [execution-checklist.md](references/execution-checklist.md) when you need the exact repo rules.
+Read `docs/github-issue-first-workflow.md`, [execution-checklist.md](references/execution-checklist.md), and [kickoff-template.md](references/kickoff-template.md) when you need the exact repo rules.
 
 ## Preflight
 
@@ -23,6 +23,29 @@ Before editing code, confirm all of the following:
 - `Dependencies/Links` are explicit.
 
 If any of these are missing, stop and refine the issue first instead of coding against an ambiguous request.
+
+## Kick Off The Thread
+
+When starting a fresh Codex thread for an issue, keep the first line aligned with the issue number:
+
+```text
+[Issue #123] Search API 권한 흐름 정리
+```
+
+Preferred path:
+
+```bash
+bash .agents/skills/kcontext-issue-execution/scripts/print-issue-kickoff.sh --issue 123
+```
+
+That helper prints a compact, ready-to-paste kickoff prompt with:
+
+- the canonical first line
+- the GitHub issue link
+- the recommended `codex/<issue-number>-slug` branch
+- the PR linking reminder for `Closes` vs `Refs`
+
+Keep the prompt short and let the GitHub issue stay the source of truth.
 
 ## Start The Branch
 
