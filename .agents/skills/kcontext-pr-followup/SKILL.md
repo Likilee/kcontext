@@ -30,6 +30,14 @@ The report highlights latest reviews and unresolved review threads so you can bu
 4. Re-run the relevant verification from the issue and PR.
 5. Prepare a concise response summary that maps fixes back to review points.
 
+If the follow-up requires env-backed verification from a Codex worktree, run this first:
+
+```bash
+./scripts/bootstrap-worktree-env.sh --symlink
+```
+
+Use `docs/codex-worktree-bootstrap.md` when the worktree is missing repo-local env files.
+
 ## Prioritize Feedback
 
 - Address `CHANGES_REQUESTED` reviews first.

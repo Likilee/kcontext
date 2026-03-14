@@ -36,6 +36,14 @@ You can also target another repository with `--repo owner/name`.
 4. Review the code and tests with repo-specific architecture rules in mind.
 5. Respond with findings first. If there are no findings, say that explicitly and note any residual risk.
 
+If review or spot-checking in a Codex worktree needs env-backed commands such as local API checks, transcript fetches, sync flows, or E2E verification, bootstrap env first:
+
+```bash
+./scripts/bootstrap-worktree-env.sh --symlink
+```
+
+Use `docs/codex-worktree-bootstrap.md` if the expected `.env` files are absent.
+
 ## What To Look For
 
 - Missing or incorrect linked issue references

@@ -24,6 +24,14 @@ Before editing code, confirm all of the following:
 
 If any of these are missing, stop and refine the issue first instead of coding against an ambiguous request.
 
+If you are working in a Codex worktree and the issue will need env-backed commands such as web search verification, transcript loading, CLI push/sync, or E2E checks, bootstrap local env files before running those commands:
+
+```bash
+./scripts/bootstrap-worktree-env.sh --symlink
+```
+
+Read `docs/codex-worktree-bootstrap.md` when the worktree does not already expose the expected `.env` files.
+
 ## Kick Off The Thread
 
 When starting a fresh Codex thread for an issue, keep the first line aligned with the issue number:
