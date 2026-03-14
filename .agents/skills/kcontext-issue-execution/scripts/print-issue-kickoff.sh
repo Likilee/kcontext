@@ -49,9 +49,16 @@ if [[ -z "${github_repo}" ]]; then
   github_repo="$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
 fi
 
-issue_json="$(gh issue view "${issue_number}" --repo "${github_repo}" --json number,title,url)"
-issue_title="$(jq -r '.title' <<< "${issue_json}")"
-issue_url="$(jq -r '.url' <<< "${issue_json}")"
+mapfile -t issue_fields < <(
+  gh issue view "${issue_number}" --repo "${github_repo}" --json title,url --jq '.title, .url'
+)
+issue_title="${issue_fields[0]:-}"
+issue_url="${issue_fields[1]:-}"
+
+if [[ -z "${issue_title}" || -z "${issue_url}" ]]; then
+  echo "Failed to read issue title or URL for #${issue_number}" >&2
+  exit 1
+fi
 display_title="$(printf '%s' "${issue_title}" | sed -E 's/^\[[^]]+\][[:space:]]*//')"
 
 if [[ -z "${display_title}" ]]; then

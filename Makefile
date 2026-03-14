@@ -19,6 +19,7 @@ SYNC_DRY_RUN ?= 0
 	e2e-smoke \
 	e2e-real \
 	e2e-down \
+	github-labels-sync \
 	ingest-local \
 	sync-remote \
 	sync-all \
@@ -63,6 +64,9 @@ e2e-real:
 
 e2e-down:
 	supabase stop --workdir "$(E2E_SUPABASE_WORKDIR)" --no-backup || true
+
+github-labels-sync:
+	./scripts/sync-github-labels.sh
 
 ingest-local:
 	./scripts/run-local-ingest.sh \

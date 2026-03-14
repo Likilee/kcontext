@@ -6,6 +6,19 @@
 - **Repo Layout**: `web/` (Next.js Frontend) + `cli/` (Python Data Pipeline)
 - **Detailed Specs**: See `docs/` directory for system design, architecture, database schema, design system
 
+## GitHub Issue Workflow
+- Non-trivial work starts from a GitHub issue.
+- Codex should prefer issues that already have `status:ready`, clear acceptance criteria, concrete verification steps, and resolved dependencies.
+- Use repo workflow labels:
+  - `area:*` → `web`, `cli`, `supabase`, `ci`, `docs`
+  - `type:*` → `feature`, `bug`, `refactor`, `chore`, `docs`
+  - `priority:*` → `p0`, `p1`, `p2`
+  - `status:*` → `ready`, `blocked`
+- Tracking issues should not carry `status:ready`; use them only as parents for smaller executable issues.
+- Branch naming for issue-driven work: `codex/<issue-number>-short-slug`
+- PRs should link the representative issue with `Closes #<number>` for complete fixes or `Refs #<number>` for partial work.
+- Source of truth for the workflow: `docs/github-issue-first-workflow.md`
+
 ## Architecture Rules
 
 ### Clean Architecture (Frontend — web/src/)
