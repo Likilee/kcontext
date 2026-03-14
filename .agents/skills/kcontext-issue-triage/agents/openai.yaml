@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kcontext Issue Triage"
+  short_description: "Triage the ready queue and blocked issues."
+  default_prompt: "Use $kcontext-issue-triage to review open kcontext issues, normalize labels, and report what is ready, blocked, or underspecified."

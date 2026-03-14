@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kcontext PR Review"
+  short_description: "Review open PRs with repo-specific checks."
+  default_prompt: "Use $kcontext-pr-review to inspect open pull requests in kcontext, surface review findings, and summarize risks."

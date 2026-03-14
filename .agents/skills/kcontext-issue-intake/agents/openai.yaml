@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kcontext Issue Intake"
+  short_description: "Create ready GitHub issues for kcontext work."
+  default_prompt: "Use $kcontext-issue-intake to turn this request into a properly labeled kcontext issue with acceptance criteria and verification."
