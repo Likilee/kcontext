@@ -13,7 +13,6 @@ pull those local-only files into each worktree before an automation starts.
 - `.env.decodo`
 - `web/.env.local`
 - `cli/.env`
-- `.codex/config.toml`
 
 Missing files are skipped so the same script works for web-only and CLI-only
 tasks.
@@ -39,9 +38,8 @@ If you need a fully copied snapshot instead of links, use:
 ## How it finds the source checkout
 
 The script resolves the shared git common dir and then reads `core.worktree`
-from that git dir. That lets it find the canonical local checkout even though
-this repository lives inside a superproject and Codex worktrees live under
-`~/.codex/worktrees/...`.
+from that git dir. That lets it find the canonical local checkout while Codex
+worktrees live under `~/.codex/worktrees/...`.
 
 ## Codex app setup
 
@@ -87,5 +85,6 @@ Override the detected source or target path:
 
 - This is meant for local Codex worktrees on the same machine.
 - It does not solve cloud sandbox env injection by itself.
-- `.codex/config.toml` is included so repo-local MCP settings can follow the
-  worktree when present.
+- Tracked repo files such as `.codex/config.toml` are not bootstrapped because
+  they already exist in fresh worktrees and forcing them through symlinks makes
+  the worktree look dirty.

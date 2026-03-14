@@ -13,7 +13,6 @@ BOOTSTRAP_PATHS=(
   ".env.decodo"
   "web/.env.local"
   "cli/.env"
-  ".codex/config.toml"
 )
 
 usage() {
@@ -38,7 +37,6 @@ Bootstrapped paths:
   .env.decodo
   web/.env.local
   cli/.env
-  .codex/config.toml
 USAGE
 }
 
@@ -165,7 +163,11 @@ if [[ -z "$SOURCE_ROOT" ]]; then
 
   core_worktree="$(git --git-dir="$common_git_dir" config --get core.worktree || true)"
   if [[ -z "$core_worktree" ]]; then
-    SOURCE_ROOT="$TARGET_ROOT"
+    if [[ "$(basename "$common_git_dir")" == ".git" ]]; then
+      SOURCE_ROOT="$(cd "$common_git_dir/.." && pwd -P)"
+    else
+      SOURCE_ROOT="$TARGET_ROOT"
+    fi
   else
     SOURCE_ROOT="$(resolve_path "$common_git_dir" "$core_worktree")"
   fi
