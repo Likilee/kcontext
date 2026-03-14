@@ -13,7 +13,7 @@ Options:
   --output <path>       Output env file path (default: .env.remote-sync)
   -h, --help            Show help
 
-This script fetches anon/service_role API keys from Supabase CLI and writes
+This script fetches anon and secret API keys from Supabase CLI and writes
 an env file used by scripts/run-remote-sync.sh.
 USAGE
 }
@@ -75,13 +75,13 @@ if proc.returncode != 0:
 
 keys = json.loads(proc.stdout)
 anon = next((k["api_key"] for k in keys if k.get("name") == "anon"), "")
-service_role = next((k["api_key"] for k in keys if k.get("name") == "service_role"), "")
+secret = next((k["api_key"] for k in keys if k.get("type") == "secret"), "")
 
 if not anon:
     print("Failed to resolve anon key from Supabase API response.", file=sys.stderr)
     raise SystemExit(1)
-if not service_role:
-    print("Failed to resolve service_role key from Supabase API response.", file=sys.stderr)
+if not secret:
+    print("Failed to resolve secret key from Supabase API response.", file=sys.stderr)
     raise SystemExit(1)
 
 existing_db_url = ""
@@ -113,12 +113,12 @@ content = "\n".join(
         f"NEXT_PUBLIC_CDN_URL={url}/storage/v1/object/public",
         "",
         "# Remote sync script vars",
-        f"REMOTE_SUPABASE_SERVICE_ROLE_KEY={service_role}",
+        f"REMOTE_SUPABASE_SECRET_KEY={secret}",
         f"REMOTE_DB_URL={existing_db_url}",
         f"# REMOTE_DB_URL template (pooler): {pooler_template}",
         "",
         "# Optional: local storage private fetch fallback",
-        "# LOCAL_SUPABASE_SERVICE_ROLE_KEY=<local-service-role-key>",
+        "# LOCAL_SUPABASE_SECRET_KEY=<local-secret-key>",
         "",
         "# Optional: Supabase MCP",
         "# SUPABASE_MCP_ACCESS_TOKEN=<set-mcp-pat>",

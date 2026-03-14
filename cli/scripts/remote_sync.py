@@ -45,7 +45,7 @@ class SyncConfig:
     local_supabase_url: str
     storage_bucket: str
     remote_supabase_url: str | None
-    remote_service_role_key: str | None
+    remote_secret_key: str | None
     remote_db_url: str | None
 
 
@@ -148,7 +148,7 @@ def parse_args() -> SyncConfig:
         local_supabase_url=str(args.local_supabase_url).rstrip("/"),
         storage_bucket=str(args.storage_bucket),
         remote_supabase_url=os.getenv("REMOTE_SUPABASE_URL"),
-        remote_service_role_key=os.getenv("REMOTE_SUPABASE_SERVICE_ROLE_KEY"),
+        remote_secret_key=os.getenv("REMOTE_SUPABASE_SECRET_KEY"),
         remote_db_url=os.getenv("REMOTE_DB_URL"),
     )
 
@@ -390,8 +390,8 @@ def download_local_storage_json(config: SyncConfig, video_id: str) -> bytes:
     try:
         return http_request(url=public_url, method="GET")
     except RuntimeError as public_error:
-        local_service_role_key = os.getenv("LOCAL_SUPABASE_SERVICE_ROLE_KEY")
-        if not local_service_role_key:
+        local_secret_key = os.getenv("LOCAL_SUPABASE_SECRET_KEY")
+        if not local_secret_key:
             raise RuntimeError(
                 f"Local storage fetch failed via public URL for {video_id}: {public_error}"
             ) from public_error
@@ -399,7 +399,7 @@ def download_local_storage_json(config: SyncConfig, video_id: str) -> bytes:
         api_url = (
             f"{config.local_supabase_url}/storage/v1/object/{config.storage_bucket}/{video_id}.json"
         )
-        headers = {"Authorization": f"Bearer {local_service_role_key}"}
+        headers = {"apikey": local_secret_key}
         try:
             return http_request(url=api_url, method="GET", headers=headers)
         except RuntimeError as api_error:
@@ -412,17 +412,15 @@ def download_local_storage_json(config: SyncConfig, video_id: str) -> bytes:
 def upload_remote_storage_json(config: SyncConfig, video_id: str, payload: bytes) -> None:
     if not config.remote_supabase_url:
         raise RuntimeError("Missing required environment variable: REMOTE_SUPABASE_URL")
-    if not config.remote_service_role_key:
-        raise RuntimeError(
-            "Missing required environment variable: REMOTE_SUPABASE_SERVICE_ROLE_KEY"
-        )
+    if not config.remote_secret_key:
+        raise RuntimeError("Missing required environment variable: REMOTE_SUPABASE_SECRET_KEY")
 
     url = (
         f"{config.remote_supabase_url.rstrip('/')}/storage/v1/object/"
         f"{config.storage_bucket}/{video_id}.json"
     )
     headers = {
-        "Authorization": f"Bearer {config.remote_service_role_key}",
+        "apikey": config.remote_secret_key,
         "Content-Type": "application/json",
         "x-upsert": "true",
     }

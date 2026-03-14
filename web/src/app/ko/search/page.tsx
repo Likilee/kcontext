@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getRequestSiteConfig } from "../../request-site-config";
 import { SearchPageClient } from "../../search/search-page-client";
+
+export const metadata: Metadata = {
+  robots: {
+    follow: false,
+    index: false,
+  },
+};
 
 function SearchPageSkeleton() {
   return (

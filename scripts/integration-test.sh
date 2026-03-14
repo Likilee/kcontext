@@ -58,11 +58,11 @@ PY
 )"
 
 export SUPABASE_URL="$API_URL"
-export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
+export SUPABASE_SECRET_KEY="$SERVICE_ROLE_KEY"
 export NEXT_PUBLIC_SUPABASE_URL="$API_URL"
 export NEXT_PUBLIC_SUPABASE_ANON_KEY="$ANON_KEY"
 export NEXT_PUBLIC_CDN_URL="$API_URL/storage/v1/object/public"
-export PLAYWRIGHT_BASE_URL="http://localhost:3100"
+export PLAYWRIGHT_BASE_URL="${PLAYWRIGHT_BASE_URL:-http://localhost:3410}"
 export CI="true"
 echo "  ✓ E2E stack is ready"
 

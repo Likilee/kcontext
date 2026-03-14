@@ -1,14 +1,5 @@
 import type { SubtitleRepository } from "@/application/ports/subtitle-repository";
 import type { SearchResult, SubtitleChunk } from "@/domain/models/subtitle";
-import { createSupabaseBrowserClient } from "@/infrastructure/supabase/client";
-
-interface SearchResultRow {
-  video_id: string;
-  title: string;
-  channel_name: string;
-  start_time: number;
-  text: string;
-}
 
 interface CdnSubtitleChunk {
   start_time: number;
@@ -18,23 +9,22 @@ interface CdnSubtitleChunk {
 
 export class SupabaseSubtitleRepository implements SubtitleRepository {
   async searchByKeyword(keyword: string, audioLanguageCode: string): Promise<SearchResult[]> {
-    const supabase = createSupabaseBrowserClient();
-    const { data, error } = await supabase.rpc("search_subtitles", {
-      audio_language_code: audioLanguageCode,
-      search_keyword: keyword,
+    const searchUrl = new URL("/api/search", window.location.origin);
+    searchUrl.searchParams.set("lang", audioLanguageCode);
+    searchUrl.searchParams.set("q", keyword);
+
+    const response = await fetch(searchUrl.toString(), {
+      headers: {
+        Accept: "application/json",
+      },
     });
 
-    if (error) {
-      throw new Error(`Search failed: ${error.message}`);
+    if (!response.ok) {
+      const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(errorPayload?.error ?? `Search failed: ${response.status}`);
     }
 
-    return (data as SearchResultRow[]).map((row) => ({
-      videoId: row.video_id,
-      title: row.title,
-      channelName: row.channel_name,
-      startTime: row.start_time,
-      matchedText: row.text,
-    }));
+    return (await response.json()) as SearchResult[];
   }
 
   async getFullTranscript(videoId: string): Promise<SubtitleChunk[]> {
@@ -43,8 +33,20 @@ export class SupabaseSubtitleRepository implements SubtitleRepository {
       throw new Error("Missing NEXT_PUBLIC_CDN_URL environment variable");
     }
 
-    const response = await fetch(`${cdnUrl}/subtitles/${videoId}.json`);
+    const response = await fetch(`${cdnUrl}/subtitles/${encodeURIComponent(videoId)}.json`, {
+      cache: "force-cache",
+      headers: {
+        Accept: "application/json",
+      },
+    });
     if (!response.ok) {
+      console.error(
+        JSON.stringify({
+          event: "transcript_fetch_failed",
+          status: response.status,
+          videoId,
+        }),
+      );
       throw new Error(`Failed to fetch transcript: ${response.status}`);
     }
 

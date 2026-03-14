@@ -144,11 +144,11 @@ def build_target_config(target: str) -> TargetConfig:
             str(os.getenv("SUPABASE_URL", "")).strip()
             or str(status_env.get("API_URL", "http://127.0.0.1:54321")).strip()
         ).rstrip("/")
-        service_role_key = str(os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")).strip()
+        service_role_key = str(os.getenv("SUPABASE_SECRET_KEY", "")).strip()
         if not service_role_key or service_role_key.startswith("<"):
             service_role_key = str(status_env.get("SERVICE_ROLE_KEY", "")).strip()
         if not service_role_key:
-            raise ValueError("Missing required environment variable: SUPABASE_SERVICE_ROLE_KEY")
+            raise ValueError("Missing required environment variable: SUPABASE_SECRET_KEY")
         return TargetConfig(
             target=target,
             db_url=None,
@@ -164,13 +164,13 @@ def build_target_config(target: str) -> TargetConfig:
         )
 
     supabase_url = str(os.getenv("REMOTE_SUPABASE_URL", "")).rstrip("/")
-    service_role_key = str(os.getenv("REMOTE_SUPABASE_SERVICE_ROLE_KEY", "")).strip()
+    service_role_key = str(os.getenv("REMOTE_SUPABASE_SECRET_KEY", "")).strip()
     db_url = str(os.getenv("REMOTE_DB_URL", "")).strip()
 
     if not supabase_url:
         raise ValueError("Missing required environment variable: REMOTE_SUPABASE_URL")
     if not service_role_key:
-        raise ValueError("Missing required environment variable: REMOTE_SUPABASE_SERVICE_ROLE_KEY")
+        raise ValueError("Missing required environment variable: REMOTE_SUPABASE_SECRET_KEY")
     if not db_url:
         raise ValueError("Missing required environment variable: REMOTE_DB_URL")
 
@@ -373,7 +373,6 @@ def delete_storage_objects(
 
     delete_url = f"{config.supabase_url}/storage/v1/object/{bucket}"
     headers = {
-        "Authorization": f"Bearer {config.service_role_key}",
         "apikey": config.service_role_key,
         "Content-Type": "application/json",
     }

@@ -42,7 +42,7 @@ def _fetch_json(url: str, *, headers: dict[str, str]) -> object:
 
 def _fetch_video_row(
     supabase_url: str,
-    service_role_key: str,
+    secret_key: str,
     video_id: str,
 ) -> dict[str, object]:
     encoded_video_id = parse.quote(video_id, safe="")
@@ -54,8 +54,7 @@ def _fetch_video_row(
     payload = _fetch_json(
         url,
         headers={
-            "apikey": service_role_key,
-            "Authorization": f"Bearer {service_role_key}",
+            "apikey": secret_key,
         },
     )
     if not isinstance(payload, list) or not payload:
@@ -136,13 +135,10 @@ def snapshot_fixtures(
             "NEXT_PUBLIC_SUPABASE_URL, or SUPABASE_URL."
         ),
     ),
-    service_role_key: str | None = typer.Option(
+    secret_key: str | None = typer.Option(
         None,
-        "--service-role-key",
-        help=(
-            "Service role key. Defaults to REMOTE_SUPABASE_SERVICE_ROLE_KEY "
-            "or SUPABASE_SERVICE_ROLE_KEY."
-        ),
+        "--secret-key",
+        help=("Secret API key. Defaults to REMOTE_SUPABASE_SECRET_KEY or SUPABASE_SECRET_KEY."),
     ),
     default_audio_language_code: str = typer.Option(
         ...,
@@ -168,17 +164,17 @@ def snapshot_fixtures(
         "NEXT_PUBLIC_SUPABASE_URL",
         "SUPABASE_URL",
     )
-    resolved_service_role_key = _resolve_env_value(
-        service_role_key,
-        "REMOTE_SUPABASE_SERVICE_ROLE_KEY",
-        "SUPABASE_SERVICE_ROLE_KEY",
+    resolved_secret_key = _resolve_env_value(
+        secret_key,
+        "REMOTE_SUPABASE_SECRET_KEY",
+        "SUPABASE_SECRET_KEY",
     )
 
     if not resolved_supabase_url:
         typer.echo("Error: Supabase URL is required.", err=True)
         raise typer.Exit(code=1)
-    if not resolved_service_role_key:
-        typer.echo("Error: Service role key is required.", err=True)
+    if not resolved_secret_key:
+        typer.echo("Error: Secret API key is required.", err=True)
         raise typer.Exit(code=1)
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -194,7 +190,7 @@ def snapshot_fixtures(
         try:
             video_row = _fetch_video_row(
                 resolved_supabase_url,
-                resolved_service_role_key,
+                resolved_secret_key,
                 video_id,
             )
             transcript = _fetch_storage_transcript(resolved_supabase_url, video_id)

@@ -40,7 +40,7 @@ cd ../cli
 cp -n .env.example .env
 ```
 
-`cli/.env`의 `SUPABASE_SERVICE_ROLE_KEY`는 아래 값으로 채운다.
+`cli/.env`의 `SUPABASE_SECRET_KEY`는 아래 값으로 채운다.
 
 ```bash
 cd ../supabase

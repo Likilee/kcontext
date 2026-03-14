@@ -24,7 +24,7 @@ Options:
 
 Required env for sync mode (not required for --status):
   REMOTE_SUPABASE_URL
-  REMOTE_SUPABASE_SERVICE_ROLE_KEY
+  REMOTE_SUPABASE_SECRET_KEY
   REMOTE_DB_URL
 USAGE
 }
@@ -97,7 +97,7 @@ if [[ "$STATUS_ONLY" -eq 1 ]]; then
 else
   for required_env in \
     REMOTE_SUPABASE_URL \
-    REMOTE_SUPABASE_SERVICE_ROLE_KEY \
+    REMOTE_SUPABASE_SECRET_KEY \
     REMOTE_DB_URL
   do
     if [[ -z "${!required_env:-}" ]]; then

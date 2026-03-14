@@ -31,7 +31,7 @@ def test_snapshot_fixtures_writes_raw_fixture(tmp_path: pathlib.Path, monkeypatc
         "\n".join(
             [
                 "REMOTE_SUPABASE_URL=https://example.supabase.co",
-                "REMOTE_SUPABASE_SERVICE_ROLE_KEY=test-service-role",
+                "REMOTE_SUPABASE_SECRET_KEY=test-secret-key",
             ]
         ),
         encoding="utf-8",
@@ -111,7 +111,7 @@ def test_snapshot_fixtures_prunes_unrequested_raw_files(
         "\n".join(
             [
                 "REMOTE_SUPABASE_URL=https://example.supabase.co",
-                "REMOTE_SUPABASE_SERVICE_ROLE_KEY=test-service-role",
+                "REMOTE_SUPABASE_SECRET_KEY=test-secret-key",
             ]
         ),
         encoding="utf-8",
@@ -165,7 +165,7 @@ def test_snapshot_fixtures_reports_http_error(tmp_path: pathlib.Path, monkeypatc
         "\n".join(
             [
                 "REMOTE_SUPABASE_URL=https://example.supabase.co",
-                "REMOTE_SUPABASE_SERVICE_ROLE_KEY=test-service-role",
+                "REMOTE_SUPABASE_SECRET_KEY=test-secret-key",
             ]
         ),
         encoding="utf-8",

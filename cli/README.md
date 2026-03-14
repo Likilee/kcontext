@@ -20,7 +20,7 @@ cp -n .env.example .env
 
 `cli/.env`에서 최소 아래 값을 확인하세요.
 
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_SECRET_KEY`
 - `SUPABASE_URL`
 - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
 - (옵션) `KCONTEXT_YOUTUBE_PROXY_URL`
@@ -175,7 +175,7 @@ cd /Users/kihoon/Documents/Project/dozboon/products/kcontext
 원격 증분 동기화:
 
 ```bash
-# 루트의 .env.remote-sync 파일 생성/갱신 (anon/service_role 자동 조회)
+# 루트의 .env.remote-sync 파일 생성/갱신 (anon/secret key 자동 조회)
 cd /Users/kihoon/Documents/Project/dozboon/products/kcontext
 ./scripts/bootstrap-remote-env.sh --project-ref bbapvtmiztyozkmgvfgf
 
