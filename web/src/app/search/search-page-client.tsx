@@ -166,7 +166,7 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
         ) : null}
 
         {!isLoading && !error && keyword.length > 0 && results.length === 0 ? (
-          <Card>
+          <Card data-testid="search-empty-state">
             <CardContent>
               <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-16)] text-[var(--text-secondary)]">
                 {EMPTY_RESULT_TEXT}
