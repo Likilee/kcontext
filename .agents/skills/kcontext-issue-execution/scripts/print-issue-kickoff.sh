@@ -52,6 +52,11 @@ fi
 issue_json="$(gh issue view "${issue_number}" --repo "${github_repo}" --json number,title,url)"
 issue_title="$(jq -r '.title' <<< "${issue_json}")"
 issue_url="$(jq -r '.url' <<< "${issue_json}")"
+display_title="$(printf '%s' "${issue_title}" | sed -E 's/^\[[^]]+\][[:space:]]*//')"
+
+if [[ -z "${display_title}" ]]; then
+  display_title="${issue_title}"
+fi
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 branch_command=(
@@ -68,7 +73,7 @@ fi
 branch_name="$("${branch_command[@]}")"
 
 cat <<EOF
-[Issue #${issue_number}] ${issue_title}
+[Issue #${issue_number}] ${display_title}
 
 Issue:
 - #${issue_number} ${issue_url}

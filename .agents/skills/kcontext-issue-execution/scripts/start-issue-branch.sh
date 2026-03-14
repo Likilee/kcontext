@@ -71,14 +71,21 @@ fi
 
 normalize_slug() {
   local raw="$1"
+  local original="$1"
+  local issue_kind=""
   local slug
 
+  issue_kind="$(printf '%s' "${original}" | sed -En 's/^\[([^]]+)\].*/\1/p' | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//; s/-+/-/g')"
   raw="$(printf '%s' "${raw}" | sed -E 's/^\[[^]]+\][[:space:]]*//')"
-  slug="$(printf '%s' "${raw}" | iconv -c -t ascii//translit 2>/dev/null || printf '%s' "${raw}")"
+  slug="$(printf '%s' "${raw}" | iconv -c -t ascii//translit 2>/dev/null || true)"
   slug="$(printf '%s' "${slug}" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9]+/-/g; s/^-+//; s/-+$//; s/-+/-/g')"
 
   if [[ -z "${slug}" ]]; then
-    slug="issue"
+    if [[ -n "${issue_kind}" ]]; then
+      slug="${issue_kind}"
+    else
+      slug="issue"
+    fi
   fi
 
   printf '%s' "${slug}" | cut -c1-48
