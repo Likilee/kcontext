@@ -77,3 +77,27 @@ def test_parse_rounding() -> None:
     result = parse_json3_to_chunks(json3)
     assert result[0]["start"] == 0.001
     assert result[0]["duration"] == 0.001
+
+
+def test_parse_accepts_numeric_string_timing_values() -> None:
+    json3 = {
+        "events": [
+            {"tStartMs": "1000", "dDurationMs": "250", "segs": [{"utf8": "텍스트"}]},
+        ]
+    }
+
+    result = parse_json3_to_chunks(json3)
+
+    assert result == [{"start": 1.0, "duration": 0.25, "text": "텍스트"}]
+
+
+def test_parse_handles_non_numeric_timing_values() -> None:
+    json3 = {
+        "events": [
+            {"tStartMs": None, "dDurationMs": "NaN", "segs": [{"utf8": "텍스트"}]},
+        ]
+    }
+
+    result = parse_json3_to_chunks(json3)
+
+    assert result == [{"start": 0.0, "duration": 0.0, "text": "텍스트"}]
