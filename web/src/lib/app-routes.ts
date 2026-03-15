@@ -4,6 +4,7 @@ import {
   UI_LANGUAGE_QUERY_PARAM,
   type UiLanguageCode,
 } from "./site-config";
+export const BLOG_INDEX_PATH = "/blog";
 
 const SEARCH_KEYWORD_QUERY_PARAM = "q";
 
@@ -108,4 +109,14 @@ export function getCanonicalSearch(search: string): string {
   searchParams.delete(UI_LANGUAGE_QUERY_PARAM);
   const normalizedSearch = searchParams.toString();
   return normalizedSearch.length > 0 ? `?${normalizedSearch}` : "";
+}
+
+export function getBlogPostPath(slug: string): string {
+  const normalizedSlug = slug.trim();
+
+  if (!normalizedSlug) {
+    return BLOG_INDEX_PATH;
+  }
+
+  return `${BLOG_INDEX_PATH}/${encodeURIComponent(normalizedSlug)}`;
 }

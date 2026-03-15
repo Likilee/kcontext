@@ -8,6 +8,8 @@ import {
   getLearningSearchPagePath,
   getLearningSearchPath,
   getUiLanguageSwitchPath,
+  BLOG_INDEX_PATH,
+  getBlogPostPath,
 } from "./app-routes";
 
 describe("app-routes", () => {
@@ -61,5 +63,19 @@ describe("app-routes", () => {
       "?q=%ED%96%89%EB%B3%B5%ED%95%B4%EC%9A%94",
     );
     expect(getCanonicalSearch("?hl=en")).toBe("");
+  });
+
+  it("returns the blog index path constant", () => {
+    expect(BLOG_INDEX_PATH).toBe("/blog");
+  });
+
+  it("builds an encoded blog detail path", () => {
+    expect(getBlogPostPath(" learn-korean with youtube ")).toBe(
+      "/blog/learn-korean%20with%20youtube",
+    );
+  });
+
+  it("falls back to the blog index path for empty slug input", () => {
+    expect(getBlogPostPath("   ")).toBe("/blog");
   });
 });
