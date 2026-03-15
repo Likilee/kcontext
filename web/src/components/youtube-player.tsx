@@ -1,6 +1,5 @@
 "use client";
 
-import Script from "next/script";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card";
 const PLAYER_FALLBACK_TITLE = "Video playback is temporarily unavailable.";
 const PLAYER_FALLBACK_DESCRIPTION =
   "You can keep reading the transcript context below and retry the player.";
+const YOUTUBE_IFRAME_API_SRC = "https://www.youtube.com/iframe_api";
+const YOUTUBE_IFRAME_API_ATTRIBUTE = "data-youtube-iframe-api";
 
 export interface YouTubePlayerHandle {
   getCurrentTime: () => number;
@@ -23,6 +24,10 @@ interface YouTubePlayerProps {
   onReady?: () => void;
   onStateChange?: (state: number) => void;
   onUnavailable?: () => void;
+}
+
+function getYoutubeIframeApiScript(): HTMLScriptElement | null {
+  return document.querySelector(`script[${YOUTUBE_IFRAME_API_ATTRIBUTE}="true"]`);
 }
 
 export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(
@@ -57,20 +62,61 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
         return;
       }
 
+      let isCancelled = false;
       const previousCallback = window.onYouTubeIframeAPIReady;
       const handleApiReady = () => {
         previousCallback?.();
-        setApiReady(true);
+        if (isCancelled) {
+          return;
+        }
+
+        if (typeof window.YT !== "undefined" && typeof window.YT.Player === "function") {
+          setPlayerError(null);
+          setApiReady(true);
+        }
+      };
+      const handleScriptLoad = () => {
+        handleApiReady();
+      };
+      const handleScriptError = () => {
+        if (isCancelled) {
+          return;
+        }
+
+        setApiReady(false);
+        markPlayerUnavailable();
       };
 
       window.onYouTubeIframeAPIReady = handleApiReady;
 
+      let script = getYoutubeIframeApiScript();
+      if (retryCount > 0 && script) {
+        script.remove();
+        script = null;
+      }
+
+      if (!script) {
+        // `next/script` reuses identical `src` loads, so retry needs a fresh DOM script tag.
+        script = document.createElement("script");
+        script.src = YOUTUBE_IFRAME_API_SRC;
+        script.async = true;
+        script.setAttribute(YOUTUBE_IFRAME_API_ATTRIBUTE, "true");
+        document.body.append(script);
+      }
+
+      script.addEventListener("load", handleScriptLoad);
+      script.addEventListener("error", handleScriptError);
+
       return () => {
+        isCancelled = true;
+        script?.removeEventListener("load", handleScriptLoad);
+        script?.removeEventListener("error", handleScriptError);
+
         if (window.onYouTubeIframeAPIReady === handleApiReady) {
           window.onYouTubeIframeAPIReady = previousCallback;
         }
       };
-    }, []);
+    }, [markPlayerUnavailable, retryCount]);
 
     const getSafeCurrentTime = () => {
       const player = playerRef.current;
@@ -228,17 +274,6 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       }
     }, [markPlayerUnavailable, playbackRate]);
 
-    const handleScriptLoad = () => {
-      if (typeof window.YT !== "undefined" && typeof window.YT.Player === "function") {
-        setPlayerError(null);
-        setApiReady(true);
-      }
-    };
-
-    const handleScriptError = () => {
-      markPlayerUnavailable();
-    };
-
     const handleRetry = () => {
       destroyPlayer();
       setApiReady(typeof window.YT !== "undefined" && typeof window.YT.Player === "function");
@@ -247,46 +282,36 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
     };
 
     return (
-      <>
-        <Script
-          key={`youtube-iframe-api-${retryCount}`}
-          src="https://www.youtube.com/iframe_api"
-          strategy="afterInteractive"
-          onLoad={handleScriptLoad}
-          onReady={handleScriptLoad}
-          onError={handleScriptError}
-        />
-        <div
-          id="yt-player-container"
-          className="aspect-video w-full overflow-hidden bg-[var(--bg-base)]"
-        >
-          {playerError ? (
-            <Card
-              data-testid="youtube-player-fallback"
-              className="flex h-full items-center justify-center rounded-none border-0 bg-[var(--bg-surface)]"
-            >
-              <CardContent className="flex max-w-xl flex-col items-center gap-[var(--space-gap-item)] text-center">
-                <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-16)] font-medium text-[var(--text-primary)]">
-                  {PLAYER_FALLBACK_TITLE}
-                </p>
-                <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
-                  {PLAYER_FALLBACK_DESCRIPTION}
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  data-testid="youtube-player-retry"
-                  onClick={handleRetry}
-                >
-                  Retry player
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div id={iframeElementId} className="h-full w-full" />
-          )}
-        </div>
-      </>
+      <div
+        id="yt-player-container"
+        className="aspect-video w-full overflow-hidden bg-[var(--bg-base)]"
+      >
+        {playerError ? (
+          <Card
+            data-testid="youtube-player-fallback"
+            className="flex h-full items-center justify-center rounded-none border-0 bg-[var(--bg-surface)]"
+          >
+            <CardContent className="flex max-w-xl flex-col items-center gap-[var(--space-gap-item)] text-center">
+              <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-16)] font-medium text-[var(--text-primary)]">
+                {PLAYER_FALLBACK_TITLE}
+              </p>
+              <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
+                {PLAYER_FALLBACK_DESCRIPTION}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                data-testid="youtube-player-retry"
+                onClick={handleRetry}
+              >
+                Retry player
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div id={iframeElementId} className="h-full w-full" />
+        )}
+      </div>
     );
   },
 );

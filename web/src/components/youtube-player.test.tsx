@@ -4,10 +4,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { YouTubePlayerHandle } from "./youtube-player";
 import { YouTubePlayer } from "./youtube-player";
 
-vi.mock("next/script", () => ({
-  default: () => null,
-}));
-
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
 }
@@ -101,6 +97,12 @@ function createThrowingPlayerConstructor(message: string): MockPlayerConstructor
   } as unknown as MockPlayerConstructor;
 }
 
+function createReadyPlayerConstructor(): MockPlayerConstructor {
+  return function MockPlayer(_elementId: string, options: MockPlayerOptions) {
+    return createReadyPlayer(options);
+  } as unknown as MockPlayerConstructor;
+}
+
 function createRetryingPlayerConstructor() {
   let callCount = 0;
 
@@ -156,6 +158,9 @@ afterEach(() => {
   roots.length = 0;
   youtubeWindow.YT = undefined;
   youtubeWindow.onYouTubeIframeAPIReady = undefined;
+  document.querySelectorAll('script[data-youtube-iframe-api="true"]').forEach((script) => {
+    script.remove();
+  });
   vi.restoreAllMocks();
 });
 
@@ -204,5 +209,50 @@ describe("YouTubePlayer", () => {
     expect(ref.current).not.toBeNull();
     expect(() => ref.current?.seekTo(12)).not.toThrow();
     expect(ref.current?.getCurrentTime()).toBe(12);
+  });
+
+  it("reinjects the iframe API script on retry after the initial script load fails", async () => {
+    const onReady = vi.fn();
+    const onUnavailable = vi.fn();
+    const { container } = renderPlayer({ onReady, onUnavailable });
+
+    const firstScript = document.querySelector('script[data-youtube-iframe-api="true"]');
+    if (!(firstScript instanceof HTMLScriptElement)) {
+      throw new Error("Expected iframe API script to be injected.");
+    }
+
+    act(() => {
+      firstScript.dispatchEvent(new Event("error"));
+    });
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-testid="youtube-player-fallback"]')).not.toBeNull();
+      expect(onUnavailable).toHaveBeenCalledTimes(1);
+    });
+
+    const retryButton = container.querySelector('[data-testid="youtube-player-retry"]');
+    if (!(retryButton instanceof HTMLButtonElement)) {
+      throw new Error("Expected retry button to render.");
+    }
+
+    act(() => {
+      retryButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    await waitFor(() => {
+      const nextScript = document.querySelector('script[data-youtube-iframe-api="true"]');
+      expect(nextScript).not.toBe(firstScript);
+    });
+
+    installPlayerConstructor(createReadyPlayerConstructor());
+
+    act(() => {
+      (window as MockYouTubeWindow).onYouTubeIframeAPIReady?.();
+    });
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-testid="youtube-player-fallback"]')).toBeNull();
+      expect(onReady).toHaveBeenCalledTimes(1);
+    });
   });
 });
