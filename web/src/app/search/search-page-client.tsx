@@ -154,6 +154,12 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
   const selectedPlayerKey = selectedResult
     ? `${selectedResult.videoId}:${selectedResult.startTime}`
     : null;
+  const handlePlayerReady = useCallback(() => {
+    setReadyPlayerKey(selectedPlayerKey);
+  }, [selectedPlayerKey]);
+  const handlePlayerUnavailable = useCallback(() => {
+    setReadyPlayerKey(null);
+  }, []);
 
   return (
     <main className="relative min-h-screen bg-[var(--bg-base)] pb-[calc(var(--space-layout-section)+var(--space-safe-bottom))]">
@@ -211,12 +217,8 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
                 videoId={selectedResult.videoId}
                 startTime={playerStartTime}
                 playbackRate={playbackRate}
-                onReady={() => {
-                  setReadyPlayerKey(selectedPlayerKey);
-                }}
-                onUnavailable={() => {
-                  setReadyPlayerKey(null);
-                }}
+                onReady={handlePlayerReady}
+                onUnavailable={handlePlayerUnavailable}
               />
 
               <ChunkViewer
