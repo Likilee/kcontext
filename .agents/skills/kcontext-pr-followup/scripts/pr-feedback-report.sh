@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  pr-feedback-report.sh [--pr number|url|branch] [--repo owner/name] [--thread-limit 50]
+  pr-feedback-report.sh [--pr number|url|branch] [--repo owner/name]
 
 If --pr is omitted, use the pull request attached to the current branch.
 EOF
@@ -12,7 +12,6 @@ EOF
 
 pr_ref=""
 github_repo=""
-thread_limit=50
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -22,10 +21,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --repo)
       github_repo="${2:-}"
-      shift 2
-      ;;
-    --thread-limit)
-      thread_limit="${2:-}"
       shift 2
       ;;
     -h|--help)
@@ -44,72 +39,70 @@ if [[ -z "${github_repo}" ]]; then
   github_repo="$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
 fi
 
-pr_json_args=(
-  --repo "${github_repo}"
-  --json number,title,url,reviewDecision,latestReviews,closingIssuesReferences,headRefName,baseRefName,files
-)
-
 if [[ -n "${pr_ref}" ]]; then
-  pr_json="$(gh pr view "${pr_ref}" "${pr_json_args[@]}")"
+  state_json="$(bash .agents/skills/kcontext-pr-review/scripts/pr-action-state.sh --repo "${github_repo}" --pr "${pr_ref}" --format json)"
 else
-  pr_json="$(gh pr view "${pr_json_args[@]}")"
+  state_json="$(bash .agents/skills/kcontext-pr-review/scripts/pr-action-state.sh --repo "${github_repo}" --format json)"
 fi
 
-pr_number="$(jq -r '.number' <<< "${pr_json}")"
-repo_owner="${github_repo%%/*}"
-repo_name="${github_repo##*/}"
-
-thread_json="$(gh api graphql \
-  -f query='query($owner:String!, $repo:String!, $number:Int!, $threadLimit:Int!, $commentLimit:Int!) { repository(owner:$owner, name:$repo) { pullRequest(number:$number) { reviewThreads(first:$threadLimit) { nodes { isResolved isOutdated comments(first:$commentLimit) { nodes { author { login } body path line originalLine url createdAt } } } } } } }' \
-  -F owner="${repo_owner}" \
-  -F repo="${repo_name}" \
-  -F number="${pr_number}" \
-  -F threadLimit="${thread_limit}" \
-  -F commentLimit=10)"
-
 jq -nr \
-  --argjson pr "${pr_json}" \
-  --argjson threads "${thread_json}" '
+  --argjson state "${state_json}" '
   def excerpt($text):
-    ($text // "" | gsub("\\s+"; " ") | if length > 180 then .[0:177] + "..." else . end);
-  ($threads.data.repository.pullRequest.reviewThreads.nodes // []) as $reviewThreads |
-  ($reviewThreads | map(select(.isResolved | not))) as $openThreads |
-  ($reviewThreads | map(select(.isResolved and (.isOutdated | not)))) as $resolvedThreads |
-  ($reviewThreads | map(select(.isOutdated))) as $outdatedThreads |
+    ($text // "" | gsub("\\s+"; " ") | if length > 220 then .[0:217] + "..." else . end);
   "== PR ==\n" +
-  "#\($pr.number) \($pr.title)\n" +
-  "url: \($pr.url)\n" +
-  "review decision: \($pr.reviewDecision // "NONE")\n" +
-  "branch: \($pr.headRefName) -> \($pr.baseRefName)\n" +
-  "linked issues: " +
-    (if ($pr.closingIssuesReferences | length) == 0 then "none" else ($pr.closingIssuesReferences | map("#\(.number)") | join(", ")) end) + "\n\n" +
-  "== Actionable Review Summaries ==\n" +
+  "#\($state.pr.number) \($state.pr.title)\n" +
+  "url: \($state.pr.url)\n" +
+  "next actor: \($state.next_actor)\n" +
+  "reason: \($state.reason)\n" +
+  "review decision: \($state.pr.review_decision // "NONE")\n" +
+  "branch: \($state.pr.head_ref) -> \($state.pr.base_ref)\n" +
+  "linked issue: " +
+    (if $state.linked_issue == null then "none" else "#\($state.linked_issue.number) \($state.linked_issue.title)" end) + "\n" +
+  "bootstrap mode: \(if $state.bootstrap_mode then "yes" else "no" end)\n" +
+  "contract sync suggested: \(if $state.contract_sync_suggested then "yes" else "no" end)\n\n" +
+  "== Actionable Human Inputs Since Codex ==\n" +
   (
-    ($pr.latestReviews | map(select((.state // "") == "CHANGES_REQUESTED" or ((.body // "") | length > 0)))) as $reviews |
-    if ($reviews | length) == 0 then
+    if ($state.human_inputs_since_codex | length) == 0 then
       "  (none)\n\n"
     else
       (
-        $reviews
-        | map("  - \(.state // "COMMENTED") by \(.author.login) at \((.submittedAt // .createdAt // "")[0:10])" +
-              (if ((.body // "") | length) > 0 then "\n    " + excerpt(.body) else "" end))
+        $state.human_inputs_since_codex
+        | map("  - [ ] \(.source) by \(.author // "unknown") at \((.created_at // "")[0:19])" +
+              (if .contract_signal then " [contract]" else "" end) +
+              (if (.url // "") != "" then "\n    " + .url else "" end) +
+              (if (.body_excerpt // "") != "" then "\n    " + excerpt(.body_excerpt) else "" end))
         | join("\n")
       ) + "\n\n"
     end
   ) +
-  "== Unresolved Review Threads ==\n" +
+  "== Unresolved Human Review Threads ==\n" +
   (
-    if ($openThreads | length) == 0 then
+    if ($state.open_human_threads | length) == 0 then
       "  (none)\n\n"
     else
       (
-        $openThreads
-        | map(.comments.nodes[0] // {})
-        | map("  - [ ] \((.path // "general")):\((.line // .originalLine // 0)) by \(.author.login // "unknown")\n    " + excerpt(.body) + (if (.url // "") != "" then "\n    " + .url else "" end))
+        $state.open_human_threads
+        | map("  - [ ] \(.path):\(.line) by \(.author // "unknown")" +
+              (if .contract_signal then " [contract]" else "" end) +
+              (if (.url // "") != "" then "\n    " + .url else "" end) +
+              (if (.body_excerpt // "") != "" then "\n    " + excerpt(.body_excerpt) else "" end))
         | join("\n")
       ) + "\n\n"
     end
   ) +
-  "== Thread Counts ==\n" +
-  "open: \($openThreads | length) | resolved: \($resolvedThreads | length) | outdated: \($outdatedThreads | length)\n"
+  "== Linked Issue Comments Since PR Creation ==\n" +
+  (
+    if ($state.issue_comments_since_pr | length) == 0 then
+      "  (none)\n"
+    else
+      (
+        $state.issue_comments_since_pr
+        | map("  - \(.author // "unknown") at \((.created_at // "")[0:19])" +
+              (if .contract_signal then " [contract]" else "" end) +
+              (if (.url // "") != "" then "\n    " + .url else "" end) +
+              (if (.body_excerpt // "") != "" then "\n    " + excerpt(.body_excerpt) else "" end))
+        | join("\n")
+      ) + "\n"
+    end
+  )
   '

@@ -4,7 +4,9 @@
 
 - Check whether the PR links a representative issue with `Closes #...` or `Refs #...`.
 - Check whether the PR scope still matches the linked issue.
+- Check whether newer human PR/issue feedback has already changed the effective contract.
 - Check whether the PR summary and verification are specific enough to audit.
+- Do not re-review a head commit that already has a Codex review marker unless new human input arrived.
 
 ## Repo-Specific Risks
 
@@ -33,3 +35,4 @@
 - Prioritize bugs, regressions, architecture violations, and missing tests.
 - If there are no findings, say so explicitly and note remaining risk or test gaps.
 - Ask for changes only when the PR is not safe to merge as-is.
+- Codex-authored reviews must include `[codex-review]` and the hidden Codex marker for the current head SHA.

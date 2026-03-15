@@ -39,6 +39,7 @@ When moving an issue to `blocked`, provide `--comment-file /tmp/blocker.md`.
 - Normalize labels so each executable issue has exactly one `type`, one `priority`, one or two `area` labels, and at most one `status`.
 - Remove `status:ready` from tracking issues.
 - Do not mark an issue ready unless `Acceptance criteria`, `Verification`, and `Dependencies/Links` are present.
+- Remove or re-check `status:ready` when newer human PR/issue feedback makes the current issue body stale.
 - Require a blocker comment whenever `status:blocked` is added.
 - Report gaps clearly when an issue stays in backlog with no status label.
 

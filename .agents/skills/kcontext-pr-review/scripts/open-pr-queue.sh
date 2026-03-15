@@ -37,12 +37,26 @@ if [[ -z "${github_repo}" ]]; then
   github_repo="$(gh repo view --json nameWithOwner --jq '.nameWithOwner')"
 fi
 
-gh pr list \
+pr_numbers="$(gh pr list \
   --repo "${github_repo}" \
   --state open \
   --limit "${limit}" \
-  --json number,title,author,isDraft,reviewDecision,headRefName,baseRefName,statusCheckRollup,updatedAt,url \
-  --jq '
+  --json number \
+  --jq '.[].number')"
+
+if [[ -z "${pr_numbers}" ]]; then
+  echo "No open pull requests."
+  exit 0
+fi
+
+while IFS= read -r pr_number; do
+  [[ -z "${pr_number}" ]] && continue
+
+  pr_json="$(bash .agents/skills/kcontext-pr-review/scripts/pr-action-state.sh --repo "${github_repo}" --pr "${pr_number}" --format json)"
+  status_checks_json="$(gh pr view "${pr_number}" --repo "${github_repo}" --json statusCheckRollup --jq '.statusCheckRollup')"
+  merged_json="$(jq -n --argjson state "${pr_json}" --argjson checks "${status_checks_json}" '$state + {checks: $checks}')"
+
+  jq -r '
     def bucket:
       if (.status // "") != "COMPLETED" then "pending"
       elif ((.conclusion // "") | ascii_upcase) == "SKIPPED" then "skipping"
@@ -51,14 +65,14 @@ gh pr list \
       else "fail"
       end;
     def count_bucket($name):
-      [(.statusCheckRollup[]? | bucket) | select(. == $name)] | length;
-    if length == 0 then
-      "No open pull requests."
-    else
-      .[] |
-      "#\(.number) \(if .isDraft then "[DRAFT] " else "" end)\(.title)\n" +
-      "  author: \(.author.login) | review: \(.reviewDecision // "NONE") | branch: \(.headRefName) -> \(.baseRefName)\n" +
-      "  checks: \((count_bucket("pass"))) pass, \((count_bucket("fail"))) fail, \((count_bucket("pending"))) pending, \((count_bucket("skipping"))) skipped, \((count_bucket("cancel"))) cancel\n" +
-      "  updated: \(.updatedAt[0:10]) | \(.url)\n"
-    end
-  '
+      [(.checks[]? | bucket) | select(. == $name)] | length;
+    "#\(.pr.number) \(.pr.title)\n" +
+    "  next_actor: \(.next_actor) | reason: \(.reason)\n" +
+    "  review: \(.pr.review_decision // "NONE") | branch: \(.pr.head_ref) -> \(.pr.base_ref)\n" +
+    "  linked issue: " +
+      (if .linked_issue == null then "none" else "#\(.linked_issue.number) \(.linked_issue.title)" end) + "\n" +
+    "  actionable human inputs since codex: \(.human_inputs_since_codex | length) | unresolved human threads: \(.open_human_threads | length) | contract sync: \(if .contract_sync_suggested then "yes" else "no" end)\n" +
+    "  checks: \((count_bucket("pass"))) pass, \((count_bucket("fail"))) fail, \((count_bucket("pending"))) pending, \((count_bucket("skipping"))) skipped, \((count_bucket("cancel"))) cancel\n" +
+    "  updated: \(.pr.updated_at[0:10]) | \(.pr.url)\n"
+  ' <<< "${merged_json}"
+done <<< "${pr_numbers}"

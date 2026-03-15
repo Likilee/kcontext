@@ -11,6 +11,7 @@ Mark an issue `ready` only when:
 - It has concrete `Acceptance criteria`
 - It has a usable `Verification` section
 - It has explicit `Dependencies/Links`
+- Its issue body is still aligned with the latest clarified human GitHub input
 
 ## Blocked
 

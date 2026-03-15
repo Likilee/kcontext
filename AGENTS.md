@@ -21,6 +21,9 @@
 - Tracking issues should not carry `status:ready`; use them only as parents for smaller executable issues.
 - Branch naming for issue-driven work: `codex/<issue-number>-short-slug`
 - PRs should link the representative issue with `Closes #<number>` for complete fixes or `Refs #<number>` for partial work.
+- Codex-authored PR reviews and follow-up comments should include a visible `[codex-*]` prefix plus a hidden Codex marker for the current head SHA.
+- Human GitHub feedback without a Codex marker overrides stale issue/PR text, even when posted through the same `Likilee` account.
+- Open PRs should block new ready-issue work only when they still require Codex action, not when they are merely waiting for human review.
 - Source of truth for the workflow: `docs/github-issue-first-workflow.md`
 
 ## Architecture Rules

@@ -24,6 +24,13 @@ Before editing code, confirm all of the following:
 
 If any of these are missing, stop and refine the issue first instead of coding against an ambiguous request.
 
+Before coding, also refresh the contract from GitHub:
+
+- read the linked issue body
+- read recent human issue comments
+- if the issue already has a live PR, read the latest human PR reviews/comments for that PR
+- if newer human input clearly supersedes the current issue body, sync the contract first instead of coding against stale AC
+
 If you are working in a Codex worktree and the issue will need env-backed commands such as web search verification, transcript loading, CLI push/sync, or E2E checks, bootstrap local env files before running those commands:
 
 ```bash
@@ -70,6 +77,7 @@ When the issue title is mostly Korean, pass `--slug short-ascii-slug` to keep th
 ## Execute From The Issue
 
 - Treat the issue body as the working contract.
+- If newer human GitHub feedback clearly overrides the current issue body, update the issue/PR contract first and only then continue.
 - Implement only the in-scope work unless the issue is explicitly expanded.
 - Verify against the named acceptance criteria, not your own inferred scope.
 - Keep the issue number visible in local notes, commits, and PR context.

@@ -4,7 +4,7 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  pr-review-report.sh [--pr number|url|branch] [--repo owner/name] [--files-limit 20] [--thread-limit 50]
+  pr-review-report.sh [--pr number|url|branch] [--repo owner/name] [--files-limit 20]
 
 If --pr is omitted, use the pull request attached to the current branch.
 EOF
@@ -13,7 +13,6 @@ EOF
 pr_ref=""
 github_repo=""
 files_limit=20
-thread_limit=50
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -27,10 +26,6 @@ while [[ $# -gt 0 ]]; do
       ;;
     --files-limit)
       files_limit="${2:-}"
-      shift 2
-      ;;
-    --thread-limit)
-      thread_limit="${2:-}"
       shift 2
       ;;
     -h|--help)
@@ -51,30 +46,20 @@ fi
 
 pr_json_args=(
   --repo "${github_repo}"
-  --json number,title,url,author,isDraft,headRefName,baseRefName,reviewDecision,mergeStateStatus,mergeable,additions,deletions,changedFiles,labels,closingIssuesReferences,latestReviews,files,statusCheckRollup
+  --json number,title,url,author,isDraft,headRefName,headRefOid,baseRefName,reviewDecision,mergeStateStatus,mergeable,updatedAt,additions,deletions,changedFiles,labels,closingIssuesReferences,latestReviews,files,statusCheckRollup
 )
 
 if [[ -n "${pr_ref}" ]]; then
   pr_json="$(gh pr view "${pr_ref}" "${pr_json_args[@]}")"
+  state_json="$(bash .agents/skills/kcontext-pr-review/scripts/pr-action-state.sh --repo "${github_repo}" --pr "${pr_ref}" --format json)"
 else
   pr_json="$(gh pr view "${pr_json_args[@]}")"
+  state_json="$(bash .agents/skills/kcontext-pr-review/scripts/pr-action-state.sh --repo "${github_repo}" --format json)"
 fi
-
-pr_number="$(jq -r '.number' <<< "${pr_json}")"
-repo_owner="${github_repo%%/*}"
-repo_name="${github_repo##*/}"
-
-thread_json="$(gh api graphql \
-  -f query='query($owner:String!, $repo:String!, $number:Int!, $threadLimit:Int!, $commentLimit:Int!) { repository(owner:$owner, name:$repo) { pullRequest(number:$number) { reviewThreads(first:$threadLimit) { nodes { isResolved isOutdated comments(first:$commentLimit) { nodes { author { login } body path line originalLine url createdAt } } } } } } }' \
-  -F owner="${repo_owner}" \
-  -F repo="${repo_name}" \
-  -F number="${pr_number}" \
-  -F threadLimit="${thread_limit}" \
-  -F commentLimit=10)"
 
 jq -nr \
   --argjson pr "${pr_json}" \
-  --argjson threads "${thread_json}" \
+  --argjson state "${state_json}" \
   --argjson filesLimit "${files_limit}" '
   def bucket:
     if (.status // "") != "COMPLETED" then "pending"
@@ -86,8 +71,7 @@ jq -nr \
   def count_bucket($name):
     [($pr.statusCheckRollup[]? | bucket) | select(. == $name)] | length;
   def excerpt($text):
-    ($text // "" | gsub("\\s+"; " ") | if length > 160 then .[0:157] + "..." else . end);
-  ($threads.data.repository.pullRequest.reviewThreads.nodes // []) as $reviewThreads |
+    ($text // "" | gsub("\\s+"; " ") | if length > 180 then .[0:177] + "..." else . end);
   "== PR ==\n" +
   "#\($pr.number) \(if $pr.isDraft then "[DRAFT] " else "" end)\($pr.title)\n" +
   "url: \($pr.url)\n" +
@@ -97,6 +81,45 @@ jq -nr \
     (if ($pr.closingIssuesReferences | length) == 0 then "none" else ($pr.closingIssuesReferences | map("#\(.number)") | join(", ")) end) + "\n" +
   "labels: " +
     (if ($pr.labels | length) == 0 then "none" else ($pr.labels | map(.name) | join(", ")) end) + "\n\n" +
+  "== Actor State ==\n" +
+  "next actor: \($state.next_actor)\n" +
+  "reason: \($state.reason)\n" +
+  "codex review on head: \(if $state.has_codex_review_on_head then "yes" else "no" end)\n" +
+  "bootstrap mode: \(if $state.bootstrap_mode then "yes" else "no" end)\n" +
+  "contract sync suggested: \(if $state.contract_sync_suggested then "yes" else "no" end)\n" +
+  "actionable human inputs since codex: \($state.human_inputs_since_codex | length) | unresolved human threads: \($state.open_human_threads | length)\n" +
+  (if ($state.last_codex_action_at // "") != "" then "last codex action: \($state.last_codex_action_at)\n" else "" end) +
+  (if ($state.latest_human_input_at // "") != "" then "latest human input: \($state.latest_human_input_at)\n\n" else "\n" end) +
+  "== Actionable Human Inputs Since Codex ==\n" +
+  (
+    if ($state.human_inputs_since_codex | length) == 0 then
+      "  (none)\n\n"
+    else
+      (
+        $state.human_inputs_since_codex
+        | map("  - \(.source) by \(.author // "unknown") at \((.created_at // "")[0:19])" +
+              (if .contract_signal then " [contract]" else "" end) +
+              (if (.url // "") != "" then "\n    " + .url else "" end) +
+              (if (.body_excerpt // "") != "" then "\n    " + excerpt(.body_excerpt) else "" end))
+        | join("\n")
+      ) + "\n\n"
+    end
+  ) +
+  "== Unresolved Human Review Threads ==\n" +
+  (
+    if ($state.open_human_threads | length) == 0 then
+      "  (none)\n\n"
+    else
+      (
+        $state.open_human_threads
+        | map("  - \(.path):\(.line) by \(.author // "unknown")" +
+              (if .contract_signal then " [contract]" else "" end) +
+              (if (.url // "") != "" then "\n    " + .url else "" end) +
+              (if (.body_excerpt // "") != "" then "\n    " + excerpt(.body_excerpt) else "" end))
+        | join("\n")
+      ) + "\n\n"
+    end
+  ) +
   "== Scope ==\n" +
   "files: \($pr.changedFiles) | +\($pr.additions) -\($pr.deletions)\n" +
   (
@@ -130,26 +153,12 @@ jq -nr \
   "== Latest Reviews ==\n" +
   (
     if ($pr.latestReviews | length) == 0 then
-      "  (none)\n\n"
-    else
-      (
-        $pr.latestReviews
-        | map("  - \(.state // "COMMENTED") by \(.author.login) at \((.submittedAt // .createdAt // "")[0:10])" +
-              (if ((.body // "") | length) > 0 then "\n    " + excerpt(.body) else "" end))
-        | join("\n")
-      ) + "\n\n"
-    end
-  ) +
-  "== Unresolved Review Threads ==\n" +
-  (
-    ($reviewThreads | map(select(.isResolved | not))) as $openThreads |
-    if ($openThreads | length) == 0 then
       "  (none)\n"
     else
       (
-        $openThreads
-        | map(.comments.nodes[0] // {})
-        | map("  - \((.path // "general")):\((.line // .originalLine // 0)) by \(.author.login // "unknown")\n    " + excerpt(.body) + (if (.url // "") != "" then "\n    " + .url else "" end))
+        $pr.latestReviews
+        | map("  - \(.state // "COMMENTED") by \(.author.login) at \((.submittedAt // .createdAt // "")[0:19])" +
+              (if ((.body // "") | length) > 0 then "\n    " + excerpt(.body) else "" end))
         | join("\n")
       ) + "\n"
     end
