@@ -36,6 +36,7 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
 
   const [searchInput, setSearchInput] = useState(query);
   const [playbackRate, setPlaybackRate] = useState<number>(1);
+  const [readyPlayerKey, setReadyPlayerKey] = useState<string | null>(null);
   const audioLanguageCode = siteConfig.learningLanguageCode;
 
   const { results, isLoading, error, search, selectedResult, selectResult, keyword } = useSearch(
@@ -139,6 +140,9 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
   const playerStartTime = selectedResult
     ? Math.max(0, selectedResult.startTime - PRE_ROLL_SECONDS)
     : 0;
+  const selectedPlayerKey = selectedResult
+    ? `${selectedResult.videoId}:${selectedResult.startTime}`
+    : null;
 
   return (
     <main className="relative min-h-screen bg-[var(--bg-base)] pb-[calc(var(--space-layout-section)+var(--space-safe-bottom))]">
@@ -187,10 +191,17 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
 
             <div className="-mx-[var(--space-layout-screen)] w-[calc(100%+var(--space-layout-screen)+var(--space-layout-screen))] lg:mx-0 lg:w-full">
               <YouTubePlayer
+                key={selectedPlayerKey ?? "no-selected-video"}
                 ref={playerRef}
                 videoId={selectedResult.videoId}
                 startTime={playerStartTime}
                 playbackRate={playbackRate}
+                onReady={() => {
+                  setReadyPlayerKey(selectedPlayerKey);
+                }}
+                onUnavailable={() => {
+                  setReadyPlayerKey(null);
+                }}
               />
 
               <ChunkViewer
@@ -213,7 +224,7 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
               onSeekForward={handleSeekForward}
               onToggleSpeed={handleToggleSpeed}
               playbackRate={playbackRate}
-              isDisabled={!selectedResult}
+              isDisabled={!selectedResult || readyPlayerKey !== selectedPlayerKey}
             />
 
             <p className="text-center font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
