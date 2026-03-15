@@ -51,7 +51,7 @@ async function expectJsonResponse<T>(response: Response, expectedStatus = 200): 
 }
 
 test.describe("Tubelang smoke E2E", () => {
-  test("search keeps focus on the global search input for follow-up keyboard navigation", async ({
+  test("search focuses the results region without trapping playback shortcuts in the search input", async ({
     page,
   }) => {
     await page.goto("/");
@@ -61,10 +61,15 @@ test.describe("Tubelang smoke E2E", () => {
     await expectJsonResponse<SearchResponseRow[]>(await searchResponsePromise);
 
     const globalSearchInput = page.locator("#global-search-input");
+    const resultsFocusTarget = page.getByTestId("search-results-focus-target");
     await expect(page).toHaveURL("/ko/search?q=%EA%B9%80%EC%B9%98%EC%B0%8C%EA%B0%9C");
-    await expect(globalSearchInput).toBeFocused();
+    await expect(resultsFocusTarget).toBeFocused();
+    await expect(globalSearchInput).not.toBeFocused();
 
-    await page.keyboard.press("Tab");
+    await page.keyboard.press("Shift+Tab");
+    await expect(page.getByRole("button", { name: "Submit search" })).toBeFocused();
+
+    await page.keyboard.press("Shift+Tab");
     await expect(page.getByRole("button", { name: "Clear search input" })).toBeFocused();
 
     await page.keyboard.press("Shift+Tab");
@@ -76,7 +81,7 @@ test.describe("Tubelang smoke E2E", () => {
     await expectJsonResponse<SearchResponseRow[]>(await followUpSearchResponsePromise);
 
     await expect(page).toHaveURL("/ko/search?q=%ED%96%89%EB%B3%B5%ED%95%B4%EC%9A%94");
-    await expect(globalSearchInput).toBeFocused();
+    await expect(resultsFocusTarget).toBeFocused();
     await expect(page.getByTestId("search-result-navigation")).toContainText("(1/1)");
   });
 

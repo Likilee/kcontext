@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent, Ref } from "react";
+import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +26,6 @@ interface SearchBarProps {
   dynamicPlaceholder?: boolean;
   placeholderText?: string;
   ariaLabel?: string;
-  inputRef?: Ref<HTMLInputElement>;
 }
 
 function useRollingPlaceholder(enabled: boolean, staticPlaceholder: string): string {
@@ -106,7 +105,6 @@ export function SearchBar({
   dynamicPlaceholder = false,
   placeholderText = STATIC_PLACEHOLDER,
   ariaLabel = "Search real Korean",
-  inputRef,
 }: SearchBarProps) {
   const placeholder = useRollingPlaceholder(
     dynamicPlaceholder && value.length === 0,
@@ -124,7 +122,6 @@ export function SearchBar({
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
       <Input
-        ref={inputRef}
         id={inputId}
         type="search"
         value={value}
