@@ -4,8 +4,6 @@ const EMPTY_STATE_TEXT = "even native speakers rarely use";
 
 interface SearchResponseRow {
   videoId: string;
-  title: string;
-  channelName: string;
   startTime: number;
   matchedText: string;
 }
@@ -34,14 +32,18 @@ function waitForSearchResponse(page: Page, keyword: string): Promise<Response> {
   });
 }
 
-function waitForTranscriptResponse(page: Page, videoId: string): Promise<Response> {
+function waitForTranscriptResponse(page: Page, videoId?: string): Promise<Response> {
   return page.waitForResponse((response) => {
     if (response.request().method() !== "GET") {
       return false;
     }
 
     const url = new URL(response.url());
-    return url.pathname.endsWith(`/storage/v1/object/public/subtitles/${videoId}.json`);
+    if (!url.pathname.includes("/storage/v1/object/public/subtitles/")) {
+      return false;
+    }
+
+    return !videoId || url.pathname.endsWith(`/storage/v1/object/public/subtitles/${videoId}.json`);
   });
 }
 
@@ -51,9 +53,7 @@ async function expectJsonResponse<T>(response: Response, expectedStatus = 200): 
 }
 
 test.describe("Tubelang smoke E2E", () => {
-  test("seeded search returns deterministic results and enables the player controls", async ({
-    page,
-  }) => {
+  test("search returns live results and enables the player controls", async ({ page }) => {
     await page.goto("/");
 
     const searchResponsePromise = waitForSearchResponse(page, "김치찌개");
@@ -61,30 +61,29 @@ test.describe("Tubelang smoke E2E", () => {
 
     const searchResponse = await searchResponsePromise;
     const results = await expectJsonResponse<SearchResponseRow[]>(searchResponse);
-    expect(results).toHaveLength(1);
+    expect(results.length).toBeGreaterThan(0);
 
     const firstResult = results[0];
     if (!firstResult) {
-      throw new Error("Expected a seeded search result for 김치찌개.");
+      throw new Error("Expected at least one live search result for 김치찌개.");
     }
 
-    expect(firstResult.videoId).toBe("test_video_03");
     expect(firstResult.matchedText).toContain("김치찌개");
 
     await expect(page).toHaveURL("/ko/search?q=%EA%B9%80%EC%B9%98%EC%B0%8C%EA%B0%9C");
     await expect(page.getByTestId("search-result-navigation")).toBeVisible();
-    await expect(page.getByTestId("search-result-navigation")).toContainText("(1/1)");
+    await expect(page.getByTestId("search-result-navigation")).toContainText(`(1/${results.length})`);
     await expect(page.locator("#yt-player-container")).toBeVisible();
     await expect(page.getByTestId("replay-context-btn")).toBeVisible();
     await expect(page.getByTestId("replay-context-btn")).toBeEnabled();
     await expect(page.getByTestId("search-empty-state")).toBeHidden();
   });
 
-  test("seeded search loads the transcript object for the selected result", async ({ page }) => {
+  test("search loads the transcript object for the selected result", async ({ page }) => {
     await page.goto("/");
 
     const searchResponsePromise = waitForSearchResponse(page, "행복해요");
-    const transcriptResponsePromise = waitForTranscriptResponse(page, "test_video_01");
+    const transcriptResponsePromise = waitForTranscriptResponse(page);
 
     await searchKeyword(page, "행복해요");
 
@@ -92,31 +91,33 @@ test.describe("Tubelang smoke E2E", () => {
     const results = await expectJsonResponse<SearchResponseRow[]>(searchResponse);
     const firstResult = results[0];
     if (!firstResult) {
-      throw new Error("Expected a seeded search result for 행복해요.");
+      throw new Error("Expected a live search result for 행복해요.");
     }
 
-    expect(firstResult.videoId).toBe("test_video_01");
     expect(firstResult.matchedText).toContain("행복해요");
 
     const transcriptResponse = await transcriptResponsePromise;
+    expect(transcriptResponse.url()).toContain(`${firstResult.videoId}.json`);
     const transcriptChunks = await expectJsonResponse<TranscriptResponseChunk[]>(transcriptResponse);
-    expect(transcriptChunks).toHaveLength(4);
+    expect(transcriptChunks.length).toBeGreaterThan(0);
 
     const highlightedChunk = transcriptChunks.find((chunk) => chunk.text.includes("행복해요"));
     expect(highlightedChunk?.text).toContain("행복해요");
 
     await expect(page.getByTestId("search-result-navigation")).toBeVisible();
-    await expect(page.getByTestId("search-result-navigation")).toContainText("(1/1)");
+    await expect(page.getByTestId("search-result-navigation")).toContainText(`(1/${results.length})`);
     await expect(page.getByTestId("chunk-viewer")).toBeVisible();
     await expect(page.getByTestId("replay-context-btn")).toBeEnabled();
     await expect(page.getByTestId("search-empty-state")).toBeHidden();
   });
 
   test("unknown search stays in empty state and does not expose player controls", async ({ page }) => {
+    const keyword = `zz-codex-e2e-${Date.now()}-nohit`;
+
     await page.goto("/");
 
-    const searchResponsePromise = waitForSearchResponse(page, "zxcvbnmasdfghjkl1234567890");
-    await searchKeyword(page, "zxcvbnmasdfghjkl1234567890");
+    const searchResponsePromise = waitForSearchResponse(page, keyword);
+    await searchKeyword(page, keyword);
 
     const searchResponse = await searchResponsePromise;
     const results = await expectJsonResponse<SearchResponseRow[]>(searchResponse);

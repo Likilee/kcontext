@@ -4,8 +4,6 @@ const EMPTY_STATE_TEXT = "even native speakers rarely use";
 
 interface SearchResponseRow {
   videoId: string;
-  title: string;
-  channelName: string;
   startTime: number;
   matchedText: string;
 }
@@ -34,14 +32,18 @@ function waitForSearchResponse(page: Page, keyword: string): Promise<Response> {
   });
 }
 
-function waitForTranscriptResponse(page: Page, videoId: string): Promise<Response> {
+function waitForTranscriptResponse(page: Page, videoId?: string): Promise<Response> {
   return page.waitForResponse((response) => {
     if (response.request().method() !== "GET") {
       return false;
     }
 
     const url = new URL(response.url());
-    return url.pathname.endsWith(`/storage/v1/object/public/subtitles/${videoId}.json`);
+    if (!url.pathname.includes("/storage/v1/object/public/subtitles/")) {
+      return false;
+    }
+
+    return !videoId || url.pathname.endsWith(`/storage/v1/object/public/subtitles/${videoId}.json`);
   });
 }
 
@@ -50,8 +52,8 @@ async function expectJsonResponse<T>(response: Response, expectedStatus = 200): 
   return (await response.json()) as T;
 }
 
-test.describe("Fixture-backed full stack integration", () => {
-  test('Search "떡볶이" hydrates the player UI from fixture-backed API data', async ({ page }) => {
+test.describe("Full stack integration", () => {
+  test('Search "떡볶이" hydrates the player UI from live API data', async ({ page }) => {
     await page.goto("/");
 
     const searchResponsePromise = waitForSearchResponse(page, "떡볶이");
@@ -70,10 +72,11 @@ test.describe("Fixture-backed full stack integration", () => {
     await expect(page.getByTestId("search-empty-state")).toBeHidden();
   });
 
-  test('Search "전분당" loads transcript data for the selected fixture result', async ({ page }) => {
+  test('Search "전분당" loads transcript data for the selected result', async ({ page }) => {
     await page.goto("/");
 
     const searchResponsePromise = waitForSearchResponse(page, "전분당");
+    const transcriptResponsePromise = waitForTranscriptResponse(page);
     await searchKeyword(page, "전분당");
 
     const searchResponse = await searchResponsePromise;
@@ -87,7 +90,8 @@ test.describe("Fixture-backed full stack integration", () => {
 
     expect(firstResult.matchedText).toContain("전분당");
 
-    const transcriptResponse = await waitForTranscriptResponse(page, firstResult.videoId);
+    const transcriptResponse = await transcriptResponsePromise;
+    expect(transcriptResponse.url()).toContain(`${firstResult.videoId}.json`);
     const transcriptChunks = await expectJsonResponse<TranscriptResponseChunk[]>(transcriptResponse);
     expect(transcriptChunks.length).toBeGreaterThan(0);
     expect(transcriptChunks.some((chunk) => chunk.text.includes("전분당"))).toBe(true);
@@ -97,7 +101,7 @@ test.describe("Fixture-backed full stack integration", () => {
     await expect(page.getByTestId("search-empty-state")).toBeHidden();
   });
 
-  test('Search "죽마고우" exposes multi-result navigation from fixture data', async ({ page }) => {
+  test('Search "죽마고우" exposes multi-result navigation from live data', async ({ page }) => {
     await page.goto("/");
 
     const searchResponsePromise = waitForSearchResponse(page, "죽마고우");
@@ -113,11 +117,13 @@ test.describe("Fixture-backed full stack integration", () => {
     await expect(page.getByRole("button", { name: "Next" })).toBeEnabled();
   });
 
-  test('Search "어쩔티비" stays empty when the fixtures do not contain the keyword', async ({ page }) => {
+  test("a nonce keyword stays empty when the dataset does not contain it", async ({ page }) => {
+    const keyword = `zz-codex-e2e-${Date.now()}-nohit`;
+
     await page.goto("/");
 
-    const searchResponsePromise = waitForSearchResponse(page, "어쩔티비");
-    await searchKeyword(page, "어쩔티비");
+    const searchResponsePromise = waitForSearchResponse(page, keyword);
+    await searchKeyword(page, keyword);
 
     const searchResponse = await searchResponsePromise;
     const results = await expectJsonResponse<SearchResponseRow[]>(searchResponse);
@@ -129,7 +135,7 @@ test.describe("Fixture-backed full stack integration", () => {
     await expect(page.getByTestId("replay-context-btn")).toBeHidden();
   });
 
-  test('Search "과징금" keeps replay enabled for a fixture-backed result', async ({ page }) => {
+  test('Search "과징금" keeps replay enabled for a live result', async ({ page }) => {
     await page.goto("/");
 
     const searchResponsePromise = waitForSearchResponse(page, "과징금");
