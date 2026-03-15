@@ -12,8 +12,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { YouTubePlayerHandle } from "@/components/youtube-player";
 import { YouTubePlayer } from "@/components/youtube-player";
 import { SupabaseSubtitleRepository } from "@/infrastructure/adapters/supabase-subtitle-repository";
-import { getKoreanSearchPath, KOREAN_HOME_PATH } from "@/lib/app-routes";
-import type { SiteConfig } from "@/lib/site-config";
+import { getLearningHomePath, getLearningSearchPath } from "@/lib/app-routes";
+import {
+  resolveRequestedUiLanguageCode,
+  type SiteConfig,
+  UI_LANGUAGE_QUERY_PARAM,
+} from "@/lib/site-config";
 import { useKeyboardShortcuts } from "@/lib/use-keyboard-shortcuts";
 import { useSubtitleSync } from "@/lib/use-subtitle-sync";
 
@@ -29,6 +33,9 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const query = (searchParams.get("q") ?? "").trim();
+  const requestedUiLanguageCode = resolveRequestedUiLanguageCode(
+    searchParams.get(UI_LANGUAGE_QUERY_PARAM),
+  );
 
   const playerRef = useRef<YouTubePlayerHandle | null>(null);
 
@@ -62,13 +69,19 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
       const normalizedKeyword = keywordToSearch.trim();
       setSearchInput(normalizedKeyword);
       if (!normalizedKeyword) {
-        router.push(KOREAN_HOME_PATH);
+        router.push(getLearningHomePath(siteConfig.learningLanguageCode, requestedUiLanguageCode));
         return;
       }
 
-      router.push(getKoreanSearchPath(normalizedKeyword));
+      router.push(
+        getLearningSearchPath({
+          learningLanguageCode: siteConfig.learningLanguageCode,
+          keyword: normalizedKeyword,
+          uiLanguageCode: requestedUiLanguageCode,
+        }),
+      );
     },
-    [router],
+    [requestedUiLanguageCode, router, siteConfig.learningLanguageCode],
   );
 
   useEffect(() => {
@@ -148,7 +161,9 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
         onSearchSubmit={executeSearch}
         isSearchLoading={isLoading}
         onLogoClick={() => {
-          router.push(KOREAN_HOME_PATH);
+          router.push(
+            getLearningHomePath(siteConfig.learningLanguageCode, requestedUiLanguageCode),
+          );
         }}
       />
 

@@ -1,6 +1,15 @@
-export const SUPPORTED_INTERFACE_LANGUAGE_CODES = ["en", "ko"] as const;
+export const SUPPORTED_UI_LANGUAGE_CODES = ["en", "ko"] as const;
+export const SUPPORTED_LEARNING_LANGUAGE_CODES = ["ko", "en"] as const;
+export const LIVE_LEARNING_LANGUAGE_CODES = ["ko"] as const;
 
-export type InterfaceLanguageCode = (typeof SUPPORTED_INTERFACE_LANGUAGE_CODES)[number];
+export const DEFAULT_UI_LANGUAGE_CODE = "en";
+export const DEFAULT_LEARNING_LANGUAGE_CODE = "ko";
+
+export const UI_LANGUAGE_QUERY_PARAM = "hl";
+export const UI_LANGUAGE_COOKIE_NAME = "tubelang-ui-lang";
+
+export type UiLanguageCode = (typeof SUPPORTED_UI_LANGUAGE_CODES)[number];
+export type LearningLanguageCode = (typeof SUPPORTED_LEARNING_LANGUAGE_CODES)[number];
 
 interface SiteCopy {
   readonly homeHeadline: readonly [string, string];
@@ -19,14 +28,21 @@ interface SiteCopy {
   readonly togglePlaybackSpeedAriaLabel: string;
   readonly loadingSubtitlesAriaLabel: string;
   readonly keyboardShortcutHint: string;
+  readonly uiLanguageSwitcherLabel: string;
+  readonly switchToEnglishLabel: string;
+  readonly switchToKoreanLabel: string;
+  readonly reservedLearningEyebrow: string;
+  readonly reservedLearningDescription: string;
+  readonly reservedLearningCtaLabel: string;
 }
 
 export interface SiteConfig {
   readonly appName: string;
-  readonly interfaceLanguageCode: InterfaceLanguageCode;
-  readonly learningLanguageCode: string;
+  readonly uiLanguageCode: UiLanguageCode;
+  readonly learningLanguageCode: LearningLanguageCode;
   readonly learningLanguageName: string;
   readonly learningLanguageNativeName: string;
+  readonly isLearningLanguageLive: boolean;
   readonly metadataTitle: string;
   readonly metadataDescription: string;
   readonly openGraphLocale: string;
@@ -43,24 +59,31 @@ export interface SiteConfig {
 interface SiteConfigBase
   extends Omit<
     SiteConfig,
-    "interfaceLanguageCode" | "metadataTitle" | "metadataDescription" | "openGraphLocale" | "copy"
+    | "uiLanguageCode"
+    | "learningLanguageCode"
+    | "learningLanguageName"
+    | "learningLanguageNativeName"
+    | "isLearningLanguageLive"
+    | "metadataTitle"
+    | "metadataDescription"
+    | "openGraphLocale"
+    | "copy"
   > {}
 
-interface SiteLocaleDefinition {
-  readonly interfaceLanguageCode: InterfaceLanguageCode;
-  readonly metadataTitle: string;
-  readonly metadataDescription: string;
+interface UiLanguageDefinition {
   readonly openGraphLocale: string;
   readonly copy: SiteCopy;
+  readonly metadataDescriptions: Record<LearningLanguageCode, string>;
 }
 
-export const DEFAULT_INTERFACE_LANGUAGE_CODE: InterfaceLanguageCode = "en";
+interface LearningLanguageDefinition {
+  readonly nativeName: string;
+  readonly displayNames: Record<UiLanguageCode, string>;
+  readonly isLive: boolean;
+}
 
 const BASE_SITE_CONFIG: SiteConfigBase = {
   appName: "Tubelang",
-  learningLanguageCode: "ko",
-  learningLanguageName: "Korean",
-  learningLanguageNativeName: "한국어",
   primaryHost: "tubelang.com",
   developmentHost: "localhost",
   baseUrl: "https://tubelang.com",
@@ -70,15 +93,35 @@ const BASE_SITE_CONFIG: SiteConfigBase = {
   },
 };
 
-const SITE_LOCALE_DEFINITIONS: Record<InterfaceLanguageCode, SiteLocaleDefinition> = {
+const LEARNING_LANGUAGE_DEFINITIONS: Record<LearningLanguageCode, LearningLanguageDefinition> = {
+  ko: {
+    nativeName: "한국어",
+    displayNames: {
+      en: "Korean",
+      ko: "한국어",
+    },
+    isLive: true,
+  },
   en: {
-    interfaceLanguageCode: "en",
-    metadataTitle: "Tubelang Korean",
-    metadataDescription: "Real Korean, Right in Context.",
+    nativeName: "영어",
+    displayNames: {
+      en: "English",
+      ko: "영어",
+    },
+    isLive: false,
+  },
+};
+
+const UI_LANGUAGE_DEFINITIONS: Record<UiLanguageCode, UiLanguageDefinition> = {
+  en: {
     openGraphLocale: "en_US",
+    metadataDescriptions: {
+      ko: "Real Korean, Right in Context.",
+      en: "English learning is coming soon.",
+    },
     copy: {
       homeHeadline: ["Learn real Korean beyond textbooks.", "See it in native context."],
-      homeAriaLabel: "Go to Tubelang Korean home",
+      homeAriaLabel: "Go to Tubelang home",
       heroSearchAriaLabel: "Search Korean in context",
       globalSearchAriaLabel: "Search real Korean",
       searchPlaceholder: "Search real Korean",
@@ -94,16 +137,24 @@ const SITE_LOCALE_DEFINITIONS: Record<InterfaceLanguageCode, SiteLocaleDefinitio
       togglePlaybackSpeedAriaLabel: "Toggle playback speed",
       loadingSubtitlesAriaLabel: "Loading subtitles",
       keyboardShortcutHint: "Keyboard: ← → switch videos | R or Space replay",
+      uiLanguageSwitcherLabel: "Switch interface language",
+      switchToEnglishLabel: "Switch interface to English",
+      switchToKoreanLabel: "Switch interface to Korean",
+      reservedLearningEyebrow: "Reserved route",
+      reservedLearningDescription:
+        "Tubelang is live for Korean today. Explore the Korean route while the English experience is still in progress.",
+      reservedLearningCtaLabel: "Explore Korean now",
     },
   },
   ko: {
-    interfaceLanguageCode: "ko",
-    metadataTitle: "튜브랭 한국어",
-    metadataDescription: "진짜 한국어를 맥락 속에서 익히세요.",
     openGraphLocale: "ko_KR",
+    metadataDescriptions: {
+      ko: "진짜 한국어를 맥락 속에서 익히세요.",
+      en: "영어 학습 경험은 준비 중입니다.",
+    },
     copy: {
       homeHeadline: ["교과서 밖 진짜 한국어를", "맥락 속에서 익히세요."],
-      homeAriaLabel: "튜브랭 한국어 홈으로 이동",
+      homeAriaLabel: "튜브랭 홈으로 이동",
       heroSearchAriaLabel: "한국어 문맥 검색",
       globalSearchAriaLabel: "실전 한국어 검색",
       searchPlaceholder: "진짜 한국어 검색",
@@ -119,23 +170,55 @@ const SITE_LOCALE_DEFINITIONS: Record<InterfaceLanguageCode, SiteLocaleDefinitio
       togglePlaybackSpeedAriaLabel: "재생 속도 전환",
       loadingSubtitlesAriaLabel: "자막 불러오는 중",
       keyboardShortcutHint: "키보드: ← → 영상 전환 | R 또는 Space 다시 재생",
+      uiLanguageSwitcherLabel: "인터페이스 언어 전환",
+      switchToEnglishLabel: "영어 UI로 전환",
+      switchToKoreanLabel: "한국어 UI로 전환",
+      reservedLearningEyebrow: "준비 중인 학습 경로",
+      reservedLearningDescription:
+        "현재 Tubelang은 한국어 학습 경로만 제공하고 있습니다. 영어 경험은 준비되는 동안 한국어 경로를 먼저 둘러보세요.",
+      reservedLearningCtaLabel: "한국어 경로 둘러보기",
     },
   },
 };
 
-function createSiteConfig(interfaceLanguageCode: InterfaceLanguageCode): SiteConfig {
+function createSiteConfig(
+  learningLanguageCode: LearningLanguageCode,
+  uiLanguageCode: UiLanguageCode,
+): SiteConfig {
+  const learningLanguage = LEARNING_LANGUAGE_DEFINITIONS[learningLanguageCode];
+  const uiLanguage = UI_LANGUAGE_DEFINITIONS[uiLanguageCode];
+  const learningLanguageName = learningLanguage.displayNames[uiLanguageCode];
+
   return {
     ...BASE_SITE_CONFIG,
-    ...SITE_LOCALE_DEFINITIONS[interfaceLanguageCode],
+    uiLanguageCode,
+    learningLanguageCode,
+    learningLanguageName,
+    learningLanguageNativeName: learningLanguage.nativeName,
+    isLearningLanguageLive: learningLanguage.isLive,
+    metadataTitle:
+      uiLanguageCode === "ko"
+        ? `튜브랭 ${learningLanguageName}`
+        : `Tubelang ${learningLanguageName}`,
+    metadataDescription: uiLanguage.metadataDescriptions[learningLanguageCode],
+    openGraphLocale: uiLanguage.openGraphLocale,
+    copy: uiLanguage.copy,
   };
 }
 
-const SITE_CONFIGS: Record<InterfaceLanguageCode, SiteConfig> = {
-  en: createSiteConfig("en"),
-  ko: createSiteConfig("ko"),
+const SITE_CONFIGS: Record<LearningLanguageCode, Record<UiLanguageCode, SiteConfig>> = {
+  ko: {
+    en: createSiteConfig("ko", "en"),
+    ko: createSiteConfig("ko", "ko"),
+  },
+  en: {
+    en: createSiteConfig("en", "en"),
+    ko: createSiteConfig("en", "ko"),
+  },
 };
 
-export const DEFAULT_SITE_CONFIG = SITE_CONFIGS[DEFAULT_INTERFACE_LANGUAGE_CODE];
+export const DEFAULT_SITE_CONFIG =
+  SITE_CONFIGS[DEFAULT_LEARNING_LANGUAGE_CODE][DEFAULT_UI_LANGUAGE_CODE];
 
 const PRODUCTION_REDIRECT_HOSTS = new Set([
   "kcontext.vercel.app",
@@ -156,8 +239,33 @@ export function isDevelopmentHost(host: string | null | undefined): boolean {
   );
 }
 
-function isSupportedInterfaceLanguageCode(value: string): value is InterfaceLanguageCode {
-  return SUPPORTED_INTERFACE_LANGUAGE_CODES.some((languageCode) => languageCode === value);
+export function isSupportedUiLanguageCode(value: string): value is UiLanguageCode {
+  return SUPPORTED_UI_LANGUAGE_CODES.some((languageCode) => languageCode === value);
+}
+
+export function isSupportedLearningLanguageCode(value: string): value is LearningLanguageCode {
+  return SUPPORTED_LEARNING_LANGUAGE_CODES.some((languageCode) => languageCode === value);
+}
+
+export function isLiveLearningLanguageCode(learningLanguageCode: LearningLanguageCode): boolean {
+  return LIVE_LEARNING_LANGUAGE_CODES.some((languageCode) => languageCode === learningLanguageCode);
+}
+
+function normalizeRequestedLanguageCode(value: string | null | undefined): string | null {
+  const normalizedValue = value?.trim().toLowerCase();
+  return normalizedValue && normalizedValue.length > 0 ? normalizedValue : null;
+}
+
+export function resolveRequestedUiLanguageCode(
+  value: string | null | undefined,
+): UiLanguageCode | null {
+  const normalizedValue = normalizeRequestedLanguageCode(value);
+
+  if (!normalizedValue || !isSupportedUiLanguageCode(normalizedValue)) {
+    return null;
+  }
+
+  return normalizedValue;
 }
 
 interface RequestedLocaleCandidate {
@@ -235,39 +343,77 @@ function getRequestedLocaleCandidates(
   return candidates;
 }
 
-export function resolveInterfaceLanguageCode(
+export function resolveUiLanguageCodeFromRequestedLocale(
   requestedLocale: string | null | undefined,
-): InterfaceLanguageCode {
+): UiLanguageCode {
   for (const candidate of getRequestedLocaleCandidates(requestedLocale)) {
-    if (isSupportedInterfaceLanguageCode(candidate)) {
+    if (isSupportedUiLanguageCode(candidate)) {
       return candidate;
     }
   }
 
-  return DEFAULT_INTERFACE_LANGUAGE_CODE;
+  return DEFAULT_UI_LANGUAGE_CODE;
 }
 
-export function getSiteConfigForInterfaceLanguage(
-  requestedLocale: string | null | undefined,
-): SiteConfig {
-  return SITE_CONFIGS[resolveInterfaceLanguageCode(requestedLocale)];
+export function resolveUiLanguageCode({
+  requestedUiLanguageCode,
+  storedUiLanguageCode,
+  requestedLocale,
+}: {
+  readonly requestedUiLanguageCode: string | null | undefined;
+  readonly storedUiLanguageCode: string | null | undefined;
+  readonly requestedLocale: string | null | undefined;
+}): UiLanguageCode {
+  return (
+    resolveRequestedUiLanguageCode(requestedUiLanguageCode) ??
+    resolveRequestedUiLanguageCode(storedUiLanguageCode) ??
+    resolveUiLanguageCodeFromRequestedLocale(requestedLocale)
+  );
 }
 
-export function getSiteConfigForHost(
-  host: string | null | undefined,
-  requestedLocale: string | null | undefined = DEFAULT_INTERFACE_LANGUAGE_CODE,
-): SiteConfig {
-  const normalizedHost = normalizeHost(host);
-  const siteConfig = getSiteConfigForInterfaceLanguage(requestedLocale);
+export function resolveLearningLanguageCode(
+  pathname: string | null | undefined,
+): LearningLanguageCode {
+  const normalizedPathname = (pathname ?? "").trim();
+  const [rawPathSegment] = normalizedPathname.replace(/^\/+/, "").split("/");
+  const pathSegment = rawPathSegment?.trim().toLowerCase();
 
-  if (
-    normalizedHost === BASE_SITE_CONFIG.primaryHost ||
-    normalizedHost === BASE_SITE_CONFIG.developmentHost
-  ) {
-    return siteConfig;
+  if (pathSegment && isSupportedLearningLanguageCode(pathSegment)) {
+    return pathSegment;
   }
 
-  return siteConfig;
+  return DEFAULT_LEARNING_LANGUAGE_CODE;
+}
+
+export function getSiteConfig({
+  learningLanguageCode = DEFAULT_LEARNING_LANGUAGE_CODE,
+  uiLanguageCode = DEFAULT_UI_LANGUAGE_CODE,
+}: {
+  readonly learningLanguageCode?: LearningLanguageCode;
+  readonly uiLanguageCode?: UiLanguageCode;
+} = {}): SiteConfig {
+  return SITE_CONFIGS[learningLanguageCode][uiLanguageCode];
+}
+
+export function getSiteConfigForRequest({
+  pathname,
+  requestedUiLanguageCode,
+  storedUiLanguageCode,
+  requestedLocale,
+}: {
+  readonly pathname: string | null | undefined;
+  readonly requestedUiLanguageCode: string | null | undefined;
+  readonly storedUiLanguageCode: string | null | undefined;
+  readonly requestedLocale: string | null | undefined;
+}): SiteConfig {
+  return getSiteConfig({
+    learningLanguageCode: resolveLearningLanguageCode(pathname),
+    uiLanguageCode: resolveUiLanguageCode({
+      requestedUiLanguageCode,
+      storedUiLanguageCode,
+      requestedLocale,
+    }),
+  });
 }
 
 export function getRedirectHostForHost(host: string | null | undefined): string | null {

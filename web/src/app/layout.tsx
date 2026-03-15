@@ -9,7 +9,7 @@ import { buildRootMetadata, RootHtml } from "./root-layout-content";
 export async function generateMetadata(): Promise<Metadata> {
   const [siteConfig, requestUrl] = await Promise.all([
     getRequestSiteConfig(),
-    getRequestUrl({ usePrimaryHost: true }),
+    getRequestUrl({ usePrimaryHost: true, includeUiLanguage: false }),
   ]);
 
   return buildRootMetadata({ siteConfig, requestUrl });
@@ -23,7 +23,7 @@ export default async function RootLayout({
   const siteConfig = await getRequestSiteConfig();
 
   return (
-    <RootHtml interfaceLanguageCode={siteConfig.interfaceLanguageCode}>
+    <RootHtml uiLanguageCode={siteConfig.uiLanguageCode}>
       <head>
         {process.env.NODE_ENV === "development" && (
           <Script

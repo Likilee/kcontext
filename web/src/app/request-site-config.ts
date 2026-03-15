@@ -1,27 +1,46 @@
-import { headers } from "next/headers";
-import { getSiteConfigForHost, isDevelopmentHost, normalizeHost } from "@/lib/site-config";
+import { cookies, headers } from "next/headers";
+import { getCanonicalSearch } from "@/lib/app-routes";
+import {
+  getSiteConfigForRequest,
+  isDevelopmentHost,
+  normalizeHost,
+  UI_LANGUAGE_COOKIE_NAME,
+  UI_LANGUAGE_QUERY_PARAM,
+} from "@/lib/site-config";
+
+function getSearchParams(search: string): URLSearchParams {
+  return new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+}
 
 export async function getRequestSiteConfig() {
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
-  const interfaceLocale = requestHeaders.get("accept-language");
-  return getSiteConfigForHost(host, interfaceLocale);
+  const [requestHeaders, cookieStore] = await Promise.all([headers(), cookies()]);
+  const pathname = requestHeaders.get("x-pathname");
+  const search = requestHeaders.get("x-search") ?? "";
+  const requestedUiLanguageCode = getSearchParams(search).get(UI_LANGUAGE_QUERY_PARAM);
+
+  return getSiteConfigForRequest({
+    pathname,
+    requestedUiLanguageCode,
+    storedUiLanguageCode: cookieStore.get(UI_LANGUAGE_COOKIE_NAME)?.value,
+    requestedLocale: requestHeaders.get("accept-language"),
+  });
 }
 
 export async function getRequestUrl({
   usePrimaryHost = false,
+  includeUiLanguage = true,
 }: {
   readonly usePrimaryHost?: boolean;
+  readonly includeUiLanguage?: boolean;
 } = {}): Promise<URL> {
   const requestHeaders = await headers();
   const hostHeader = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const host = normalizeHost(hostHeader);
-  const siteConfig = getSiteConfigForHost(host);
   const pathname = requestHeaders.get("x-pathname") ?? "/";
   const search = requestHeaders.get("x-search") ?? "";
   const forwardedProto = requestHeaders.get("x-forwarded-proto");
   const shouldUseRequestHost = isDevelopmentHost(host) || !usePrimaryHost;
-  const effectiveHost = shouldUseRequestHost ? host : siteConfig.primaryHost;
+  const effectiveHost = shouldUseRequestHost ? host : "tubelang.com";
   const protocol = shouldUseRequestHost
     ? forwardedProto
       ? `${forwardedProto}:`
@@ -29,6 +48,7 @@ export async function getRequestUrl({
         ? "http:"
         : "https:"
     : "https:";
+  const effectiveSearch = includeUiLanguage ? search : getCanonicalSearch(search);
 
-  return new URL(`${protocol}//${effectiveHost}${pathname}${search}`);
+  return new URL(`${protocol}//${effectiveHost}${pathname}${effectiveSearch}`);
 }

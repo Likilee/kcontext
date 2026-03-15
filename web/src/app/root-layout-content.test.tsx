@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { getSiteConfigForHost } from "@/lib/site-config";
+import { getSiteConfig } from "@/lib/site-config";
 import { buildRootMetadata, RootHtml } from "./root-layout-content";
 
 describe("root-layout-content", () => {
-  it("builds locale-specific metadata from the resolved site config", () => {
-    const englishSiteConfig = getSiteConfigForHost("tubelang.com", "en-US,en;q=0.9");
-    const koreanSiteConfig = getSiteConfigForHost("tubelang.com", "ko-KR,ko;q=0.9");
+  it("builds UI-language-specific metadata for the live learning route", () => {
+    const englishUiConfig = getSiteConfig({ learningLanguageCode: "ko", uiLanguageCode: "en" });
+    const koreanUiConfig = getSiteConfig({ learningLanguageCode: "ko", uiLanguageCode: "ko" });
     const requestUrl = new URL("https://tubelang.com/ko");
 
     const englishMetadata = buildRootMetadata({
-      siteConfig: englishSiteConfig,
+      siteConfig: englishUiConfig,
       requestUrl,
     });
     const koreanMetadata = buildRootMetadata({
-      siteConfig: koreanSiteConfig,
+      siteConfig: koreanUiConfig,
       requestUrl,
     });
 
@@ -26,16 +26,28 @@ describe("root-layout-content", () => {
     expect(koreanMetadata.openGraph?.locale).toBe("ko_KR");
   });
 
-  it("sets the html lang attribute from the resolved interface language", () => {
-    const englishSiteConfig = getSiteConfigForHost("tubelang.com", "en-US");
-    const koreanSiteConfig = getSiteConfigForHost("tubelang.com", "ko-KR");
+  it("builds reserved-route metadata from the learning-language path", () => {
+    const reservedConfig = getSiteConfig({ learningLanguageCode: "en", uiLanguageCode: "en" });
+    const requestUrl = new URL("https://tubelang.com/en");
+    const metadata = buildRootMetadata({
+      siteConfig: reservedConfig,
+      requestUrl,
+    });
+
+    expect(metadata.title).toBe("Tubelang English");
+    expect(metadata.description).toBe("English learning is coming soon.");
+  });
+
+  it("sets the html lang attribute from the resolved UI language", () => {
+    const englishUiConfig = getSiteConfig({ learningLanguageCode: "ko", uiLanguageCode: "en" });
+    const koreanUiConfig = getSiteConfig({ learningLanguageCode: "ko", uiLanguageCode: "ko" });
 
     const englishDocument = RootHtml({
-      interfaceLanguageCode: englishSiteConfig.interfaceLanguageCode,
+      uiLanguageCode: englishUiConfig.uiLanguageCode,
       children: null,
     });
     const koreanDocument = RootHtml({
-      interfaceLanguageCode: koreanSiteConfig.interfaceLanguageCode,
+      uiLanguageCode: koreanUiConfig.uiLanguageCode,
       children: null,
     });
 

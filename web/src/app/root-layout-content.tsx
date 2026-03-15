@@ -41,14 +41,14 @@ export function buildRootMetadata({
 }
 
 export function RootHtml({
-  interfaceLanguageCode,
+  uiLanguageCode,
   children,
 }: Readonly<{
-  interfaceLanguageCode: SiteConfig["interfaceLanguageCode"];
+  uiLanguageCode: SiteConfig["uiLanguageCode"];
   children: ReactNode;
 }>) {
   return (
-    <html lang={interfaceLanguageCode} className="dark">
+    <html lang={uiLanguageCode} className="dark">
       {children}
     </html>
   );
