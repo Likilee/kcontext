@@ -1,12 +1,7 @@
 import Link from "next/link";
 import type { BlogPost } from "@/domain/models/blog-post";
 import { BLOG_INDEX_PATH } from "@/lib/app-routes";
-
-function formatPublishedDate(publishedAt: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    dateStyle: "long",
-  }).format(new Date(`${publishedAt}T00:00:00Z`));
-}
+import { formatBlogPublishedDate } from "@/lib/blog-published-date";
 
 interface BlogArticleProps {
   readonly post: BlogPost;
@@ -23,7 +18,7 @@ export function BlogArticle({ post }: BlogArticleProps) {
           Back to blog
         </Link>
         <div className="flex flex-wrap items-center gap-[var(--space-gap-item)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
-          <span>{formatPublishedDate(post.publishedAt)}</span>
+          <span>{formatBlogPublishedDate(post.publishedAt)}</span>
           <span aria-hidden="true">•</span>
           <span>{post.readingTimeMinutes} min read</span>
         </div>

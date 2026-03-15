@@ -2,13 +2,8 @@ import Link from "next/link";
 import { BlogPageShell } from "@/components/blog-page-shell";
 import { BLOG_INDEX_PATH, getBlogPostPath } from "@/lib/app-routes";
 import { getBlogPosts } from "@/lib/blog-posts";
+import { formatBlogPublishedDate } from "@/lib/blog-published-date";
 import { getRequestSiteConfig } from "../request-site-config";
-
-function formatPublishedDate(publishedAt: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    dateStyle: "long",
-  }).format(new Date(`${publishedAt}T00:00:00Z`));
-}
 
 export default async function BlogIndexPage() {
   const siteConfig = await getRequestSiteConfig();
@@ -30,7 +25,7 @@ export default async function BlogIndexPage() {
           >
             <article className="flex flex-col gap-[var(--space-gap-item)]">
               <p className="text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
-                {formatPublishedDate(post.publishedAt)} · {post.readingTimeMinutes} min read
+                {formatBlogPublishedDate(post.publishedAt)} · {post.readingTimeMinutes} min read
               </p>
               <h2 className="text-[length:var(--font-size-20)] font-semibold text-[var(--text-primary)]">
                 {post.title}
