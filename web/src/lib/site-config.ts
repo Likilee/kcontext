@@ -160,24 +160,85 @@ function isSupportedInterfaceLanguageCode(value: string): value is InterfaceLang
   return SUPPORTED_INTERFACE_LANGUAGE_CODES.some((languageCode) => languageCode === value);
 }
 
+interface RequestedLocaleCandidate {
+  readonly locale: string;
+  readonly quality: number;
+  readonly order: number;
+}
+
+function resolveLocaleQuality(parameters: readonly string[]): number {
+  for (const parameter of parameters) {
+    const trimmedParameter = parameter.trim().toLowerCase();
+    if (!trimmedParameter.startsWith("q=")) {
+      continue;
+    }
+
+    const quality = Number.parseFloat(trimmedParameter.slice(2));
+    if (Number.isNaN(quality)) {
+      return 0;
+    }
+
+    return Math.max(0, Math.min(quality, 1));
+  }
+
+  return 1;
+}
+
+function getRequestedLocaleCandidates(
+  requestedLocale: string | null | undefined,
+): readonly string[] {
+  const parsedCandidates = (requestedLocale ?? "")
+    .split(",")
+    .flatMap<RequestedLocaleCandidate>((entry, order) => {
+      const [rawLocale, ...parameters] = entry.split(";");
+      const locale = rawLocale?.trim().toLowerCase();
+      if (!locale) {
+        return [];
+      }
+
+      const quality = resolveLocaleQuality(parameters);
+      if (quality <= 0) {
+        return [];
+      }
+
+      return [{ locale, quality, order }];
+    })
+    .sort((left, right) => {
+      if (left.quality !== right.quality) {
+        return right.quality - left.quality;
+      }
+
+      return left.order - right.order;
+    });
+
+  const candidates: string[] = [];
+  const seenCandidates = new Set<string>();
+
+  for (const parsedCandidate of parsedCandidates) {
+    const baseLanguageCode = parsedCandidate.locale.split("-")[0];
+    const localeVariants = [parsedCandidate.locale];
+
+    if (baseLanguageCode && baseLanguageCode !== parsedCandidate.locale) {
+      localeVariants.push(baseLanguageCode);
+    }
+
+    for (const localeVariant of localeVariants) {
+      if (seenCandidates.has(localeVariant)) {
+        continue;
+      }
+
+      seenCandidates.add(localeVariant);
+      candidates.push(localeVariant);
+    }
+  }
+
+  return candidates;
+}
+
 export function resolveInterfaceLanguageCode(
   requestedLocale: string | null | undefined,
 ): InterfaceLanguageCode {
-  const candidates = (requestedLocale ?? "").split(",").flatMap((entry) => {
-    const locale = entry.split(";")[0]?.trim().toLowerCase();
-    if (!locale) {
-      return [];
-    }
-
-    const baseLanguageCode = locale.split("-")[0];
-    if (!baseLanguageCode || baseLanguageCode === locale) {
-      return [locale];
-    }
-
-    return [locale, baseLanguageCode];
-  });
-
-  for (const candidate of candidates) {
+  for (const candidate of getRequestedLocaleCandidates(requestedLocale)) {
     if (isSupportedInterfaceLanguageCode(candidate)) {
       return candidate;
     }

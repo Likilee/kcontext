@@ -19,6 +19,12 @@ describe("site-config", () => {
     expect(resolveInterfaceLanguageCode("en-GB,en;q=0.8,ko;q=0.6")).toBe("en");
   });
 
+  it("respects q-values and skips explicitly rejected locales", () => {
+    expect(resolveInterfaceLanguageCode("ko;q=0,en;q=1")).toBe("en");
+    expect(resolveInterfaceLanguageCode("ko-KR;q=0.2,en-US;q=0.9")).toBe("en");
+    expect(resolveInterfaceLanguageCode("ko-KR;q=0,en-US;q=0.8")).toBe("en");
+  });
+
   it("falls back to the default interface language when the locale is unsupported", () => {
     expect(resolveInterfaceLanguageCode("ja-JP,fr;q=0.8")).toBe(DEFAULT_INTERFACE_LANGUAGE_CODE);
     expect(resolveInterfaceLanguageCode(null)).toBe(DEFAULT_INTERFACE_LANGUAGE_CODE);
