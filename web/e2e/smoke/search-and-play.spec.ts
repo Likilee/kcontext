@@ -105,6 +105,35 @@ async function expectJsonResponse<T>(response: Response, expectedStatus = 200): 
 }
 
 test.describe("Tubelang smoke E2E", () => {
+  test("search keeps focus on the global search input for follow-up keyboard navigation", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const searchResponsePromise = waitForSearchResponse(page, "김치찌개");
+    await searchKeyword(page, "김치찌개");
+    await expectJsonResponse<SearchResponseRow[]>(await searchResponsePromise);
+
+    const globalSearchInput = page.locator("#global-search-input");
+    await expect(page).toHaveURL("/ko/search?q=%EA%B9%80%EC%B9%98%EC%B0%8C%EA%B0%9C");
+    await expect(globalSearchInput).toBeFocused();
+
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("button", { name: "Clear search input" })).toBeFocused();
+
+    await page.keyboard.press("Shift+Tab");
+    await expect(globalSearchInput).toBeFocused();
+
+    const followUpSearchResponsePromise = waitForSearchResponse(page, "행복해요");
+    await globalSearchInput.fill("행복해요");
+    await globalSearchInput.press("Enter");
+    await expectJsonResponse<SearchResponseRow[]>(await followUpSearchResponsePromise);
+
+    await expect(page).toHaveURL("/ko/search?q=%ED%96%89%EB%B3%B5%ED%95%B4%EC%9A%94");
+    await expect(globalSearchInput).toBeFocused();
+    await expect(page.getByTestId("search-result-navigation")).toContainText("(1/1)");
+  });
+
   test("seeded search returns deterministic results and enables the player controls", async ({
     page,
   }) => {
