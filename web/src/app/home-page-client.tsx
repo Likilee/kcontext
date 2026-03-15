@@ -80,6 +80,8 @@ export function HomePageClient({ siteConfig }: HomePageClientProps) {
               dynamicPlaceholder
               placeholderText={siteConfig.copy.searchPlaceholder}
               ariaLabel={siteConfig.copy.heroSearchAriaLabel}
+              clearAriaLabel={siteConfig.copy.clearSearchInputAriaLabel}
+              submitAriaLabel={siteConfig.copy.submitSearchAriaLabel}
             />
 
             <SuggestionChipList

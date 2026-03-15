@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_INTERFACE_LANGUAGE_CODE,
   DEFAULT_SITE_CONFIG,
   getRedirectHostForHost,
   getSiteConfigForHost,
   isDevelopmentHost,
-  KOREAN_SITE_CONFIG,
   normalizeHost,
+  resolveInterfaceLanguageCode,
 } from "./site-config";
 
 describe("site-config", () => {
@@ -13,13 +14,31 @@ describe("site-config", () => {
     expect(normalizeHost("KO.LOCALHOST:3000")).toBe("ko.localhost");
   });
 
-  it("returns the Korean site config for the canonical production and development hosts", () => {
-    expect(getSiteConfigForHost("tubelang.com")).toBe(KOREAN_SITE_CONFIG);
-    expect(getSiteConfigForHost("localhost:3000")).toBe(KOREAN_SITE_CONFIG);
+  it("resolves the first supported interface language from the request locale", () => {
+    expect(resolveInterfaceLanguageCode("ko-KR,ko;q=0.9,en-US;q=0.8")).toBe("ko");
+    expect(resolveInterfaceLanguageCode("en-GB,en;q=0.8,ko;q=0.6")).toBe("en");
   });
 
-  it("falls back to the default site config for unknown hosts", () => {
-    expect(getSiteConfigForHost("preview.tubelang.dev")).toBe(DEFAULT_SITE_CONFIG);
+  it("falls back to the default interface language when the locale is unsupported", () => {
+    expect(resolveInterfaceLanguageCode("ja-JP,fr;q=0.8")).toBe(DEFAULT_INTERFACE_LANGUAGE_CODE);
+    expect(resolveInterfaceLanguageCode(null)).toBe(DEFAULT_INTERFACE_LANGUAGE_CODE);
+  });
+
+  it("returns locale-specific copy and metadata for the canonical hosts", () => {
+    const englishSiteConfig = getSiteConfigForHost("tubelang.com", "en-US,en;q=0.9");
+    const koreanSiteConfig = getSiteConfigForHost("localhost:3000", "ko-KR,ko;q=0.9");
+
+    expect(englishSiteConfig.interfaceLanguageCode).toBe("en");
+    expect(englishSiteConfig.metadataTitle).toBe("Tubelang Korean");
+    expect(englishSiteConfig.copy.searchPlaceholder).toBe("Search real Korean");
+
+    expect(koreanSiteConfig.interfaceLanguageCode).toBe("ko");
+    expect(koreanSiteConfig.metadataTitle).toBe("튜브랭 한국어");
+    expect(koreanSiteConfig.copy.searchPlaceholder).toBe("진짜 한국어 검색");
+  });
+
+  it("falls back to the default locale config for unknown hosts and unsupported locales", () => {
+    expect(getSiteConfigForHost("preview.tubelang.dev", "ja-JP")).toBe(DEFAULT_SITE_CONFIG);
   });
 
   it("redirects legacy and alternate hosts to the canonical hosts", () => {

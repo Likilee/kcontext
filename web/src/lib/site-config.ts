@@ -1,6 +1,29 @@
+export const SUPPORTED_INTERFACE_LANGUAGE_CODES = ["en", "ko"] as const;
+
+export type InterfaceLanguageCode = (typeof SUPPORTED_INTERFACE_LANGUAGE_CODES)[number];
+
+interface SiteCopy {
+  readonly homeHeadline: readonly [string, string];
+  readonly homeAriaLabel: string;
+  readonly heroSearchAriaLabel: string;
+  readonly globalSearchAriaLabel: string;
+  readonly searchPlaceholder: string;
+  readonly clearSearchInputAriaLabel: string;
+  readonly submitSearchAriaLabel: string;
+  readonly searchEmptyState: string;
+  readonly searchResultPreviousLabel: string;
+  readonly searchResultNextLabel: string;
+  readonly replayContextLabel: string;
+  readonly seekBackwardAriaLabel: string;
+  readonly seekForwardAriaLabel: string;
+  readonly togglePlaybackSpeedAriaLabel: string;
+  readonly loadingSubtitlesAriaLabel: string;
+  readonly keyboardShortcutHint: string;
+}
+
 export interface SiteConfig {
   readonly appName: string;
-  readonly interfaceLanguageCode: string;
+  readonly interfaceLanguageCode: InterfaceLanguageCode;
   readonly learningLanguageCode: string;
   readonly learningLanguageName: string;
   readonly learningLanguageNativeName: string;
@@ -14,24 +37,30 @@ export interface SiteConfig {
     readonly horizontalLogoPath: string;
     readonly verticalLogoPath: string;
   };
-  readonly copy: {
-    readonly homeHeadline: readonly [string, string];
-    readonly homeAriaLabel: string;
-    readonly heroSearchAriaLabel: string;
-    readonly globalSearchAriaLabel: string;
-    readonly searchPlaceholder: string;
-  };
+  readonly copy: SiteCopy;
 }
 
-export const KOREAN_SITE_CONFIG: SiteConfig = {
+interface SiteConfigBase
+  extends Omit<
+    SiteConfig,
+    "interfaceLanguageCode" | "metadataTitle" | "metadataDescription" | "openGraphLocale" | "copy"
+  > {}
+
+interface SiteLocaleDefinition {
+  readonly interfaceLanguageCode: InterfaceLanguageCode;
+  readonly metadataTitle: string;
+  readonly metadataDescription: string;
+  readonly openGraphLocale: string;
+  readonly copy: SiteCopy;
+}
+
+export const DEFAULT_INTERFACE_LANGUAGE_CODE: InterfaceLanguageCode = "en";
+
+const BASE_SITE_CONFIG: SiteConfigBase = {
   appName: "Tubelang",
-  interfaceLanguageCode: "en",
   learningLanguageCode: "ko",
   learningLanguageName: "Korean",
   learningLanguageNativeName: "한국어",
-  metadataTitle: "Tubelang Korean",
-  metadataDescription: "Real Korean, Right in Context.",
-  openGraphLocale: "ko_KR",
   primaryHost: "tubelang.com",
   developmentHost: "localhost",
   baseUrl: "https://tubelang.com",
@@ -39,16 +68,74 @@ export const KOREAN_SITE_CONFIG: SiteConfig = {
     horizontalLogoPath: "/brand/tubelang-ko-horizontal.png",
     verticalLogoPath: "/brand/tubelang-ko-vertical.png",
   },
-  copy: {
-    homeHeadline: ["Learn real Korean beyond textbooks.", "See it in native context."],
-    homeAriaLabel: "Go to Tubelang Korean home",
-    heroSearchAriaLabel: "Hero search for Korean context",
-    globalSearchAriaLabel: "Global search for real Korean",
-    searchPlaceholder: "Search real Korean",
+};
+
+const SITE_LOCALE_DEFINITIONS: Record<InterfaceLanguageCode, SiteLocaleDefinition> = {
+  en: {
+    interfaceLanguageCode: "en",
+    metadataTitle: "Tubelang Korean",
+    metadataDescription: "Real Korean, Right in Context.",
+    openGraphLocale: "en_US",
+    copy: {
+      homeHeadline: ["Learn real Korean beyond textbooks.", "See it in native context."],
+      homeAriaLabel: "Go to Tubelang Korean home",
+      heroSearchAriaLabel: "Search Korean in context",
+      globalSearchAriaLabel: "Search real Korean",
+      searchPlaceholder: "Search real Korean",
+      clearSearchInputAriaLabel: "Clear search input",
+      submitSearchAriaLabel: "Submit search",
+      searchEmptyState:
+        "Hmm, even native speakers rarely use this exact phrase. Try searching for a shorter keyword.",
+      searchResultPreviousLabel: "Prev",
+      searchResultNextLabel: "Next",
+      replayContextLabel: "Replay context",
+      seekBackwardAriaLabel: "Seek backward 5 seconds",
+      seekForwardAriaLabel: "Seek forward 5 seconds",
+      togglePlaybackSpeedAriaLabel: "Toggle playback speed",
+      loadingSubtitlesAriaLabel: "Loading subtitles",
+      keyboardShortcutHint: "Keyboard: ← → switch videos | R or Space replay",
+    },
+  },
+  ko: {
+    interfaceLanguageCode: "ko",
+    metadataTitle: "튜브랭 한국어",
+    metadataDescription: "진짜 한국어를 맥락 속에서 익히세요.",
+    openGraphLocale: "ko_KR",
+    copy: {
+      homeHeadline: ["교과서 밖 진짜 한국어를", "맥락 속에서 익히세요."],
+      homeAriaLabel: "튜브랭 한국어 홈으로 이동",
+      heroSearchAriaLabel: "한국어 문맥 검색",
+      globalSearchAriaLabel: "실전 한국어 검색",
+      searchPlaceholder: "진짜 한국어 검색",
+      clearSearchInputAriaLabel: "검색어 지우기",
+      submitSearchAriaLabel: "검색 실행",
+      searchEmptyState:
+        "원어민도 이 표현을 딱 그대로는 거의 쓰지 않아요. 더 짧은 키워드로 다시 검색해 보세요.",
+      searchResultPreviousLabel: "이전",
+      searchResultNextLabel: "다음",
+      replayContextLabel: "문맥 다시 듣기",
+      seekBackwardAriaLabel: "5초 뒤로 이동",
+      seekForwardAriaLabel: "5초 앞으로 이동",
+      togglePlaybackSpeedAriaLabel: "재생 속도 전환",
+      loadingSubtitlesAriaLabel: "자막 불러오는 중",
+      keyboardShortcutHint: "키보드: ← → 영상 전환 | R 또는 Space 다시 재생",
+    },
   },
 };
 
-export const DEFAULT_SITE_CONFIG = KOREAN_SITE_CONFIG;
+function createSiteConfig(interfaceLanguageCode: InterfaceLanguageCode): SiteConfig {
+  return {
+    ...BASE_SITE_CONFIG,
+    ...SITE_LOCALE_DEFINITIONS[interfaceLanguageCode],
+  };
+}
+
+const SITE_CONFIGS: Record<InterfaceLanguageCode, SiteConfig> = {
+  en: createSiteConfig("en"),
+  ko: createSiteConfig("ko"),
+};
+
+export const DEFAULT_SITE_CONFIG = SITE_CONFIGS[DEFAULT_INTERFACE_LANGUAGE_CODE];
 
 const PRODUCTION_REDIRECT_HOSTS = new Set([
   "kcontext.vercel.app",
@@ -64,32 +151,73 @@ export function normalizeHost(host: string | null | undefined): string {
 export function isDevelopmentHost(host: string | null | undefined): boolean {
   const normalizedHost = normalizeHost(host);
   return (
-    normalizedHost === KOREAN_SITE_CONFIG.developmentHost ||
+    normalizedHost === BASE_SITE_CONFIG.developmentHost ||
     DEVELOPMENT_REDIRECT_HOSTS.has(normalizedHost)
   );
 }
 
-export function getSiteConfigForHost(host: string | null | undefined): SiteConfig {
-  const normalizedHost = normalizeHost(host);
-  if (
-    normalizedHost === KOREAN_SITE_CONFIG.primaryHost ||
-    normalizedHost === KOREAN_SITE_CONFIG.developmentHost
-  ) {
-    return KOREAN_SITE_CONFIG;
+function isSupportedInterfaceLanguageCode(value: string): value is InterfaceLanguageCode {
+  return SUPPORTED_INTERFACE_LANGUAGE_CODES.some((languageCode) => languageCode === value);
+}
+
+export function resolveInterfaceLanguageCode(
+  requestedLocale: string | null | undefined,
+): InterfaceLanguageCode {
+  const candidates = (requestedLocale ?? "").split(",").flatMap((entry) => {
+    const locale = entry.split(";")[0]?.trim().toLowerCase();
+    if (!locale) {
+      return [];
+    }
+
+    const baseLanguageCode = locale.split("-")[0];
+    if (!baseLanguageCode || baseLanguageCode === locale) {
+      return [locale];
+    }
+
+    return [locale, baseLanguageCode];
+  });
+
+  for (const candidate of candidates) {
+    if (isSupportedInterfaceLanguageCode(candidate)) {
+      return candidate;
+    }
   }
 
-  return DEFAULT_SITE_CONFIG;
+  return DEFAULT_INTERFACE_LANGUAGE_CODE;
+}
+
+export function getSiteConfigForInterfaceLanguage(
+  requestedLocale: string | null | undefined,
+): SiteConfig {
+  return SITE_CONFIGS[resolveInterfaceLanguageCode(requestedLocale)];
+}
+
+export function getSiteConfigForHost(
+  host: string | null | undefined,
+  requestedLocale: string | null | undefined = DEFAULT_INTERFACE_LANGUAGE_CODE,
+): SiteConfig {
+  const normalizedHost = normalizeHost(host);
+  const siteConfig = getSiteConfigForInterfaceLanguage(requestedLocale);
+
+  if (
+    normalizedHost === BASE_SITE_CONFIG.primaryHost ||
+    normalizedHost === BASE_SITE_CONFIG.developmentHost
+  ) {
+    return siteConfig;
+  }
+
+  return siteConfig;
 }
 
 export function getRedirectHostForHost(host: string | null | undefined): string | null {
   const normalizedHost = normalizeHost(host);
 
   if (PRODUCTION_REDIRECT_HOSTS.has(normalizedHost)) {
-    return KOREAN_SITE_CONFIG.primaryHost;
+    return BASE_SITE_CONFIG.primaryHost;
   }
 
   if (DEVELOPMENT_REDIRECT_HOSTS.has(normalizedHost)) {
-    return KOREAN_SITE_CONFIG.developmentHost;
+    return BASE_SITE_CONFIG.developmentHost;
   }
 
   return null;

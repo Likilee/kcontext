@@ -20,8 +20,6 @@ import { useSubtitleSync } from "@/lib/use-subtitle-sync";
 const repository = new SupabaseSubtitleRepository();
 const PLAYBACK_RATES = [0.75, 1, 1.25] as const;
 const PRE_ROLL_SECONDS = 0.7;
-const EMPTY_RESULT_TEXT =
-  "Hmm, even native speakers rarely use this exact phrase. Try searching for a shorter keyword.";
 
 interface SearchPageClientProps {
   siteConfig: SiteConfig;
@@ -169,7 +167,7 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
           <Card data-testid="search-empty-state">
             <CardContent>
               <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-16)] text-[var(--text-secondary)]">
-                {EMPTY_RESULT_TEXT}
+                {siteConfig.copy.searchEmptyState}
               </p>
             </CardContent>
           </Card>
@@ -183,6 +181,8 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
               totalCount={results.length}
               onPrevious={handlePreviousResult}
               onNext={handleNextResult}
+              previousLabel={siteConfig.copy.searchResultPreviousLabel}
+              nextLabel={siteConfig.copy.searchResultNextLabel}
             />
 
             <div className="-mx-[var(--space-layout-screen)] w-[calc(100%+var(--space-layout-screen)+var(--space-layout-screen))] lg:mx-0 lg:w-full">
@@ -198,6 +198,7 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
                 keyword={keyword}
                 isLoading={isTranscriptLoading}
                 className="rounded-t-none border-t-0"
+                loadingAriaLabel={siteConfig.copy.loadingSubtitlesAriaLabel}
               />
             </div>
 
@@ -214,10 +215,14 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
               onToggleSpeed={handleToggleSpeed}
               playbackRate={playbackRate}
               isDisabled={!selectedResult}
+              replayContextLabel={siteConfig.copy.replayContextLabel}
+              seekBackwardAriaLabel={siteConfig.copy.seekBackwardAriaLabel}
+              seekForwardAriaLabel={siteConfig.copy.seekForwardAriaLabel}
+              togglePlaybackSpeedAriaLabel={siteConfig.copy.togglePlaybackSpeedAriaLabel}
             />
 
             <p className="text-center font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
-              Keyboard: ← → switch videos | R or Space replay
+              {siteConfig.copy.keyboardShortcutHint}
             </p>
           </>
         ) : null}

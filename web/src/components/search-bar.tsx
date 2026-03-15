@@ -26,6 +26,8 @@ interface SearchBarProps {
   dynamicPlaceholder?: boolean;
   placeholderText?: string;
   ariaLabel?: string;
+  clearAriaLabel?: string;
+  submitAriaLabel?: string;
 }
 
 function useRollingPlaceholder(enabled: boolean, staticPlaceholder: string): string {
@@ -105,6 +107,8 @@ export function SearchBar({
   dynamicPlaceholder = false,
   placeholderText = STATIC_PLACEHOLDER,
   ariaLabel = "Search real Korean",
+  clearAriaLabel = "Clear search input",
+  submitAriaLabel = "Submit search",
 }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const placeholder = useRollingPlaceholder(
@@ -153,7 +157,7 @@ export function SearchBar({
               ? ""
               : "min-h-[calc(var(--space-layout-section)-var(--space-gap-item))] min-w-[calc(var(--space-layout-section)-var(--space-gap-item))]",
           )}
-          aria-label="Clear search input"
+          aria-label={clearAriaLabel}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -182,7 +186,7 @@ export function SearchBar({
             ? ""
             : "min-h-[calc(var(--space-layout-section)-var(--space-gap-item))] min-w-[calc(var(--space-layout-section)-var(--space-gap-item))]",
         )}
-        aria-label="Submit search"
+        aria-label={submitAriaLabel}
       >
         {isLoading ? (
           <span className="size-5 animate-spin rounded-full border-2 border-[var(--text-secondary)] border-t-transparent" />

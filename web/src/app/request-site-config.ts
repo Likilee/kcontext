@@ -4,7 +4,8 @@ import { getSiteConfigForHost, isDevelopmentHost, normalizeHost } from "@/lib/si
 export async function getRequestSiteConfig() {
   const requestHeaders = await headers();
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
-  return getSiteConfigForHost(host);
+  const interfaceLocale = requestHeaders.get("accept-language");
+  return getSiteConfigForHost(host, interfaceLocale);
 }
 
 export async function getRequestUrl({

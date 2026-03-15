@@ -57,6 +57,8 @@ export function TopNavigation({
                   inputId="global-search-input"
                   placeholderText={siteConfig.copy.searchPlaceholder}
                   ariaLabel={siteConfig.copy.globalSearchAriaLabel}
+                  clearAriaLabel={siteConfig.copy.clearSearchInputAriaLabel}
+                  submitAriaLabel={siteConfig.copy.submitSearchAriaLabel}
                 />
               </div>
             </div>

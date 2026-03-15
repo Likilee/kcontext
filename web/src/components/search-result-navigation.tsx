@@ -8,6 +8,8 @@ interface SearchResultNavigationProps {
   totalCount: number;
   onPrevious: () => void;
   onNext: () => void;
+  previousLabel: string;
+  nextLabel: string;
 }
 
 export function SearchResultNavigation({
@@ -16,6 +18,8 @@ export function SearchResultNavigation({
   totalCount,
   onPrevious,
   onNext,
+  previousLabel,
+  nextLabel,
 }: SearchResultNavigationProps) {
   const safeCurrent = currentIndex >= 0 ? currentIndex + 1 : 0;
   const isPreviousDisabled = totalCount <= 1 || safeCurrent <= 1;
@@ -34,7 +38,7 @@ export function SearchResultNavigation({
         disabled={isPreviousDisabled}
         className="shrink-0 px-[var(--space-inset-squish-x)] text-[length:var(--font-size-13)]"
       >
-        Prev
+        {previousLabel}
       </Button>
 
       <p className="min-w-0 flex flex-1 items-center justify-center gap-[var(--space-gap-micro)] text-center font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
@@ -54,7 +58,7 @@ export function SearchResultNavigation({
         disabled={isNextDisabled}
         className="shrink-0 px-[var(--space-inset-squish-x)] text-[length:var(--font-size-13)]"
       >
-        Next
+        {nextLabel}
       </Button>
     </div>
   );
