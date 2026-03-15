@@ -12,16 +12,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { YouTubePlayerHandle } from "@/components/youtube-player";
 import { YouTubePlayer } from "@/components/youtube-player";
 import { SupabaseSubtitleRepository } from "@/infrastructure/adapters/supabase-subtitle-repository";
-import { getKoreanSearchPath, KOREAN_HOME_PATH } from "@/lib/app-routes";
-import type { SiteConfig } from "@/lib/site-config";
+import { getLearningHomePath, getLearningSearchPath } from "@/lib/app-routes";
+import {
+  resolveRequestedUiLanguageCode,
+  type SiteConfig,
+  UI_LANGUAGE_QUERY_PARAM,
+} from "@/lib/site-config";
 import { useKeyboardShortcuts } from "@/lib/use-keyboard-shortcuts";
 import { useSubtitleSync } from "@/lib/use-subtitle-sync";
 
 const repository = new SupabaseSubtitleRepository();
 const PLAYBACK_RATES = [0.75, 1, 1.25] as const;
 const PRE_ROLL_SECONDS = 0.7;
-const EMPTY_RESULT_TEXT =
-  "Hmm, even native speakers rarely use this exact phrase. Try searching for a shorter keyword.";
 
 interface SearchPageClientProps {
   siteConfig: SiteConfig;
@@ -31,6 +33,9 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const query = (searchParams.get("q") ?? "").trim();
+  const requestedUiLanguageCode = resolveRequestedUiLanguageCode(
+    searchParams.get(UI_LANGUAGE_QUERY_PARAM),
+  );
 
   const playerRef = useRef<YouTubePlayerHandle | null>(null);
 
@@ -64,13 +69,19 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
       const normalizedKeyword = keywordToSearch.trim();
       setSearchInput(normalizedKeyword);
       if (!normalizedKeyword) {
-        router.push(KOREAN_HOME_PATH);
+        router.push(getLearningHomePath(siteConfig.learningLanguageCode, requestedUiLanguageCode));
         return;
       }
 
-      router.push(getKoreanSearchPath(normalizedKeyword));
+      router.push(
+        getLearningSearchPath({
+          learningLanguageCode: siteConfig.learningLanguageCode,
+          keyword: normalizedKeyword,
+          uiLanguageCode: requestedUiLanguageCode,
+        }),
+      );
     },
-    [router],
+    [requestedUiLanguageCode, router, siteConfig.learningLanguageCode],
   );
 
   useEffect(() => {
@@ -150,7 +161,9 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
         onSearchSubmit={executeSearch}
         isSearchLoading={isLoading}
         onLogoClick={() => {
-          router.push(KOREAN_HOME_PATH);
+          router.push(
+            getLearningHomePath(siteConfig.learningLanguageCode, requestedUiLanguageCode),
+          );
         }}
       />
 
@@ -169,7 +182,7 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
           <Card data-testid="search-empty-state">
             <CardContent>
               <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-16)] text-[var(--text-secondary)]">
-                {EMPTY_RESULT_TEXT}
+                {siteConfig.copy.searchEmptyState}
               </p>
             </CardContent>
           </Card>
@@ -183,6 +196,8 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
               totalCount={results.length}
               onPrevious={handlePreviousResult}
               onNext={handleNextResult}
+              previousLabel={siteConfig.copy.searchResultPreviousLabel}
+              nextLabel={siteConfig.copy.searchResultNextLabel}
             />
 
             <div className="-mx-[var(--space-layout-screen)] w-[calc(100%+var(--space-layout-screen)+var(--space-layout-screen))] lg:mx-0 lg:w-full">
@@ -198,6 +213,7 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
                 keyword={keyword}
                 isLoading={isTranscriptLoading}
                 className="rounded-t-none border-t-0"
+                loadingAriaLabel={siteConfig.copy.loadingSubtitlesAriaLabel}
               />
             </div>
 
@@ -214,10 +230,14 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
               onToggleSpeed={handleToggleSpeed}
               playbackRate={playbackRate}
               isDisabled={!selectedResult}
+              replayContextLabel={siteConfig.copy.replayContextLabel}
+              seekBackwardAriaLabel={siteConfig.copy.seekBackwardAriaLabel}
+              seekForwardAriaLabel={siteConfig.copy.seekForwardAriaLabel}
+              togglePlaybackSpeedAriaLabel={siteConfig.copy.togglePlaybackSpeedAriaLabel}
             />
 
             <p className="text-center font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
-              Keyboard: ← → switch videos | R or Space replay
+              {siteConfig.copy.keyboardShortcutHint}
             </p>
           </>
         ) : null}

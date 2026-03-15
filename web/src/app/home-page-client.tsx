@@ -1,13 +1,17 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { SearchBar } from "@/components/search-bar";
 import { SuggestionChipList } from "@/components/suggestion-chip-list";
 import { TopNavigation } from "@/components/top-navigation";
-import { getKoreanSearchPath, KOREAN_HOME_PATH } from "@/lib/app-routes";
+import { getLearningHomePath, getLearningSearchPath } from "@/lib/app-routes";
 import { SEARCH_KEYWORDS } from "@/lib/search-keywords";
-import type { SiteConfig } from "@/lib/site-config";
+import {
+  resolveRequestedUiLanguageCode,
+  type SiteConfig,
+  UI_LANGUAGE_QUERY_PARAM,
+} from "@/lib/site-config";
 
 const SEARCH_SUGGESTIONS = SEARCH_KEYWORDS;
 
@@ -17,7 +21,11 @@ interface HomePageClientProps {
 
 export function HomePageClient({ siteConfig }: HomePageClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [searchInput, setSearchInput] = useState("");
+  const requestedUiLanguageCode = resolveRequestedUiLanguageCode(
+    searchParams.get(UI_LANGUAGE_QUERY_PARAM),
+  );
 
   const navigateToSearch = useCallback(
     (keyword: string) => {
@@ -26,9 +34,15 @@ export function HomePageClient({ siteConfig }: HomePageClientProps) {
         return;
       }
 
-      router.push(getKoreanSearchPath(normalizedKeyword));
+      router.push(
+        getLearningSearchPath({
+          learningLanguageCode: siteConfig.learningLanguageCode,
+          keyword: normalizedKeyword,
+          uiLanguageCode: requestedUiLanguageCode,
+        }),
+      );
     },
-    [router],
+    [requestedUiLanguageCode, router, siteConfig.learningLanguageCode],
   );
 
   const handleSuggestionSelect = useCallback(
@@ -55,7 +69,9 @@ export function HomePageClient({ siteConfig }: HomePageClientProps) {
         }}
         isSearchLoading={false}
         onLogoClick={() => {
-          router.push(KOREAN_HOME_PATH);
+          router.push(
+            getLearningHomePath(siteConfig.learningLanguageCode, requestedUiLanguageCode),
+          );
         }}
       />
 
@@ -80,6 +96,8 @@ export function HomePageClient({ siteConfig }: HomePageClientProps) {
               dynamicPlaceholder
               placeholderText={siteConfig.copy.searchPlaceholder}
               ariaLabel={siteConfig.copy.heroSearchAriaLabel}
+              clearAriaLabel={siteConfig.copy.clearSearchInputAriaLabel}
+              submitAriaLabel={siteConfig.copy.submitSearchAriaLabel}
             />
 
             <SuggestionChipList

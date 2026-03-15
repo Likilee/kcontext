@@ -4,42 +4,15 @@ import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import "@fontsource-variable/inter";
 import "./globals.css";
 import { getRequestSiteConfig, getRequestUrl } from "./request-site-config";
+import { buildRootMetadata, RootHtml } from "./root-layout-content";
 
 export async function generateMetadata(): Promise<Metadata> {
   const [siteConfig, requestUrl] = await Promise.all([
     getRequestSiteConfig(),
-    getRequestUrl({ usePrimaryHost: true }),
+    getRequestUrl({ usePrimaryHost: true, includeUiLanguage: false }),
   ]);
 
-  return {
-    metadataBase: new URL(siteConfig.baseUrl),
-    title: siteConfig.metadataTitle,
-    description: siteConfig.metadataDescription,
-    applicationName: siteConfig.appName,
-    alternates: {
-      canonical: requestUrl.toString(),
-    },
-    openGraph: {
-      type: "website",
-      url: requestUrl.toString(),
-      siteName: siteConfig.appName,
-      title: siteConfig.metadataTitle,
-      description: siteConfig.metadataDescription,
-      locale: siteConfig.openGraphLocale,
-      images: [
-        {
-          url: siteConfig.brandAssets.verticalLogoPath,
-          alt: `${siteConfig.appName} ${siteConfig.learningLanguageName}`,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary",
-      title: siteConfig.metadataTitle,
-      description: siteConfig.metadataDescription,
-      images: [siteConfig.brandAssets.verticalLogoPath],
-    },
-  };
+  return buildRootMetadata({ siteConfig, requestUrl });
 }
 
 export default async function RootLayout({
@@ -50,7 +23,7 @@ export default async function RootLayout({
   const siteConfig = await getRequestSiteConfig();
 
   return (
-    <html lang={siteConfig.interfaceLanguageCode} className="dark">
+    <RootHtml uiLanguageCode={siteConfig.uiLanguageCode}>
       <head>
         {process.env.NODE_ENV === "development" && (
           <Script
@@ -61,6 +34,6 @@ export default async function RootLayout({
         )}
       </head>
       <body>{children}</body>
-    </html>
+    </RootHtml>
   );
 }
