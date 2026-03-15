@@ -1,7 +1,7 @@
 "use client";
 
-import type { FormEvent, MutableRefObject, Ref } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import type { FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/components/ui/utils";
@@ -28,7 +28,6 @@ interface SearchBarProps {
   ariaLabel?: string;
   clearAriaLabel?: string;
   submitAriaLabel?: string;
-  inputRef?: Ref<HTMLInputElement>;
 }
 
 function useRollingPlaceholder(enabled: boolean, staticPlaceholder: string): string {
@@ -110,35 +109,17 @@ export function SearchBar({
   ariaLabel = "Search real Korean",
   clearAriaLabel = "Clear search input",
   submitAriaLabel = "Submit search",
-  inputRef,
 }: SearchBarProps) {
-  const internalInputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const placeholder = useRollingPlaceholder(
     dynamicPlaceholder && value.length === 0,
     placeholderText,
-  );
-  const setInputRefs = useCallback(
-    (element: HTMLInputElement | null) => {
-      internalInputRef.current = element;
-
-      if (!inputRef) {
-        return;
-      }
-
-      if (typeof inputRef === "function") {
-        inputRef(element);
-        return;
-      }
-
-      (inputRef as MutableRefObject<HTMLInputElement | null>).current = element;
-    },
-    [inputRef],
   );
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSearch(value);
-    internalInputRef.current?.blur();
+    inputRef.current?.blur();
   };
 
   const isHero = variant === "hero";
@@ -147,7 +128,7 @@ export function SearchBar({
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
       <Input
-        ref={setInputRefs}
+        ref={inputRef}
         id={inputId}
         type="search"
         value={value}

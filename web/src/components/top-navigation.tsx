@@ -1,6 +1,5 @@
 "use client";
 
-import type { Ref } from "react";
 import type { SiteConfig } from "@/lib/site-config";
 import { BrandLogo } from "./brand-logo";
 import { SearchBar } from "./search-bar";
@@ -14,7 +13,6 @@ interface TopNavigationProps {
   onSearchSubmit: (keyword: string) => void;
   isSearchLoading: boolean;
   onLogoClick: () => void;
-  searchInputRef?: Ref<HTMLInputElement>;
 }
 
 export function TopNavigation({
@@ -25,7 +23,6 @@ export function TopNavigation({
   onSearchSubmit,
   isSearchLoading,
   onLogoClick,
-  searchInputRef,
 }: TopNavigationProps) {
   const logoButton = (
     <button
@@ -60,7 +57,6 @@ export function TopNavigation({
                   onChange={onSearchValueChange}
                   onSearch={onSearchSubmit}
                   isLoading={isSearchLoading}
-                  inputRef={searchInputRef}
                   variant="compact"
                   inputId="global-search-input"
                   placeholderText={siteConfig.copy.searchPlaceholder}
