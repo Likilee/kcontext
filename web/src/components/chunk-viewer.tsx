@@ -37,8 +37,14 @@ export function ChunkViewer({
     );
   } else if (text !== null) {
     content = (
-      <div className="grid h-full place-items-center">
-        <div className="max-h-full w-full overflow-y-auto">
+      <div
+        data-testid="chunk-viewer-layout"
+        className="flex h-full min-h-0 items-center overflow-hidden"
+      >
+        <div
+          data-testid="chunk-viewer-scroll-region"
+          className="max-h-full min-h-0 w-full overflow-y-auto py-[var(--space-gap-item)]"
+        >
           <p className="break-keep text-center font-[family-name:var(--font-family-kr)] text-[length:var(--font-size-20)] font-medium leading-[var(--line-height-relaxed)] text-[var(--text-primary)]">
             {renderHighlightedText(text, keyword)}
           </p>
