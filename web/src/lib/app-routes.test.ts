@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { getKoreanSearchPath, KOREAN_HOME_PATH, KOREAN_SEARCH_PATH } from "./app-routes";
+import {
+  BLOG_INDEX_PATH,
+  getBlogPostPath,
+  getKoreanSearchPath,
+  KOREAN_HOME_PATH,
+  KOREAN_SEARCH_PATH,
+} from "./app-routes";
 
 describe("app-routes", () => {
   it("returns the Korean home path constant", () => {
@@ -16,5 +22,19 @@ describe("app-routes", () => {
 
   it("falls back to the Korean home path for empty search input", () => {
     expect(getKoreanSearchPath("   ")).toBe("/ko");
+  });
+
+  it("returns the blog index path constant", () => {
+    expect(BLOG_INDEX_PATH).toBe("/blog");
+  });
+
+  it("builds an encoded blog detail path", () => {
+    expect(getBlogPostPath(" learn-korean with youtube ")).toBe(
+      "/blog/learn-korean%20with%20youtube",
+    );
+  });
+
+  it("falls back to the blog index path for empty slug input", () => {
+    expect(getBlogPostPath("   ")).toBe("/blog");
   });
 });
