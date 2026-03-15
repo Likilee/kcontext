@@ -1,7 +1,7 @@
 "use client";
 
-import type { FormEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import type { FormEvent, Ref } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/components/ui/utils";
@@ -26,6 +26,7 @@ interface SearchBarProps {
   dynamicPlaceholder?: boolean;
   placeholderText?: string;
   ariaLabel?: string;
+  inputRef?: Ref<HTMLInputElement>;
 }
 
 function useRollingPlaceholder(enabled: boolean, staticPlaceholder: string): string {
@@ -105,8 +106,8 @@ export function SearchBar({
   dynamicPlaceholder = false,
   placeholderText = STATIC_PLACEHOLDER,
   ariaLabel = "Search real Korean",
+  inputRef,
 }: SearchBarProps) {
-  const inputRef = useRef<HTMLInputElement | null>(null);
   const placeholder = useRollingPlaceholder(
     dynamicPlaceholder && value.length === 0,
     placeholderText,
@@ -115,7 +116,6 @@ export function SearchBar({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSearch(value);
-    inputRef.current?.blur();
   };
 
   const isHero = variant === "hero";

@@ -33,6 +33,7 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
   const query = (searchParams.get("q") ?? "").trim();
 
   const playerRef = useRef<YouTubePlayerHandle | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const [searchInput, setSearchInput] = useState(query);
   const [playbackRate, setPlaybackRate] = useState<number>(1);
@@ -77,6 +78,26 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
     setSearchInput(query);
     search(query);
   }, [query, search]);
+
+  useEffect(() => {
+    if (!query) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      const searchInput = searchInputRef.current;
+      if (!searchInput) {
+        return;
+      }
+
+      searchInput.focus({ preventScroll: true });
+      searchInput.select();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [query]);
 
   const handlePreviousResult = useCallback(() => {
     if (selectedIndex <= 0) {
@@ -149,6 +170,7 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
         onSearchValueChange={setSearchInput}
         onSearchSubmit={executeSearch}
         isSearchLoading={isLoading}
+        searchInputRef={searchInputRef}
         onLogoClick={() => {
           router.push(KOREAN_HOME_PATH);
         }}
