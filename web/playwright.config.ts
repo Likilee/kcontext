@@ -22,12 +22,6 @@ export default defineConfig({
   },
   webServer: {
     command: `pnpm build && pnpm start --port ${port}`,
-    env: {
-      ...process.env,
-      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
-      NEXT_PUBLIC_CDN_URL: process.env.NEXT_PUBLIC_CDN_URL ?? "",
-    },
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,
