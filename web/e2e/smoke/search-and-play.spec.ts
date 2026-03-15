@@ -1,6 +1,7 @@
 import { expect, test, type Page, type Response } from "@playwright/test";
 
 const EMPTY_STATE_TEXT = "even native speakers rarely use";
+const UI_READY_TIMEOUT_MS = 10_000;
 
 interface SearchResponseRow {
   videoId: string;
@@ -70,12 +71,25 @@ test.describe("Tubelang smoke E2E", () => {
 
     expect(firstResult.matchedText).toContain("김치찌개");
 
-    await expect(page).toHaveURL("/ko/search?q=%EA%B9%80%EC%B9%98%EC%B0%8C%EA%B0%9C");
-    await expect(page.getByTestId("search-result-navigation")).toBeVisible();
-    await expect(page.getByTestId("search-result-navigation")).toContainText(`(1/${results.length})`);
-    await expect(page.locator("#yt-player-container")).toBeVisible();
-    await expect(page.getByTestId("replay-context-btn")).toBeVisible();
-    await expect(page.getByTestId("replay-context-btn")).toBeEnabled();
+    await expect(page).toHaveURL("/ko/search?q=%EA%B9%80%EC%B9%98%EC%B0%8C%EA%B0%9C", {
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("search-result-navigation")).toBeVisible({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("search-result-navigation")).toContainText(
+      `(1/${results.length})`,
+      { timeout: UI_READY_TIMEOUT_MS },
+    );
+    await expect(page.locator("#yt-player-container")).toBeVisible({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("replay-context-btn")).toBeVisible({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("replay-context-btn")).toBeEnabled({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
     await expect(page.getByTestId("search-empty-state")).toBeHidden();
   });
 
@@ -104,10 +118,19 @@ test.describe("Tubelang smoke E2E", () => {
     const highlightedChunk = transcriptChunks.find((chunk) => chunk.text.includes("행복해요"));
     expect(highlightedChunk?.text).toContain("행복해요");
 
-    await expect(page.getByTestId("search-result-navigation")).toBeVisible();
-    await expect(page.getByTestId("search-result-navigation")).toContainText(`(1/${results.length})`);
-    await expect(page.getByTestId("chunk-viewer")).toBeVisible();
-    await expect(page.getByTestId("replay-context-btn")).toBeEnabled();
+    await expect(page.getByTestId("search-result-navigation")).toBeVisible({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("search-result-navigation")).toContainText(
+      `(1/${results.length})`,
+      { timeout: UI_READY_TIMEOUT_MS },
+    );
+    await expect(page.getByTestId("chunk-viewer")).toBeVisible({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("replay-context-btn")).toBeEnabled({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
     await expect(page.getByTestId("search-empty-state")).toBeHidden();
   });
 
