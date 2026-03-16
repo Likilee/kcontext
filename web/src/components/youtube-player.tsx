@@ -9,6 +9,9 @@ const PLAYER_FALLBACK_DESCRIPTION =
   "You can keep reading the transcript context below and retry the player.";
 const YOUTUBE_IFRAME_API_SRC = "https://www.youtube.com/iframe_api";
 const YOUTUBE_IFRAME_API_ATTRIBUTE = "data-youtube-iframe-api";
+const YOUTUBE_IFRAME_API_STATUS_ATTRIBUTE = "data-youtube-iframe-api-status";
+
+type YoutubeIframeApiScriptStatus = "error" | "loading" | "ready";
 
 export interface YouTubePlayerHandle {
   getCurrentTime: () => number;
@@ -28,6 +31,24 @@ interface YouTubePlayerProps {
 
 function getYoutubeIframeApiScript(): HTMLScriptElement | null {
   return document.querySelector(`script[${YOUTUBE_IFRAME_API_ATTRIBUTE}="true"]`);
+}
+
+function getYoutubeIframeApiScriptStatus(
+  script: HTMLScriptElement | null,
+): YoutubeIframeApiScriptStatus | null {
+  const status = script?.getAttribute(YOUTUBE_IFRAME_API_STATUS_ATTRIBUTE);
+  if (status === "error" || status === "loading" || status === "ready") {
+    return status;
+  }
+
+  return null;
+}
+
+function setYoutubeIframeApiScriptStatus(
+  script: HTMLScriptElement,
+  status: YoutubeIframeApiScriptStatus,
+) {
+  script.setAttribute(YOUTUBE_IFRAME_API_STATUS_ATTRIBUTE, status);
 }
 
 export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(
@@ -71,6 +92,9 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
         }
 
         if (typeof window.YT !== "undefined" && typeof window.YT.Player === "function") {
+          if (script) {
+            setYoutubeIframeApiScriptStatus(script, "ready");
+          }
           setPlayerError(null);
           setApiReady(true);
         }
@@ -83,6 +107,9 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
           return;
         }
 
+        if (script) {
+          setYoutubeIframeApiScriptStatus(script, "error");
+        }
         setApiReady(false);
         markPlayerUnavailable();
       };
@@ -90,7 +117,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       window.onYouTubeIframeAPIReady = handleApiReady;
 
       let script = getYoutubeIframeApiScript();
-      if (retryCount > 0 && script) {
+      if (script && (retryCount > 0 || getYoutubeIframeApiScriptStatus(script) === "error")) {
         script.remove();
         script = null;
       }
@@ -101,6 +128,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
         script.src = YOUTUBE_IFRAME_API_SRC;
         script.async = true;
         script.setAttribute(YOUTUBE_IFRAME_API_ATTRIBUTE, "true");
+        setYoutubeIframeApiScriptStatus(script, "loading");
         document.body.append(script);
       }
 

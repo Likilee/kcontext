@@ -33,13 +33,12 @@ interface MockPlayerOptions {
 
 type MockPlayerConstructor = new (elementId: string, options: MockPlayerOptions) => MockPlayer;
 
-type MockYouTubeWindow = Window &
-  typeof globalThis & {
-    YT?: {
-      Player?: MockPlayerConstructor;
-    };
-    onYouTubeIframeAPIReady?: (() => void) | undefined;
+type MockYouTubeWindow = {
+  YT?: {
+    Player?: MockPlayerConstructor;
   };
+  onYouTubeIframeAPIReady?: (() => void) | undefined;
+};
 
 const roots: Array<{ container: HTMLDivElement; root: ReturnType<typeof createRoot> }> = [];
 
@@ -64,7 +63,7 @@ async function waitFor(check: () => void): Promise<void> {
 }
 
 function installPlayerConstructor(playerConstructor: MockPlayerConstructor) {
-  const youtubeWindow = window as MockYouTubeWindow;
+  const youtubeWindow = window as unknown as MockYouTubeWindow;
   youtubeWindow.YT = {
     Player: playerConstructor,
   };
@@ -140,13 +139,28 @@ function renderPlayer(
     );
   });
 
-  roots.push({ container, root });
+  const renderedPlayer = { container, root };
+  roots.push(renderedPlayer);
 
-  return { container, ref };
+  return {
+    container,
+    ref,
+    unmount: () => {
+      const renderedPlayerIndex = roots.indexOf(renderedPlayer);
+      if (renderedPlayerIndex >= 0) {
+        roots.splice(renderedPlayerIndex, 1);
+      }
+
+      act(() => {
+        root.unmount();
+      });
+      container.remove();
+    },
+  };
 }
 
 afterEach(() => {
-  const youtubeWindow = window as MockYouTubeWindow;
+  const youtubeWindow = window as unknown as MockYouTubeWindow;
 
   for (const { container, root } of roots) {
     act(() => {
@@ -156,8 +170,8 @@ afterEach(() => {
   }
 
   roots.length = 0;
-  youtubeWindow.YT = undefined;
-  youtubeWindow.onYouTubeIframeAPIReady = undefined;
+  delete youtubeWindow.YT;
+  delete youtubeWindow.onYouTubeIframeAPIReady;
   document.querySelectorAll('script[data-youtube-iframe-api="true"]').forEach((script) => {
     script.remove();
   });
@@ -252,6 +266,48 @@ describe("YouTubePlayer", () => {
 
     await waitFor(() => {
       expect(container.querySelector('[data-testid="youtube-player-fallback"]')).toBeNull();
+      expect(onReady).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it("reinjects the iframe API script on a fresh mount after the previous script load failed", async () => {
+    const firstRender = renderPlayer();
+
+    const firstScript = document.querySelector('script[data-youtube-iframe-api="true"]');
+    if (!(firstScript instanceof HTMLScriptElement)) {
+      throw new Error("Expected iframe API script to be injected.");
+    }
+
+    act(() => {
+      firstScript.dispatchEvent(new Event("error"));
+    });
+
+    await waitFor(() => {
+      expect(
+        firstRender.container.querySelector('[data-testid="youtube-player-fallback"]'),
+      ).not.toBeNull();
+    });
+
+    firstRender.unmount();
+
+    const onReady = vi.fn();
+    const secondRender = renderPlayer({ onReady });
+
+    await waitFor(() => {
+      const nextScript = document.querySelector('script[data-youtube-iframe-api="true"]');
+      expect(nextScript).not.toBe(firstScript);
+    });
+
+    installPlayerConstructor(createReadyPlayerConstructor());
+
+    act(() => {
+      (window as unknown as MockYouTubeWindow).onYouTubeIframeAPIReady?.();
+    });
+
+    await waitFor(() => {
+      expect(
+        secondRender.container.querySelector('[data-testid="youtube-player-fallback"]'),
+      ).toBeNull();
       expect(onReady).toHaveBeenCalledTimes(1);
     });
   });
