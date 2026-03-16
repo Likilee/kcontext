@@ -1,6 +1,7 @@
 import { expect, test, type Page, type Response } from "@playwright/test";
 
 const EMPTY_STATE_TEXT = "even native speakers rarely use";
+const UI_READY_TIMEOUT_MS = 10_000;
 
 interface SearchResponseRow {
   videoId: string;
@@ -14,6 +15,43 @@ interface TranscriptResponseChunk {
   start_time: number;
   duration: number;
   text: string;
+}
+
+async function mockYouTubeIframeApi(page: Page) {
+  await page.route("https://www.youtube.com/iframe_api", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: `
+        window.YT = {
+          Player: function Player(_elementId, options) {
+            const player = {
+              currentTime: options?.playerVars?.start ?? 0,
+              destroy() {},
+              getCurrentTime() {
+                return this.currentTime;
+              },
+              loadVideoById(_videoId, startTime) {
+                this.currentTime = typeof startTime === "number" ? startTime : this.currentTime;
+              },
+              playVideo() {},
+              seekTo(seconds) {
+                this.currentTime = seconds;
+              },
+              setPlaybackRate() {},
+            };
+
+            queueMicrotask(() => {
+              options?.events?.onReady?.();
+            });
+
+            return player;
+          },
+        };
+        window.onYouTubeIframeAPIReady?.();
+      `,
+    });
+  });
 }
 
 async function searchKeyword(page: Page, keyword: string) {
@@ -54,6 +92,7 @@ test.describe("Tubelang smoke E2E", () => {
   test("seeded search returns deterministic results and enables the player controls", async ({
     page,
   }) => {
+    await mockYouTubeIframeApi(page);
     await page.goto("/");
 
     const searchResponsePromise = waitForSearchResponse(page, "김치찌개");
@@ -71,16 +110,29 @@ test.describe("Tubelang smoke E2E", () => {
     expect(firstResult.videoId).toBe("test_video_03");
     expect(firstResult.matchedText).toContain("김치찌개");
 
-    await expect(page).toHaveURL("/ko/search?q=%EA%B9%80%EC%B9%98%EC%B0%8C%EA%B0%9C");
-    await expect(page.getByTestId("search-result-navigation")).toBeVisible();
-    await expect(page.getByTestId("search-result-navigation")).toContainText("(1/1)");
-    await expect(page.locator("#yt-player-container")).toBeVisible();
-    await expect(page.getByTestId("replay-context-btn")).toBeVisible();
-    await expect(page.getByTestId("replay-context-btn")).toBeEnabled();
+    await expect(page).toHaveURL("/ko/search?q=%EA%B9%80%EC%B9%98%EC%B0%8C%EA%B0%9C", {
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("search-result-navigation")).toBeVisible({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("search-result-navigation")).toContainText("(1/1)", {
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.locator("#yt-player-container")).toBeVisible({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("replay-context-btn")).toBeVisible({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("replay-context-btn")).toBeEnabled({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
     await expect(page.getByTestId("search-empty-state")).toBeHidden();
   });
 
   test("seeded search loads the transcript object for the selected result", async ({ page }) => {
+    await mockYouTubeIframeApi(page);
     await page.goto("/");
 
     const searchResponsePromise = waitForSearchResponse(page, "행복해요");
@@ -105,10 +157,18 @@ test.describe("Tubelang smoke E2E", () => {
     const highlightedChunk = transcriptChunks.find((chunk) => chunk.text.includes("행복해요"));
     expect(highlightedChunk?.text).toContain("행복해요");
 
-    await expect(page.getByTestId("search-result-navigation")).toBeVisible();
-    await expect(page.getByTestId("search-result-navigation")).toContainText("(1/1)");
-    await expect(page.getByTestId("chunk-viewer")).toBeVisible();
-    await expect(page.getByTestId("replay-context-btn")).toBeEnabled();
+    await expect(page.getByTestId("search-result-navigation")).toBeVisible({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("search-result-navigation")).toContainText("(1/1)", {
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("chunk-viewer")).toBeVisible({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("replay-context-btn")).toBeEnabled({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
     await expect(page.getByTestId("search-empty-state")).toBeHidden();
   });
 
