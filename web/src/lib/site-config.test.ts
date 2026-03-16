@@ -25,6 +25,7 @@ describe("site-config", () => {
 
   it("respects q-values and skips explicitly rejected locales", () => {
     expect(resolveUiLanguageCodeFromRequestedLocale("ko;q=0,en;q=1")).toBe("en");
+    expect(resolveUiLanguageCodeFromRequestedLocale("ko;q=0,ko-KR;q=1,en;q=0.9")).toBe("en");
     expect(resolveUiLanguageCodeFromRequestedLocale("ko-KR;q=0.2,en-US;q=0.9")).toBe("en");
     expect(resolveUiLanguageCodeFromRequestedLocale("ko-KR;q=0,en-US;q=0.8")).toBe("en");
   });

@@ -305,12 +305,17 @@ function getRequestedLocaleCandidates(
       }
 
       const quality = resolveLocaleQuality(parameters);
-      if (quality <= 0) {
-        return [];
-      }
-
       return [{ locale, quality, order }];
-    })
+    });
+
+  const rejectedBaseLanguageCodes = new Set(
+    parsedCandidates
+      .filter((candidate) => candidate.quality <= 0 && !candidate.locale.includes("-"))
+      .map((candidate) => candidate.locale),
+  );
+
+  const acceptedCandidates = parsedCandidates
+    .filter((candidate) => candidate.quality > 0)
     .sort((left, right) => {
       if (left.quality !== right.quality) {
         return right.quality - left.quality;
@@ -322,11 +327,15 @@ function getRequestedLocaleCandidates(
   const candidates: string[] = [];
   const seenCandidates = new Set<string>();
 
-  for (const parsedCandidate of parsedCandidates) {
+  for (const parsedCandidate of acceptedCandidates) {
     const baseLanguageCode = parsedCandidate.locale.split("-")[0];
     const localeVariants = [parsedCandidate.locale];
 
-    if (baseLanguageCode && baseLanguageCode !== parsedCandidate.locale) {
+    if (
+      baseLanguageCode &&
+      baseLanguageCode !== parsedCandidate.locale &&
+      !rejectedBaseLanguageCodes.has(baseLanguageCode)
+    ) {
       localeVariants.push(baseLanguageCode);
     }
 
