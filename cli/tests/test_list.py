@@ -7,6 +7,7 @@ from unittest.mock import patch
 import typer
 from typer.testing import CliRunner
 
+from kcontext_cli.commands import list_cmd
 from kcontext_cli.main import app
 
 runner = CliRunner()
@@ -130,6 +131,26 @@ def test_list_manual_ko_only_filters_video_ids():
 
     assert result.exit_code == 0
     assert _extract_ids(result.output) == ["id1", "id3"]
+
+
+def test_list_probe_accepts_manual_ko_variant_key():
+    mock_result = subprocess.CompletedProcess(
+        args=[],
+        returncode=0,
+        stdout=json.dumps(
+            {
+                "subtitles": {
+                    "en-FmoQciUtYSc": [{"ext": "json3"}],
+                    "ko-FmoQciUtYSc": [{"ext": "json3"}],
+                }
+            },
+            ensure_ascii=False,
+        ),
+        stderr="",
+    )
+
+    with patch("subprocess.run", return_value=mock_result):
+        assert list_cmd._has_manual_ko_subtitle("test_abc123", None) is True
 
 
 def test_list_manual_ko_only_uses_probe_max_candidates():

@@ -126,6 +126,44 @@ def test_decodo_scraper_requires_uploader_provided_ko(mocker) -> None:
         )
 
 
+def test_decodo_scraper_accepts_manual_ko_variant_key(mocker) -> None:
+    payload_with_manual_ko_variant = {
+        "results": [
+            {
+                "content": {
+                    "uploader_provided": {
+                        "ko-FmoQciUtYSc": {
+                            "events": [
+                                {
+                                    "tStartMs": 0,
+                                    "dDurationMs": 1200,
+                                    "segs": [{"utf8": "제가 그렇게 불렀나요ㅋㅋㅋ"}],
+                                }
+                            ]
+                        },
+                        "en-FmoQciUtYSc": {"events": []},
+                    }
+                }
+            }
+        ]
+    }
+    mocker.patch(
+        "kcontext_cli.fetch_backends.decodo_scraper_backend.resolve_decodo_scraper_api_config",
+        return_value=object(),
+    )
+    mocker.patch(
+        "kcontext_cli.fetch_backends.decodo_scraper_backend.post_scrape_request",
+        side_effect=[payload_with_manual_ko_variant, MOCK_METADATA_PAYLOAD],
+    )
+
+    result = decodo_scraper_backend.fetch(
+        "test_abc123",
+        default_audio_language_code="ko",
+    )
+
+    assert result.transcript[0]["text"] == "제가 그렇게 불렀나요ㅋㅋㅋ"
+
+
 def test_decodo_scraper_rejects_unexpected_metadata_shape(mocker) -> None:
     bad_metadata_payload = {"results": [{"content": {"results": []}}]}
     mocker.patch(

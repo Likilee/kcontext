@@ -61,6 +61,30 @@ def _mock_subprocess_fetch_ok(metadata=None, json3_data=None):
     return _run
 
 
+def _mock_subprocess_fetch_with_subtitle_files(
+    files: dict[str, dict],
+    *,
+    metadata: dict | None = None,
+):
+    if metadata is None:
+        metadata = MOCK_METADATA_JSON
+
+    def _run(command: list[str], **_kwargs):
+        output_template = Path(command[command.index("--output") + 1])
+        for language_code, json3_data in files.items():
+            subtitle_path = output_template.parent / f"{metadata['id']}.{language_code}.json3"
+            subtitle_path.write_text(json.dumps(json3_data, ensure_ascii=False), encoding="utf-8")
+
+        return subprocess.CompletedProcess(
+            args=command,
+            returncode=0,
+            stdout=json.dumps(metadata, ensure_ascii=False),
+            stderr="",
+        )
+
+    return _run
+
+
 def _decodo_fetch_result(video_id: str = "test_abc123") -> FetchResult:
     return FetchResult(
         metadata=VideoMetadata(
@@ -286,6 +310,27 @@ def test_fetch_uses_proxy_for_ytdlp(tmp_path):
     assert proxy_url in called_args
 
 
+def test_fetch_requests_manual_ko_variant_selector(tmp_path):
+    output_file = tmp_path / "out.json"
+
+    with patch("subprocess.run", side_effect=_mock_subprocess_fetch_ok()) as mock_subprocess:
+        result = runner.invoke(
+            app,
+            [
+                "fetch",
+                "test_abc123",
+                "-o",
+                str(output_file),
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
+        )
+
+    assert result.exit_code == 0
+    called_args = mock_subprocess.call_args.args[0]
+    assert called_args[called_args.index("--sub-langs") + 1] == "ko,ko.*"
+
+
 def test_fetch_uses_proxy_from_env(tmp_path):
     output_file = tmp_path / "out.json"
     proxy_url = "http://127.0.0.1:8118"
@@ -349,6 +394,51 @@ def test_fetch_uses_decodo_proxy_from_env(tmp_path):
     assert decodo_proxy_url in called_args
     assert "Using YouTube proxy: gate.decodo.local:10001" in result.output
     assert "pa:ss" not in result.output
+
+
+def test_fetch_prefers_manual_ko_variant_file_over_other_json3(tmp_path):
+    output_file = tmp_path / "out.json"
+    english_json3 = {
+        "events": [
+            {"tStartMs": 0, "dDurationMs": 1000, "segs": [{"utf8": "english"}]},
+        ]
+    }
+    korean_json3 = {
+        "events": [
+            {"tStartMs": 0, "dDurationMs": 1000, "segs": [{"utf8": "제가 그렇게 불렀나요ㅋㅋㅋ"}]},
+        ]
+    }
+    live_chat_json3 = {
+        "events": [
+            {"tStartMs": 0, "dDurationMs": 1000, "segs": [{"utf8": "live chat"}]},
+        ]
+    }
+
+    with patch(
+        "subprocess.run",
+        side_effect=_mock_subprocess_fetch_with_subtitle_files(
+            {
+                "en-FmoQciUtYSc": english_json3,
+                "ko-FmoQciUtYSc": korean_json3,
+                "live_chat": live_chat_json3,
+            }
+        ),
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "fetch",
+                "test_abc123",
+                "-o",
+                str(output_file),
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
+        )
+
+    assert result.exit_code == 0
+    data = json.loads(output_file.read_text(encoding="utf-8"))
+    assert data["transcript"][0]["text"] == "제가 그렇게 불렀나요ㅋㅋㅋ"
 
 
 def test_fetch_tags_proxy_auth_failure(tmp_path):

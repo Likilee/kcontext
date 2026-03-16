@@ -15,6 +15,7 @@ from kcontext_cli.network.decodo_scraper_api import (
     post_scrape_request,
     resolve_decodo_scraper_api_config,
 )
+from kcontext_cli.subtitle.manual_ko import find_manual_korean_track_key
 from kcontext_cli.subtitle.parser import parse_json3_to_chunks
 
 DECODO_METADATA_TARGET = "youtube_metadata"
@@ -78,7 +79,11 @@ def _extract_manual_ko_subtitle(payload: dict, video_id: str) -> dict:
     if not isinstance(uploader_provided, dict):
         raise FetchBackendError(f"No manual Korean subtitle found for {video_id}")
 
-    manual_ko = uploader_provided.get("ko")
+    manual_ko_key = find_manual_korean_track_key(uploader_provided)
+    if manual_ko_key is None:
+        raise FetchBackendError(f"No manual Korean subtitle found for {video_id}")
+
+    manual_ko = uploader_provided.get(manual_ko_key)
     if not isinstance(manual_ko, dict):
         raise FetchBackendError(f"No manual Korean subtitle found for {video_id}")
 
