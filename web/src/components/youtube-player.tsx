@@ -11,7 +11,7 @@ const YOUTUBE_IFRAME_API_SRC = "https://www.youtube.com/iframe_api";
 const YOUTUBE_IFRAME_API_ATTRIBUTE = "data-youtube-iframe-api";
 const YOUTUBE_IFRAME_API_STATUS_ATTRIBUTE = "data-youtube-iframe-api-status";
 
-type YoutubeIframeApiScriptStatus = "error" | "loading" | "ready";
+type YoutubeIframeApiScriptStatus = "error" | "loading" | "ready" | "stale";
 
 export interface YouTubePlayerHandle {
   getCurrentTime: () => number;
@@ -37,7 +37,7 @@ function getYoutubeIframeApiScriptStatus(
   script: HTMLScriptElement | null,
 ): YoutubeIframeApiScriptStatus | null {
   const status = script?.getAttribute(YOUTUBE_IFRAME_API_STATUS_ATTRIBUTE);
-  if (status === "error" || status === "loading" || status === "ready") {
+  if (status === "error" || status === "loading" || status === "ready" || status === "stale") {
     return status;
   }
 
@@ -117,7 +117,8 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       window.onYouTubeIframeAPIReady = handleApiReady;
 
       let script = getYoutubeIframeApiScript();
-      if (script && (retryCount > 0 || getYoutubeIframeApiScriptStatus(script) === "error")) {
+      const scriptStatus = getYoutubeIframeApiScriptStatus(script);
+      if (script && (retryCount > 0 || scriptStatus === "error" || scriptStatus === "stale")) {
         script.remove();
         script = null;
       }
@@ -139,6 +140,15 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
         isCancelled = true;
         script?.removeEventListener("load", handleScriptLoad);
         script?.removeEventListener("error", handleScriptError);
+
+        if (
+          script &&
+          getYoutubeIframeApiScriptStatus(script) === "loading" &&
+          (typeof window.YT === "undefined" || typeof window.YT.Player !== "function")
+        ) {
+          // A loading script with detached listeners cannot be reused safely on the next mount.
+          setYoutubeIframeApiScriptStatus(script, "stale");
+        }
 
         if (window.onYouTubeIframeAPIReady === handleApiReady) {
           window.onYouTubeIframeAPIReady = previousCallback;

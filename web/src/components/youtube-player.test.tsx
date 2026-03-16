@@ -311,4 +311,40 @@ describe("YouTubePlayer", () => {
       expect(onReady).toHaveBeenCalledTimes(1);
     });
   });
+
+  it("reinjects the iframe API script on a fresh mount when the previous mount left a stale loading script", async () => {
+    const firstRender = renderPlayer();
+
+    const firstScript = document.querySelector('script[data-youtube-iframe-api="true"]');
+    if (!(firstScript instanceof HTMLScriptElement)) {
+      throw new Error("Expected iframe API script to be injected.");
+    }
+
+    firstRender.unmount();
+
+    act(() => {
+      firstScript.dispatchEvent(new Event("error"));
+    });
+
+    const onReady = vi.fn();
+    const secondRender = renderPlayer({ onReady });
+
+    await waitFor(() => {
+      const nextScript = document.querySelector('script[data-youtube-iframe-api="true"]');
+      expect(nextScript).not.toBe(firstScript);
+    });
+
+    installPlayerConstructor(createReadyPlayerConstructor());
+
+    act(() => {
+      (window as MockYouTubeWindow).onYouTubeIframeAPIReady?.();
+    });
+
+    await waitFor(() => {
+      expect(
+        secondRender.container.querySelector('[data-testid="youtube-player-fallback"]'),
+      ).toBeNull();
+      expect(onReady).toHaveBeenCalledTimes(1);
+    });
+  });
 });
