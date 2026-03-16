@@ -39,4 +39,12 @@ describe("root search redirect", () => {
 
     expect(mockRedirect).toHaveBeenCalledWith("/ko/search?q=%ED%96%89%EB%B3%B5&hl=ko");
   });
+
+  it("keeps the search landing route when q is missing", async () => {
+    mockGetRequestUrl.mockResolvedValue(new URL("https://tubelang.com/search?hl=ko"));
+
+    await SearchPage();
+
+    expect(mockRedirect).toHaveBeenCalledWith("/ko/search?hl=ko");
+  });
 });

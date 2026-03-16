@@ -29,6 +29,19 @@ export function getLearningHomePath(
   return buildPathname(`/${learningLanguageCode}`, searchParams);
 }
 
+export function getLearningSearchPagePath(
+  learningLanguageCode: LearningLanguageCode,
+  uiLanguageCode?: UiLanguageCode | null,
+): string {
+  const searchParams = new URLSearchParams();
+
+  if (uiLanguageCode) {
+    searchParams.set(UI_LANGUAGE_QUERY_PARAM, uiLanguageCode);
+  }
+
+  return buildPathname(`/${learningLanguageCode}/search`, searchParams);
+}
+
 export function getLearningSearchPath({
   learningLanguageCode,
   keyword,
@@ -56,6 +69,10 @@ export function getLearningSearchPath({
 
 export function getDefaultLearningHomePath(uiLanguageCode?: UiLanguageCode | null): string {
   return getLearningHomePath(DEFAULT_LEARNING_LANGUAGE_CODE, uiLanguageCode);
+}
+
+export function getDefaultLearningSearchPagePath(uiLanguageCode?: UiLanguageCode | null): string {
+  return getLearningSearchPagePath(DEFAULT_LEARNING_LANGUAGE_CODE, uiLanguageCode);
 }
 
 export function getDefaultLearningSearchPath({
