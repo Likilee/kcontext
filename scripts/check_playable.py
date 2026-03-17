@@ -9,6 +9,7 @@ CSV의 video_id들이 재생 가능한지 YouTube oEmbed API로 확인.
 import csv
 import random
 import time
+from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 
@@ -44,12 +45,65 @@ def dedupe_rows_by_video_id(rows: list[dict[str, str]]) -> list[dict[str, str]]:
     return deduped_rows
 
 
-def load_csv(path):
+def load_csv(path: Path) -> tuple[list[str], list[dict[str, str]]]:
     with open(path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         rows = list(reader)
         fieldnames = list(reader.fieldnames or [])
     return fieldnames, rows
+
+
+def load_preserved_metadata(
+    base_fieldnames: Sequence[str],
+    existing_paths: Sequence[Path],
+) -> tuple[list[str], dict[str, dict[str, str]]]:
+    """Load extra per-video metadata from existing output CSVs."""
+    preserved_fieldnames: list[str] = []
+    seen_fieldnames = set(base_fieldnames)
+    metadata_by_video_id: dict[str, dict[str, str]] = {}
+
+    for path in existing_paths:
+        if not path.exists():
+            continue
+
+        fieldnames, rows = load_csv(path)
+        extra_fieldnames = [
+            field for field in fieldnames if field not in seen_fieldnames and field != "status"
+        ]
+
+        for field in extra_fieldnames:
+            seen_fieldnames.add(field)
+            preserved_fieldnames.append(field)
+
+        for row in rows:
+            video_id = (row.get("video_id") or "").strip()
+            if not video_id:
+                continue
+
+            row_metadata = metadata_by_video_id.setdefault(video_id, {})
+            for field in preserved_fieldnames:
+                value = row.get(field, "")
+                if value and not row_metadata.get(field):
+                    row_metadata[field] = value
+
+    return preserved_fieldnames, metadata_by_video_id
+
+
+def merge_preserved_metadata(
+    rows: list[dict[str, str]],
+    preserved_fieldnames: Sequence[str],
+    metadata_by_video_id: dict[str, dict[str, str]],
+) -> list[dict[str, str]]:
+    merged_rows: list[dict[str, str]] = []
+
+    for row in rows:
+        merged_row = dict(row)
+        row_metadata = metadata_by_video_id.get(row["video_id"], {})
+        for field in preserved_fieldnames:
+            merged_row[field] = merged_row.get(field) or row_metadata.get(field, "")
+        merged_rows.append(merged_row)
+
+    return merged_rows
 
 
 def check_oembed(video_id):
@@ -87,6 +141,11 @@ def save_progress_row(video_id, status):
 
 def main():
     fieldnames, rows = load_csv(CSV_PATH)
+    preserved_fieldnames, metadata_by_video_id = load_preserved_metadata(
+        base_fieldnames=fieldnames,
+        existing_paths=(FILTERED_CSV_PATH, UNPLAYABLE_CSV_PATH),
+    )
+    output_fieldnames = [*fieldnames, *preserved_fieldnames]
     total = len(rows)
     print(f"총 {total}개 영상 확인 시작 ({datetime.now().strftime('%H:%M:%S')})")
 
@@ -173,18 +232,26 @@ def main():
         + len(unplayable_rows)
         - len(deduped_unplayable_rows)
     )
-    playable_rows = deduped_playable_rows
-    unplayable_rows = deduped_unplayable_rows
+    playable_rows = merge_preserved_metadata(
+        deduped_playable_rows,
+        preserved_fieldnames,
+        metadata_by_video_id,
+    )
+    unplayable_rows = merge_preserved_metadata(
+        deduped_unplayable_rows,
+        preserved_fieldnames,
+        metadata_by_video_id,
+    )
 
     # Filtered CSV
     with open(FILTERED_CSV_PATH, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer = csv.DictWriter(f, fieldnames=output_fieldnames)
         writer.writeheader()
         writer.writerows(playable_rows)
 
     # Unplayable CSV
     with open(UNPLAYABLE_CSV_PATH, "w", newline="", encoding="utf-8") as f:
-        unplayable_fieldnames = fieldnames if "status" in fieldnames else [*fieldnames, "status"]
+        unplayable_fieldnames = [*output_fieldnames, "status"]
         writer = csv.DictWriter(f, fieldnames=unplayable_fieldnames)
         writer.writeheader()
         writer.writerows(unplayable_rows)
