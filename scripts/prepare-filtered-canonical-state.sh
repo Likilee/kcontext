@@ -89,10 +89,8 @@ mkdir -p "$WORKSPACE"
   uv run python - "$FILTERED_CSV_PATH" "$WORKSPACE" "$STATE_DB" "$REMOTE_ENV_FILE" "$FORCE" <<'PY'
 from __future__ import annotations
 
-import csv
 import json
 import os
-import re
 import sqlite3
 import sys
 from datetime import UTC, datetime
@@ -100,6 +98,8 @@ from pathlib import Path
 from urllib.parse import quote
 
 import psycopg2
+
+from kcontext_cli.manual_csv import load_unique_video_ids
 
 
 def utc_now_iso() -> str:
@@ -134,26 +134,10 @@ def build_remote_db_url(env: dict[str, str]) -> str:
 
 
 def read_filtered_ids(path: Path) -> list[str]:
-    with path.open(encoding="utf-8") as file_obj:
-        reader = csv.DictReader(file_obj)
-        required = {"channel_id", "channel_name", "video_id"}
-        if reader.fieldnames is None or set(reader.fieldnames) != required:
-            raise SystemExit(
-                f"Expected CSV columns {sorted(required)}, got {reader.fieldnames!r}"
-            )
-
-        seen: set[str] = set()
-        ordered_ids: list[str] = []
-        pattern = re.compile(r"^[A-Za-z0-9_-]{11}$")
-        for line_no, row in enumerate(reader, start=2):
-            video_id = (row.get("video_id") or "").strip()
-            if not pattern.fullmatch(video_id):
-                raise SystemExit(f"Invalid video_id {video_id!r} on line {line_no}")
-            if video_id in seen:
-                continue
-            seen.add(video_id)
-            ordered_ids.append(video_id)
-        return ordered_ids
+    try:
+        return load_unique_video_ids(path)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
 
 
 def fetch_ids(conn: psycopg2.extensions.connection) -> list[str]:
