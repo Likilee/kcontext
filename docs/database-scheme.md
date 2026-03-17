@@ -9,8 +9,8 @@ CREATE EXTENSION IF NOT EXISTS pgroonga;
 -- 비디오 메타데이터 테이블
 CREATE TABLE video (
     id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    channel_name TEXT NOT NULL,
+    title TEXT,
+    channel_name TEXT,
     published_at TIMESTAMPTZ,
     audio_language_code TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()

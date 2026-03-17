@@ -3,8 +3,8 @@ import { createSupabaseAdminClient } from "@/infrastructure/supabase/admin";
 
 interface SearchResultRow {
   video_id: string;
-  title: string;
-  channel_name: string;
+  title: string | null;
+  channel_name: string | null;
   start_time: number;
   text: string;
 }
