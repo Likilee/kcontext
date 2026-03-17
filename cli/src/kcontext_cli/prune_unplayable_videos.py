@@ -67,8 +67,13 @@ def load_unplayable_rows(csv_path: Path) -> list[UnplayableVideoRow]:
     with csv_path.open(encoding="utf-8") as file_obj:
         reader = csv.DictReader(file_obj)
         required = {"channel_id", "channel_name", "video_id", "status"}
-        if reader.fieldnames is None or set(reader.fieldnames) != required:
-            raise ValueError(f"Expected CSV columns {sorted(required)}, got {reader.fieldnames!r}")
+        fieldnames = set(reader.fieldnames or [])
+        missing = sorted(required - fieldnames)
+        if reader.fieldnames is None or missing:
+            raise ValueError(
+                "Expected CSV columns to include "
+                f"{sorted(required)}, got {reader.fieldnames!r}"
+            )
 
         seen: set[str] = set()
         rows: list[UnplayableVideoRow] = []

@@ -110,6 +110,41 @@ def test_load_unplayable_rows_reads_expected_columns(tmp_path: Path) -> None:
     assert second["status"] == "404"
 
 
+def test_load_unplayable_rows_allows_extra_metadata_columns(tmp_path: Path) -> None:
+    prune_module = _import_module("kcontext_cli.prune_unplayable_videos")
+    load_rows = _resolve_symbol(
+        prune_module,
+        [
+            "load_unplayable_rows",
+            "load_unplayable_entries",
+            "load_prune_rows",
+        ],
+    )
+
+    csv_path = tmp_path / "unplayable_videos.csv"
+    csv_path.write_text(
+        "\n".join(
+            [
+                "channel_id,channel_name,video_id,manual_langs,status",
+                "ch001,Channel One,video000001A,ko;en,401",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    rows = load_rows(csv_path)
+
+    assert len(rows) == 1
+    parsed = _coerce_row(rows[0])
+    assert parsed == {
+        "channel_id": "ch001",
+        "channel_name": "Channel One",
+        "video_id": "video000001A",
+        "status": "401",
+    }
+
+
 def test_load_unplayable_rows_rejects_missing_required_columns(tmp_path: Path) -> None:
     prune_module = _import_module("kcontext_cli.prune_unplayable_videos")
     load_rows = _resolve_symbol(
