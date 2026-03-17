@@ -123,36 +123,19 @@ if [[ ! -f "$FAILED_ATTEMPTS" ]]; then
   printf "timestamp\tvideo_id\tstage\terror_class\tlog_path\n" > "$FAILED_ATTEMPTS"
 fi
 
-python3 - "$CSV_PATH" "$PLANNED_IDS" <<'PY'
-import csv
-import re
+PYTHONPATH="$ROOT_DIR/cli/src${PYTHONPATH:+:$PYTHONPATH}" python3 - "$CSV_PATH" "$PLANNED_IDS" <<'PY'
 import sys
 from pathlib import Path
+
+from kcontext_cli.manual_csv import load_unique_video_ids
 
 csv_path = Path(sys.argv[1])
 planned_path = Path(sys.argv[2])
 
-with csv_path.open(encoding="utf-8") as file_obj:
-    reader = csv.DictReader(file_obj)
-    required = {"channel_id", "channel_name", "video_id"}
-    if reader.fieldnames is None or set(reader.fieldnames) != required:
-        raise SystemExit(
-            f"Error: expected CSV columns {sorted(required)}, got {reader.fieldnames!r}"
-        )
-
-    seen: set[str] = set()
-    ordered_ids: list[str] = []
-    pattern = re.compile(r"^[A-Za-z0-9_-]{11}$")
-    for line_no, row in enumerate(reader, start=2):
-        video_id = (row.get("video_id") or "").strip()
-        if not video_id:
-            raise SystemExit(f"Error: missing video_id on line {line_no}")
-        if not pattern.fullmatch(video_id):
-            raise SystemExit(f"Error: invalid video_id {video_id!r} on line {line_no}")
-        if video_id in seen:
-            continue
-        seen.add(video_id)
-        ordered_ids.append(video_id)
+try:
+    ordered_ids = load_unique_video_ids(csv_path)
+except ValueError as exc:
+    raise SystemExit(f"Error: {exc}") from exc
 
 planned_path.write_text(
     "\n".join(ordered_ids) + ("\n" if ordered_ids else ""),
