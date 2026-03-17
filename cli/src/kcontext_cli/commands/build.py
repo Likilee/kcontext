@@ -7,7 +7,19 @@ from pathlib import Path
 
 import typer
 
-REQUIRED_KEYS = {"video_id", "title", "channel_name", "published_at", "transcript"}
+from kcontext_cli.audio_language import (
+    AUDIO_LANGUAGE_CODE_OPTION_HELP,
+    resolve_audio_language_code,
+)
+from kcontext_cli.subtitle.search_text import normalize_search_text
+
+REQUIRED_KEYS = {
+    "video_id",
+    "title",
+    "channel_name",
+    "published_at",
+    "transcript",
+}
 
 
 def _sanitize_tab(text: str) -> str:
@@ -17,6 +29,11 @@ def _sanitize_tab(text: str) -> str:
 def build_artifacts(
     input_path: Path = typer.Argument(help="Path to raw JSON file from fetch command"),  # noqa: B008
     output_dir: Path = typer.Option(..., "-d", "--dir", help="Output directory for artifacts"),  # noqa: B008
+    default_audio_language_code: str = typer.Option(
+        ...,
+        "--default-audio-language-code",
+        help=AUDIO_LANGUAGE_CODE_OPTION_HELP,
+    ),
 ) -> None:
     """Transform raw JSON into storage JSON and TSV artifacts."""
     if not input_path.exists():
@@ -37,6 +54,14 @@ def build_artifacts(
 
     video_id = raw["video_id"]
     os.makedirs(output_dir, exist_ok=True)
+    try:
+        audio_language_code = resolve_audio_language_code(
+            raw.get("audio_language_code"),
+            default_audio_language_code=default_audio_language_code,
+        )
+    except ValueError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
 
     transcript = raw.get("transcript", [])
     if not transcript:
@@ -63,6 +88,7 @@ def build_artifacts(
                 _sanitize_tab(raw["title"]),
                 _sanitize_tab(raw["channel_name"]),
                 _sanitize_tab(raw["published_at"]),
+                _sanitize_tab(audio_language_code),
             ]
         )
 
@@ -70,11 +96,15 @@ def build_artifacts(
     with open(subtitle_path, "w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f, delimiter="\t")
         for chunk in transcript:
+            normalized_text = _sanitize_tab(normalize_search_text(chunk["text"]))
+            if not normalized_text:
+                continue
+
             writer.writerow(
                 [
                     _sanitize_tab(video_id),
                     chunk["start"],
-                    _sanitize_tab(chunk["text"]),
+                    normalized_text,
                 ]
             )
 

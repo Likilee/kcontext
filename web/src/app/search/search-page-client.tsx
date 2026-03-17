@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import type { YouTubePlayerHandle } from "@/components/youtube-player";
 import { YouTubePlayer } from "@/components/youtube-player";
 import { SupabaseSubtitleRepository } from "@/infrastructure/adapters/supabase-subtitle-repository";
+import { getKoreanSearchPath, KOREAN_HOME_PATH } from "@/lib/app-routes";
 import type { SiteConfig } from "@/lib/site-config";
 import { useKeyboardShortcuts } from "@/lib/use-keyboard-shortcuts";
 import { useSubtitleSync } from "@/lib/use-subtitle-sync";
@@ -35,9 +36,12 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
 
   const [searchInput, setSearchInput] = useState(query);
   const [playbackRate, setPlaybackRate] = useState<number>(1);
+  const audioLanguageCode = siteConfig.learningLanguageCode;
 
-  const { results, isLoading, error, search, selectedResult, selectResult, keyword } =
-    useSearch(repository);
+  const { results, isLoading, error, search, selectedResult, selectResult, keyword } = useSearch(
+    repository,
+    audioLanguageCode,
+  );
   const { transcriptChunks, transcriptError, isTranscriptLoading } = useTranscriptLoader(
     repository,
     selectedResult,
@@ -60,11 +64,11 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
       const normalizedKeyword = keywordToSearch.trim();
       setSearchInput(normalizedKeyword);
       if (!normalizedKeyword) {
-        router.push("/");
+        router.push(KOREAN_HOME_PATH);
         return;
       }
 
-      router.push(`/search?q=${encodeURIComponent(normalizedKeyword)}`);
+      router.push(getKoreanSearchPath(normalizedKeyword));
     },
     [router],
   );
@@ -146,7 +150,7 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
         onSearchSubmit={executeSearch}
         isSearchLoading={isLoading}
         onLogoClick={() => {
-          router.push("/");
+          router.push(KOREAN_HOME_PATH);
         }}
       />
 
@@ -162,7 +166,7 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
         ) : null}
 
         {!isLoading && !error && keyword.length > 0 && results.length === 0 ? (
-          <Card>
+          <Card data-testid="search-empty-state">
             <CardContent>
               <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-16)] text-[var(--text-secondary)]">
                 {EMPTY_RESULT_TEXT}

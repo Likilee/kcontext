@@ -9,8 +9,8 @@
   - Uses isolated Supabase stack: `testing/supabase-e2e`.
   - Runs deterministic seed reset for DB + Storage every run.
   - Command: `make e2e-smoke`
-- `Real-data integration E2E (non-blocking)`
-  - Uses real YouTube data flow via CLI pipeline.
+- `CLI integration E2E (non-blocking)`
+  - Uses checked-in raw fixtures and exercises CLI `build -> push` plus web E2E.
   - Scheduled nightly and runnable manually.
   - Command: `make e2e-real`
 
@@ -26,19 +26,41 @@
   - Seed verification (`test_%` videos count check)
 
 ## CI Workflows
-- `.github/workflows/ci.yml`
-  - `precommit-parity`: runs lefthook pre-commit on changed files
-  - `lint-and-test-web`: lint, arch check, type check, unit tests, build
-  - `web-e2e-smoke`: isolated smoke E2E with artifact upload
-  - `lint-cli`: Ruff checks
-- `.github/workflows/e2e-real-nightly.yml`
-  - Nightly + manual real-data integration run
-  - Uploads Playwright artifacts
+- Trigger workflows
+  - `.github/workflows/pr-main.yml`
+    - Pull request trigger for `main`
+    - Calls reusable lane workflows for pre-commit parity, web quality, CLI quality, and smoke E2E
+  - `.github/workflows/push-main.yml`
+    - Push trigger for `main`
+    - Calls the same reusable lane workflows as PR
+  - `.github/workflows/e2e-real-nightly.yml`
+    - Nightly + manual trigger for fixture-backed CLI integration E2E
+- Reusable lane workflows
+  - `.github/workflows/reusable-precommit-parity.yml`
+  - `.github/workflows/reusable-web-quality.yml`
+  - `.github/workflows/reusable-cli-quality.yml`
+  - `.github/workflows/reusable-web-e2e-smoke.yml`
+  - `.github/workflows/reusable-web-e2e-real.yml`
+- Shared GitHub Actions
+  - `.github/actions/setup-web/action.yml`
+  - `.github/actions/setup-cli/action.yml`
+  - `.github/actions/setup-supabase/action.yml`
+- CI shell helpers
+  - `scripts/ci/run-precommit-parity.sh`
+    - Resolves changed files and runs `lefthook pre-commit` parity outside the workflow YAML
 
 ## Retry and Parallelism
 - Smoke E2E uses `workers=1`.
 - CI retries are set to `1` in Playwright config for infra noise tolerance.
 - Failures keep trace/video/screenshot artifacts for diagnosis.
+
+## Local Hook Policy
+- `pre-commit`
+  - Runs changed-file checks for Biome, Sheriff, and Ruff before commit.
+- `pre-push`
+  - Runs the local CI gate: web lint, architecture check, type check, unit tests, build, and CLI Ruff checks.
+- `commit-msg`
+  - Runs commitlint locally.
 
 ## Commit Lint Policy
 - Commit lint is enforced locally via `lefthook` `commit-msg`.
@@ -56,8 +78,11 @@ make e2e-reset
 # Run smoke E2E
 make e2e-smoke
 
-# Run real-data integration test
+# Run fixture-backed CLI integration test
 make e2e-real
+
+# Refresh checked-in CLI integration fixtures from the source Supabase DB
+./scripts/refresh-cli-integration-fixtures.sh
 
 # Tear down isolated E2E stack and volumes
 make e2e-down

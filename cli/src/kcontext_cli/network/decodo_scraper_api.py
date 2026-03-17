@@ -82,6 +82,13 @@ def post_scrape_request(
             error_class="api_unexpected_schema",
         ) from err
 
+    api_failure_message = _extract_api_failure_message(parsed)
+    if api_failure_message is not None:
+        raise DecodoScraperApiError(
+            api_failure_message,
+            error_class=_classify_api_failure(parsed),
+        )
+
     return parsed
 
 
@@ -104,3 +111,69 @@ def _classify_http_error(status_code: int, body: str) -> str:
     ):
         return "api_budget_exhausted"
     return "api_unexpected_schema"
+
+
+def _extract_api_failure_message(payload: object) -> str | None:
+    failure_node = _failure_node(payload)
+    if failure_node is None:
+        return None
+
+    status = str(failure_node.get("status") or "").strip().lower()
+    if status != "failed":
+        return None
+
+    status_code = failure_node.get("status_code")
+    task_id = failure_node.get("task_id")
+    message = str(failure_node.get("message") or "Decodo reported a scrape failure.").strip()
+
+    extras = []
+    if status_code not in (None, ""):
+        extras.append(f"status_code={status_code}")
+    if task_id:
+        extras.append(f"task_id={task_id}")
+    if extras:
+        return f"{message} ({', '.join(extras)})"
+    return message
+
+
+def _classify_api_failure(payload: object) -> str:
+    failure_node = _failure_node(payload)
+    if failure_node is None:
+        return "api_unexpected_schema"
+
+    normalized_message = str(failure_node.get("message") or "").lower()
+    status_code = int(failure_node.get("status_code") or 0)
+
+    if status_code == 402:
+        return "api_budget_exhausted"
+    if status_code == 429:
+        return "api_rate_limited"
+    if status_code in (401, 403, 407):
+        return "api_auth_failed"
+    if status_code == 613:
+        return "api_target_failed"
+    if (
+        "quota" in normalized_message
+        or "budget" in normalized_message
+        or "balance" in normalized_message
+    ):
+        return "api_budget_exhausted"
+    if "rate limit" in normalized_message or "too many requests" in normalized_message:
+        return "api_rate_limited"
+    if "unauthorized" in normalized_message or "forbidden" in normalized_message:
+        return "api_auth_failed"
+    return "api_target_failed"
+
+
+def _failure_node(payload: object) -> dict[str, object] | None:
+    if not isinstance(payload, dict):
+        return None
+
+    root = payload.get("root")
+    if isinstance(root, dict) and root.get("status") is not None:
+        return root
+
+    if payload.get("status") is not None:
+        return payload
+
+    return None

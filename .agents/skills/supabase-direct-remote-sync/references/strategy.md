@@ -44,6 +44,8 @@ This is the safest default for kcontext because `video_id` is stable, subtitle r
   - Use when S3 credentials are unavailable.
   - Simpler fallback path.
   - Accept the Supabase Storage REST path bandwidth tradeoff.
+  - Prefer `100` to `200` videos per run for large hosted sync backlogs.
+  - Very large `rest` runs can fail with remote read timeouts even if partial progress was committed.
 - `auto`:
   - Choose `s3` when both remote S3 key vars exist, otherwise choose `rest`.
 
@@ -52,3 +54,5 @@ This is the safest default for kcontext because `video_id` is stable, subtitle r
 - If local and remote counts drift, re-run with the same state DB first.
 - If local content changed after a prior sync, use `--resync-all`.
 - If only some video IDs need repair, use a temporary state DB path or delete the main state DB after confirming the scope.
+- If a `rest` run times out mid-sync, keep the same state DB and continue with a smaller `--max-videos` batch, typically `100` or less.
+- Check `--status` between resumed runs until `pending_estimate = 0`.

@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import { SearchBar } from "@/components/search-bar";
 import { SuggestionChipList } from "@/components/suggestion-chip-list";
 import { TopNavigation } from "@/components/top-navigation";
+import { getKoreanSearchPath, KOREAN_HOME_PATH } from "@/lib/app-routes";
 import { SEARCH_KEYWORDS } from "@/lib/search-keywords";
 import type { SiteConfig } from "@/lib/site-config";
 
@@ -25,7 +26,7 @@ export function HomePageClient({ siteConfig }: HomePageClientProps) {
         return;
       }
 
-      router.push(`/search?q=${encodeURIComponent(normalizedKeyword)}`);
+      router.push(getKoreanSearchPath(normalizedKeyword));
     },
     [router],
   );
@@ -54,7 +55,7 @@ export function HomePageClient({ siteConfig }: HomePageClientProps) {
         }}
         isSearchLoading={false}
         onLogoClick={() => {
-          router.push("/");
+          router.push(KOREAN_HOME_PATH);
         }}
       />
 

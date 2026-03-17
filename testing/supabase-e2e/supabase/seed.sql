@@ -1,7 +1,7 @@
-INSERT INTO video (id, title, channel_name, published_at) VALUES
-  ('test_video_01', '테스트 영상 1: 일상 대화', '테스트 채널', '2024-06-15T00:00:00Z'),
-  ('test_video_02', '테스트 영상 2: 뉴스 리포트', '뉴스 채널', '2024-07-20T00:00:00Z'),
-  ('test_video_03', '테스트 영상 3: 요리 방송', '요리 채널', '2024-08-10T00:00:00Z')
+INSERT INTO video (id, title, channel_name, published_at, audio_language_code) VALUES
+  ('test_video_01', '테스트 영상 1: 일상 대화', '테스트 채널', '2024-06-15T00:00:00Z', 'ko'),
+  ('test_video_02', '테스트 영상 2: 뉴스 리포트', '뉴스 채널', '2024-07-20T00:00:00Z', 'ko'),
+  ('test_video_03', '테스트 영상 3: 요리 방송', '요리 채널', '2024-08-10T00:00:00Z', 'ko')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO subtitle (video_id, start_time, text) VALUES

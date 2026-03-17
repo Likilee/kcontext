@@ -1,0 +1,6 @@
+*
+!.gitignore
+!config.toml
+!environments/
+environments/*
+!environments/environment.toml

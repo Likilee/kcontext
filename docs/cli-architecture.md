@@ -30,31 +30,31 @@
 
 단일 영상의 메타데이터와 수동 자막 원본을 추출하여 단일 Raw JSON 파일로 저장.
 
-- Signature: `cli fetch <video_id> -o <output_raw_json_path> [--youtube-proxy-url URL]`
+- Signature: `cli fetch <video_id> -o <output_raw_json_path> --default-audio-language-code <code> [--youtube-proxy-url URL]`
 - 방어 로직: 수동 한국어 자막이 없을 경우 에러 출력 후 스킵.
 
 ### 3.3 fetch-list (Batch Extract Data)
 
 영상 ID 목록 파일을 입력받아 각 ID에 대한 Raw JSON을 일괄 생성한다.
 
-- Signature: `cli fetch-list <video_ids_file> -d <output_dir> [--strict] [--youtube-proxy-url URL]`
+- Signature: `cli fetch-list <video_ids_file> -d <output_dir> --default-audio-language-code <code> [--strict] [--youtube-proxy-url URL]`
 - 동작 방식: 내부적으로 `fetch`를 반복 호출하며 `--youtube-proxy-url`을 그대로 전달한다.
 
 ### 3.4 build (Transform)
 
 Raw JSON을 입력받아 Track A(DB)와 Track B(Storage) 인프라 스키마에 맞게 3개의 아티팩트로 분해 및 변환.
 
-- Signature: `cli build <input_raw_json_path> -d <output_directory_path>`
+- Signature: `cli build <input_raw_json_path> -d <output_directory_path> --default-audio-language-code <code>`
 - Output Artifacts:
     1. `{video_id}_storage.json` (Track B: 전체 자막 CDN 서빙용)
-    2. `{video_id}_video.csv` (Track A: 비디오 메타데이터 UPSERT용)
-    3. `{video_id}_subtitle.csv` (Track A: 자막 검색 인덱스 원자적 교체용)
+    2. `{video_id}_video.csv` (Track A: 비디오 메타데이터 UPSERT용. `audio_language_code` 포함)
+    3. `{video_id}_subtitle.csv` (Track A: 자막 검색 인덱스 원자적 교체용. `()`, `[]`, `（）`, `［］` 문맥 메모를 제거한 검색용 텍스트만 포함하며, 정제 후 빈 문자열이 된 청크는 제외)
 
 ### 3.5 push (Load)
 
 빌드된 3개의 아티팩트 파일을 명시적으로 주입받아 대상 인프라로 전송.
 
-- Signature: `cli push -s <storage_json_path> -vc <video_csv_path> -sc <subtitle_csv_path>`
+- Signature: `cli push -s <storage_json_path> -vc <video_csv_path> -sc <subtitle_csv_path> --default-audio-language-code <code>`
 - 동작 방식: 비디오 메타데이터는 UPSERT로 갱신하고, 자막 인덱스는 트랜잭션 기반 Atomic Replace(DELETE 후 COPY) 방식으로 전면 교체.
 
 ## 4. YouTube Proxy Policy
@@ -77,15 +77,16 @@ WORKSPACE="/tmp/kcontext_pipeline"
 mkdir -p "$WORKSPACE"
 
 cli list "$TARGET_URL" --limit 50 | while read ID; do
-  cli fetch "$ID" -o "$WORKSPACE/${ID}_raw.json"
+  cli fetch "$ID" -o "$WORKSPACE/${ID}_raw.json" --default-audio-language-code ko
   if [ ! -f "$WORKSPACE/${ID}_raw.json" ]; then continue; fi
 
-  cli build "$WORKSPACE/${ID}_raw.json" -d "$WORKSPACE"
+  cli build "$WORKSPACE/${ID}_raw.json" -d "$WORKSPACE" --default-audio-language-code ko
 
   cli push \
     -s "$WORKSPACE/${ID}_storage.json" \
     -vc "$WORKSPACE/${ID}_video.csv" \
-    -sc "$WORKSPACE/${ID}_subtitle.csv"
+    -sc "$WORKSPACE/${ID}_subtitle.csv" \
+    --default-audio-language-code ko
 done
 
 rm -rf "$WORKSPACE"

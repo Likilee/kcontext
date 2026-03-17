@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="$ROOT_DIR/.env.decodo"
 VIDEO_ID="${DECODO_CANARY_VIDEO_ID:-DucXv5xjhW4}"
+DEFAULT_AUDIO_LANGUAGE_CODE="${DEFAULT_AUDIO_LANGUAGE_CODE:-ko}"
 
 usage() {
   cat <<EOF
@@ -100,7 +101,12 @@ if ! (cd "$ROOT_DIR/cli" && uv run yt-dlp --proxy "$PROXY_URL" --dump-json --ski
   exit 1
 fi
 
-if ! (cd "$ROOT_DIR/cli" && uv run tubelang fetch "$VIDEO_ID" -o "$TMP_DIR/$VIDEO_ID.json" --youtube-proxy-url "$PROXY_URL") >"$FETCH_LOG" 2>&1; then
+if ! (
+  cd "$ROOT_DIR/cli" && \
+    uv run tubelang fetch "$VIDEO_ID" -o "$TMP_DIR/$VIDEO_ID.json" \
+      --youtube-proxy-url "$PROXY_URL" \
+      --default-audio-language-code "$DEFAULT_AUDIO_LANGUAGE_CODE"
+) >"$FETCH_LOG" 2>&1; then
   classify_log "$FETCH_LOG"
   exit 1
 fi

@@ -1,7 +1,6 @@
-import { HomePageClient } from "./home-page-client";
-import { getRequestSiteConfig } from "./request-site-config";
+import { redirect } from "next/navigation";
+import { KOREAN_HOME_PATH } from "@/lib/app-routes";
 
-export default async function HomePage() {
-  const siteConfig = await getRequestSiteConfig();
-  return <HomePageClient siteConfig={siteConfig} />;
+export default function HomePage() {
+  redirect(KOREAN_HOME_PATH);
 }

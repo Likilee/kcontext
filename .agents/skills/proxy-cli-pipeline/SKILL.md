@@ -19,6 +19,13 @@ Use the bundled wrapper script instead of manually chaining commands.
 - Ensure `cli/` dependencies are ready (`uv sync` already completed in `cli/`).
 - Ensure Docker is running (required by `cli/scripts/proxy-up.sh`).
 - Ensure DB/Supabase env is configured in `cli/.env` for `kcontext push`.
+- If running inside a Codex worktree, bootstrap local env files first:
+
+```bash
+./scripts/bootstrap-worktree-env.sh --symlink
+```
+
+Read `docs/codex-worktree-bootstrap.md` if the worktree does not already expose `cli/.env`.
 
 ## Execute
 

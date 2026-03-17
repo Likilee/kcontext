@@ -1,0 +1,15 @@
+area:web	1d76db	Changes in web/ Next.js UI, application, domain, or infrastructure code
+area:cli	0e8a16	Changes in cli/ ingestion, fetch, build, or sync pipeline code
+area:supabase	5319e7	Changes in Supabase SQL, schema, storage, or access policy
+area:ci	fbca04	Changes in GitHub Actions, hooks, scripts, or test infrastructure
+area:docs	0366d6	Changes in docs, operating rules, or design records
+type:feature	a2eeef	User-facing or repo-facing functionality work
+type:bug	d73a4a	Behavior mismatch, regression, or unexpected failure
+type:refactor	7057ff	Internal structure improvement without intended behavior change
+type:chore	c2e0c6	Maintenance, dependency, config, or cleanup work
+type:docs	bfdadc	Documentation-only work
+priority:p0	b60205	Release blocker, critical flow failure, or data/security risk
+priority:p1	d93f0b	Important work for the current batch
+priority:p2	fbca04	Important but deferrable work
+status:ready	0e8a16	Ready to pick up now with clear acceptance criteria and verification
+status:blocked	bfd4f2	Blocked by an external decision, dependency, or missing input

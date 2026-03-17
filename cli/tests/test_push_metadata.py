@@ -52,6 +52,7 @@ def test_push_metadata_uploads_to_video_metadata_bucket(tmp_path: Path) -> None:
     upload_call = mock_storage_bucket.upload.call_args
     assert upload_call.kwargs["path"] == "test_vid01.json"
     assert upload_call.kwargs["file_options"] == {
+        "cache-control": "public, max-age=86400, stale-while-revalidate=604800",
         "content-type": "application/json",
         "upsert": "true",
     }

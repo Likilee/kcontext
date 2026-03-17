@@ -1,12 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SupabaseSubtitleRepository } from "./supabase-subtitle-repository";
 
-vi.mock("@/infrastructure/supabase/client", () => ({
-  createSupabaseBrowserClient: vi.fn(() => ({
-    rpc: vi.fn(),
-  })),
-}));
-
 describe("SupabaseSubtitleRepository", () => {
   let repo: SupabaseSubtitleRepository;
 
@@ -16,25 +10,30 @@ describe("SupabaseSubtitleRepository", () => {
   });
 
   describe("searchByKeyword", () => {
-    it("should map snake_case DB response to camelCase domain model", async () => {
-      const { createSupabaseBrowserClient } = await import("@/infrastructure/supabase/client");
-      const mockRpc = vi.fn().mockResolvedValue({
-        data: [
+    it("should request the server search API and return domain results", async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [
           {
-            video_id: "vid1",
+            videoId: "vid1",
             title: "테스트 영상",
-            channel_name: "테스트 채널",
-            start_time: 12.5,
-            text: "안녕하세요",
+            channelName: "테스트 채널",
+            startTime: 12.5,
+            matchedText: "안녕하세요",
           },
         ],
-        error: null,
-      });
-      vi.mocked(createSupabaseBrowserClient).mockReturnValue({
-        rpc: mockRpc,
-      } as unknown as ReturnType<typeof createSupabaseBrowserClient>);
+      } as Response);
 
-      const results = await repo.searchByKeyword("안녕");
+      const results = await repo.searchByKeyword("안녕", "ko");
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        "http://localhost:3000/api/search?lang=ko&q=%EC%95%88%EB%85%95",
+        {
+          headers: {
+            Accept: "application/json",
+          },
+        },
+      );
       expect(results).toHaveLength(1);
       expect(results[0]).toEqual({
         videoId: "vid1",
@@ -45,27 +44,22 @@ describe("SupabaseSubtitleRepository", () => {
       });
     });
 
-    it("should throw on RPC error", async () => {
-      const { createSupabaseBrowserClient } = await import("@/infrastructure/supabase/client");
-      const mockRpc = vi.fn().mockResolvedValue({
-        data: null,
-        error: { message: "RPC failed" },
-      });
-      vi.mocked(createSupabaseBrowserClient).mockReturnValue({
-        rpc: mockRpc,
-      } as unknown as ReturnType<typeof createSupabaseBrowserClient>);
+    it("should throw on API error", async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ error: "RPC failed" }),
+      } as Response);
 
-      await expect(repo.searchByKeyword("test")).rejects.toThrow("Search failed");
+      await expect(repo.searchByKeyword("test", "ko")).rejects.toThrow("RPC failed");
     });
 
     it("should return empty array for no results", async () => {
-      const { createSupabaseBrowserClient } = await import("@/infrastructure/supabase/client");
-      const mockRpc = vi.fn().mockResolvedValue({ data: [], error: null });
-      vi.mocked(createSupabaseBrowserClient).mockReturnValue({
-        rpc: mockRpc,
-      } as unknown as ReturnType<typeof createSupabaseBrowserClient>);
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [],
+      } as Response);
 
-      const results = await repo.searchByKeyword("없는단어");
+      const results = await repo.searchByKeyword("없는단어", "ko");
       expect(results).toEqual([]);
     });
   });
@@ -83,6 +77,15 @@ describe("SupabaseSubtitleRepository", () => {
       process.env.NEXT_PUBLIC_CDN_URL = "http://localhost:54321/storage/v1/object/public";
 
       const chunks = await repo.getFullTranscript("vid1");
+      expect(global.fetch).toHaveBeenCalledWith(
+        "http://localhost:54321/storage/v1/object/public/subtitles/vid1.json",
+        {
+          cache: "force-cache",
+          headers: {
+            Accept: "application/json",
+          },
+        },
+      );
       expect(chunks).toHaveLength(2);
       expect(chunks[0]).toEqual({ startTime: 0.0, duration: 2.5, text: "안녕하세요" });
     });

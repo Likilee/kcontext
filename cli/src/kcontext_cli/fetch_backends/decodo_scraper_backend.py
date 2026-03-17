@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from kcontext_cli.audio_language import resolve_audio_language_code
 from kcontext_cli.fetch_backends.base import (
     FetchBackendError,
     FetchResult,
@@ -20,7 +21,12 @@ DECODO_METADATA_TARGET = "youtube_metadata"
 DECODO_SUBTITLES_TARGET = "youtube_subtitles"
 
 
-def fetch(video_id: str, youtube_proxy_url: str | None = None) -> FetchResult:
+def fetch(
+    video_id: str,
+    youtube_proxy_url: str | None = None,
+    *,
+    default_audio_language_code: str,
+) -> FetchResult:
     """Fetch manual Korean subtitles and metadata via Decodo scraper API."""
     del youtube_proxy_url
 
@@ -49,7 +55,11 @@ def fetch(video_id: str, youtube_proxy_url: str | None = None) -> FetchResult:
     transcript = parse_json3_to_chunks(subtitle_json3)
 
     return FetchResult(
-        metadata=_normalize_metadata(video_id, metadata_payload),
+        metadata=_normalize_metadata(
+            video_id,
+            metadata_payload,
+            default_audio_language_code=default_audio_language_code,
+        ),
         transcript=transcript,
     )
 
@@ -59,7 +69,8 @@ def _extract_manual_ko_subtitle(payload: dict, video_id: str) -> dict:
     content = result.get("content")
     if not isinstance(content, dict):
         raise FetchBackendError(
-            "Decodo scraper subtitles response content is missing.",
+            "Decodo scraper subtitles response content is missing. "
+            f"{_describe_payload_shape(payload)}",
             error_class="api_unexpected_schema",
         )
 
@@ -74,26 +85,34 @@ def _extract_manual_ko_subtitle(payload: dict, video_id: str) -> dict:
     events = manual_ko.get("events")
     if not isinstance(events, list):
         raise FetchBackendError(
-            f"Manual Korean subtitle payload for {video_id} is missing events.",
+            f"Manual Korean subtitle payload for {video_id} is missing events. "
+            f"{_describe_payload_shape(payload)}",
             error_class="api_unexpected_schema",
         )
 
     return manual_ko
 
 
-def _normalize_metadata(video_id: str, payload: dict) -> VideoMetadata:
+def _normalize_metadata(
+    video_id: str,
+    payload: dict,
+    *,
+    default_audio_language_code: str,
+) -> VideoMetadata:
     result = _first_result(payload)
     content = result.get("content")
     if not isinstance(content, dict):
         raise FetchBackendError(
-            "Decodo scraper metadata response content is missing.",
+            "Decodo scraper metadata response content is missing. "
+            f"{_describe_payload_shape(payload)}",
             error_class="api_unexpected_schema",
         )
 
     raw_metadata = content.get("results")
     if not isinstance(raw_metadata, dict):
         raise FetchBackendError(
-            "Decodo scraper metadata response is missing results.",
+            "Decodo scraper metadata response is missing results. "
+            f"{_describe_payload_shape(payload)}",
             error_class="api_unexpected_schema",
         )
 
@@ -105,6 +124,10 @@ def _normalize_metadata(video_id: str, payload: dict) -> VideoMetadata:
         title=str(raw_metadata.get("title") or ""),
         channel_name=str(raw_metadata.get("channel") or raw_metadata.get("uploader") or ""),
         published_at=parse_upload_date(upload_date) if upload_date else "",
+        audio_language_code=resolve_audio_language_code(
+            raw_metadata.get("language"),
+            default_audio_language_code=default_audio_language_code,
+        ),
         channel_id=_optional_str(raw_metadata.get("channel_id")),
         uploader_id=_optional_str(raw_metadata.get("uploader_id")),
         uploader_url=_optional_str(raw_metadata.get("uploader_url")),
@@ -122,10 +145,48 @@ def _first_result(payload: dict) -> dict:
     results = payload.get("results")
     if not isinstance(results, list) or not results or not isinstance(results[0], dict):
         raise FetchBackendError(
-            "Decodo scraper response is missing results.",
+            f"Decodo scraper response is missing results. {_describe_payload_shape(payload)}",
             error_class="api_unexpected_schema",
         )
     return results[0]
+
+
+def _describe_payload_shape(payload: object) -> str:
+    if not isinstance(payload, dict):
+        return f"payload_type={type(payload).__name__}"
+
+    top_keys = sorted(str(key) for key in payload)
+    results = payload.get("results")
+    if not isinstance(results, list):
+        return (
+            f"payload_keys={top_keys} "
+            f"results_type={type(results).__name__ if results is not None else 'None'}"
+        )
+
+    if not results:
+        return f"payload_keys={top_keys} results_type=list results_len=0"
+
+    first = results[0]
+    if not isinstance(first, dict):
+        return (
+            f"payload_keys={top_keys} results_type=list results_len={len(results)} "
+            f"first_type={type(first).__name__}"
+        )
+
+    first_keys = sorted(str(key) for key in first)
+    content = first.get("content")
+    if not isinstance(content, dict):
+        return (
+            f"payload_keys={top_keys} results_len={len(results)} "
+            f"first_keys={first_keys} "
+            f"content_type={type(content).__name__ if content is not None else 'None'}"
+        )
+
+    content_keys = sorted(str(key) for key in content)
+    return (
+        f"payload_keys={top_keys} results_len={len(results)} "
+        f"first_keys={first_keys} content_keys={content_keys[:20]}"
+    )
 
 
 def _pick_thumbnail(primary: object, thumbnails: object) -> str | None:

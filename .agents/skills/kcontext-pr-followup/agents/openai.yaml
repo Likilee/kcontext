@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kcontext PR Follow-up"
+  short_description: "Turn PR review feedback into code changes."
+  default_prompt: "Use $kcontext-pr-followup to read PR review feedback, make the necessary fixes, and prepare a concise response summary."

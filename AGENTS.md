@@ -6,6 +6,26 @@
 - **Repo Layout**: `web/` (Next.js Frontend) + `cli/` (Python Data Pipeline)
 - **Detailed Specs**: See `docs/` directory for system design, architecture, database schema, design system
 
+## GitHub Issue Workflow
+- Non-trivial work starts from a GitHub issue.
+- Codex should prefer issues that already have `status:ready`, clear acceptance criteria, concrete verification steps, and resolved dependencies.
+- Default collaboration language for GitHub is Korean.
+  - Write issue titles/bodies, PR titles/bodies, review comments, and follow-up replies in Korean by default.
+  - Keep code, commands, identifiers, API names, and externally quoted text in their original form when that is clearer.
+  - If an external tool or existing thread contains English, add a short Korean summary rather than switching the whole discussion to English.
+- Use repo workflow labels:
+  - `area:*` → `web`, `cli`, `supabase`, `ci`, `docs`
+  - `type:*` → `feature`, `bug`, `refactor`, `chore`, `docs`
+  - `priority:*` → `p0`, `p1`, `p2`
+  - `status:*` → `ready`, `blocked`
+- Tracking issues should not carry `status:ready`; use them only as parents for smaller executable issues.
+- Branch naming for issue-driven work: `codex/<issue-number>-short-slug`
+- PRs should link the representative issue with `Closes #<number>` for complete fixes or `Refs #<number>` for partial work.
+- Codex-authored PR reviews and follow-up comments should include a visible `[codex-*]` prefix plus a hidden Codex marker for the current head SHA.
+- Human GitHub feedback without a Codex marker overrides stale issue/PR text, even when posted through the same `Likilee` account.
+- Open PRs should block new ready-issue work only when they still require Codex action, not when they are merely waiting for human review.
+- Source of truth for the workflow: `docs/github-issue-first-workflow.md`
+
 ## Architecture Rules
 
 ### Clean Architecture (Frontend — web/src/)

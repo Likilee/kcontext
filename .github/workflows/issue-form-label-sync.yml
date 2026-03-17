@@ -1,0 +1,142 @@
+name: "Issue Form Label Sync"
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+permissions:
+  issues: write
+
+jobs:
+  sync-labels:
+    name: "Sync managed labels from issue form"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Apply managed labels"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body || "";
+
+            const managedPrefixes = ["area:", "type:", "priority:", "status:"];
+            const managedFields = [
+              {
+                heading: "Type",
+                prefix: "type:",
+                allowed: ["feature", "bug", "refactor", "chore", "docs"],
+                multiple: false,
+              },
+              {
+                heading: "Priority",
+                prefix: "priority:",
+                allowed: ["p0", "p1", "p2"],
+                multiple: false,
+              },
+              {
+                heading: "Area",
+                prefix: "area:",
+                allowed: ["web", "cli", "supabase", "ci", "docs"],
+                multiple: true,
+              },
+              {
+                heading: "Status",
+                prefix: "status:",
+                allowed: ["ready", "blocked", "none"],
+                multiple: false,
+              },
+            ];
+
+            const parseSections = (markdown) => {
+              const normalized = markdown.replace(/\r\n/g, "\n");
+              const sections = new Map();
+              const parts = normalized.split(/^### /m);
+
+              for (const part of parts) {
+                const trimmed = part.trim();
+                if (!trimmed) {
+                  continue;
+                }
+
+                const firstBreak = trimmed.indexOf("\n");
+                if (firstBreak === -1) {
+                  continue;
+                }
+
+                const heading = trimmed.slice(0, firstBreak).trim();
+                const content = trimmed.slice(firstBreak + 1).trim();
+                sections.set(heading, content);
+              }
+
+              return sections;
+            };
+
+            const readValues = (rawValue) =>
+              rawValue
+                .split(/\n|,/)
+                .map((value) => value.replace(/^- /, "").trim())
+                .filter((value) => value.length > 0 && value !== "_No response_");
+
+            const sections = parseSections(body);
+            const managedLabels = [];
+            const hasManagedHeadings = managedFields.some((field) =>
+              sections.has(field.heading),
+            );
+
+            if (!hasManagedHeadings) {
+              core.info("No managed issue-form headings found; leaving labels unchanged.");
+              return;
+            }
+
+            for (const field of managedFields) {
+              const rawValue = sections.get(field.heading);
+              if (!rawValue) {
+                continue;
+              }
+
+              const values = readValues(rawValue).filter((value) =>
+                field.allowed.includes(value),
+              );
+
+              if (!field.multiple) {
+                const selected = values[0];
+                if (!selected || selected === "none") {
+                  continue;
+                }
+
+                managedLabels.push(`${field.prefix}${selected}`);
+                continue;
+              }
+
+              for (const value of values) {
+                managedLabels.push(`${field.prefix}${value}`);
+              }
+            }
+
+            const existingLabels = issue.labels.map((label) =>
+              typeof label === "string" ? label : label.name,
+            );
+
+            const retainedLabels = existingLabels.filter(
+              (label) => !managedPrefixes.some((prefix) => label.startsWith(prefix)),
+            );
+
+            const nextLabels = [...new Set([...retainedLabels, ...managedLabels])];
+
+            const sameLabels =
+              existingLabels.length === nextLabels.length &&
+              existingLabels.every((label, index) => label === nextLabels[index]);
+
+            if (sameLabels) {
+              core.info("Managed labels already match issue form values.");
+              return;
+            }
+
+            await github.rest.issues.setLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              labels: nextLabels,
+            });
+
+            core.info(`Updated labels for issue #${issue.number}: ${nextLabels.join(", ")}`);

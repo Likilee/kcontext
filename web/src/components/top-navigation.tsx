@@ -27,7 +27,7 @@ export function TopNavigation({
     <button
       type="button"
       onClick={onLogoClick}
-      className="shrink-0"
+      className="shrink-0 cursor-pointer"
       aria-label={siteConfig.copy.homeAriaLabel}
     >
       <BrandLogo

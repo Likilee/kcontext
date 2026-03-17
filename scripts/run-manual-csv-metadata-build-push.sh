@@ -2,9 +2,10 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WORKSPACE="$ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_full"
+WORKSPACE="$ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_filtered_full"
 MAX_VIDEOS_PER_RUN=0
 FORCE=0
+DEFAULT_AUDIO_LANGUAGE_CODE="${DEFAULT_AUDIO_LANGUAGE_CODE:-ko}"
 
 usage() {
   cat <<EOF
@@ -100,7 +101,11 @@ for METADATA_RAW in "${METADATA_FILES[@]}"; do
   PUSH_LOG="$LOG_DIR/push_metadata_${VIDEO_ID}.log"
 
   echo "[${RUN_PROCESSED}] ${VIDEO_ID}: build-metadata"
-  if ! (cd "$ROOT_DIR/cli" && uv run tubelang build-metadata "$METADATA_RAW" -d "$BUILD_DIR") >"$BUILD_LOG" 2>&1; then
+  if ! (
+    cd "$ROOT_DIR/cli" && \
+      uv run tubelang build-metadata "$METADATA_RAW" -d "$BUILD_DIR" \
+        --default-audio-language-code "$DEFAULT_AUDIO_LANGUAGE_CODE"
+  ) >"$BUILD_LOG" 2>&1; then
     append_failure "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" "$VIDEO_ID" "build-metadata" "build_metadata_failed" "$BUILD_LOG"
     RUN_FAILED=$((RUN_FAILED + 1))
     echo "[${RUN_PROCESSED}] ${VIDEO_ID}: build-metadata failed (log: ${BUILD_LOG})" >&2

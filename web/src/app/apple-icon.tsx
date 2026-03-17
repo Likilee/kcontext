@@ -28,14 +28,18 @@ export default async function AppleIcon(): Promise<ImageResponse> {
         width: "100%",
       }}
     >
-      <img
-        alt=""
-        src={iconDataUrl}
+      <div
         style={{
+          alignItems: "center",
+          display: "flex",
           height: 112,
+          justifyContent: "center",
           width: 112,
         }}
-      />
+      >
+        {/* biome-ignore lint/performance/noImgElement: ImageResponse renders this server-side into a PNG. */}
+        <img alt="" height="112" src={iconDataUrl} width="112" />
+      </div>
     </div>,
     size,
   );

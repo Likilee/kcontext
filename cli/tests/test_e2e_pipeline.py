@@ -1,5 +1,6 @@
 """E2E pipeline integration test — verifies list → fetch → build → push data flow."""
 
+import csv
 import json
 import subprocess
 from pathlib import Path
@@ -10,6 +11,7 @@ from typer.testing import CliRunner
 from kcontext_cli.main import app
 
 runner = CliRunner()
+DEFAULT_AUDIO_LANGUAGE_CODE = "ko"
 
 VIDEO_ID = "test_pipeline_01"
 
@@ -18,6 +20,7 @@ MOCK_RAW_JSON = {
     "title": "파이프라인 테스트 영상",
     "channel_name": "테스트 채널",
     "published_at": "2024-06-15T00:00:00Z",
+    "audio_language_code": "ko",
     "transcript": [
         {"start": 0.0, "duration": 2.5, "text": "안녕하세요"},
         {"start": 2.5, "duration": 3.0, "text": "반갑습니다"},
@@ -34,6 +37,7 @@ MOCK_YTDLP_METADATA = {
     "title": "파이프라인 테스트 영상",
     "channel": "테스트 채널",
     "upload_date": "20240615",
+    "language": "ko",
 }
 
 MOCK_JSON3_DATA = {
@@ -103,7 +107,17 @@ class TestE2EPipeline:
 
         # Stage 2: fetch — mock yt-dlp metadata print + subtitle file download
         with patch("subprocess.run", side_effect=_mock_fetch_result()):
-            result = runner.invoke(app, ["fetch", VIDEO_ID, "-o", str(raw_json_path)])
+            result = runner.invoke(
+                app,
+                [
+                    "fetch",
+                    VIDEO_ID,
+                    "-o",
+                    str(raw_json_path),
+                    "--default-audio-language-code",
+                    DEFAULT_AUDIO_LANGUAGE_CODE,
+                ],
+            )
         assert result.exit_code == 0
         assert raw_json_path.exists()
 
@@ -116,10 +130,21 @@ class TestE2EPipeline:
         assert metadata_sidecar.exists()
         metadata_payload = json.loads(metadata_sidecar.read_text(encoding="utf-8"))
         assert metadata_payload["video_id"] == VIDEO_ID
+        assert metadata_payload["audio_language_code"] == "ko"
         assert metadata_payload["source_backend"] == "ytdlp"
 
         # Stage 3: build — pure transformation, no mocks needed
-        result = runner.invoke(app, ["build", str(raw_json_path), "-d", str(build_dir)])
+        result = runner.invoke(
+            app,
+            [
+                "build",
+                str(raw_json_path),
+                "-d",
+                str(build_dir),
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
+        )
         assert result.exit_code == 0
 
         storage_file = build_dir / f"{VIDEO_ID}_storage.json"
@@ -150,7 +175,17 @@ class TestE2EPipeline:
         ):
             result = runner.invoke(
                 app,
-                ["push", "-s", str(storage_file), "-vc", str(video_csv), "-sc", str(subtitle_csv)],
+                [
+                    "push",
+                    "-s",
+                    str(storage_file),
+                    "-vc",
+                    str(video_csv),
+                    "-sc",
+                    str(subtitle_csv),
+                    "--default-audio-language-code",
+                    DEFAULT_AUDIO_LANGUAGE_CODE,
+                ],
             )
         assert result.exit_code == 0
         mock_bucket.upload.assert_called_once()
@@ -161,7 +196,17 @@ class TestE2EPipeline:
         raw_json_path = tmp_path / f"{VIDEO_ID}_raw.json"
 
         with patch("subprocess.run", side_effect=_mock_fetch_result(write_subtitle=False)):
-            result = runner.invoke(app, ["fetch", VIDEO_ID, "-o", str(raw_json_path)])
+            result = runner.invoke(
+                app,
+                [
+                    "fetch",
+                    VIDEO_ID,
+                    "-o",
+                    str(raw_json_path),
+                    "--default-audio-language-code",
+                    DEFAULT_AUDIO_LANGUAGE_CODE,
+                ],
+            )
 
         assert result.exit_code == 1
         assert not raw_json_path.exists()
@@ -195,7 +240,17 @@ class TestE2EPipeline:
                 ),
             ),
         ):
-            result = runner.invoke(app, ["fetch", video_id, "-o", str(raw_json_path)])
+            result = runner.invoke(
+                app,
+                [
+                    "fetch",
+                    video_id,
+                    "-o",
+                    str(raw_json_path),
+                    "--default-audio-language-code",
+                    DEFAULT_AUDIO_LANGUAGE_CODE,
+                ],
+            )
         assert result.exit_code == 0
 
         raw_content = raw_json_path.read_text(encoding="utf-8")
@@ -205,16 +260,33 @@ class TestE2EPipeline:
         assert "\\u" not in raw_content
 
         # Build artifacts
-        build_result = runner.invoke(app, ["build", str(raw_json_path), "-d", str(build_dir)])
+        build_result = runner.invoke(
+            app,
+            [
+                "build",
+                str(raw_json_path),
+                "-d",
+                str(build_dir),
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
+        )
         assert build_result.exit_code == 0
 
         storage_file = build_dir / f"{video_id}_storage.json"
+        subtitle_csv = build_dir / f"{video_id}_subtitle.csv"
         assert storage_file.exists()
+        assert subtitle_csv.exists()
 
         storage_content = storage_file.read_text(encoding="utf-8")
         # Korean text preserved in storage JSON without unicode escaping
         assert "괄호" in storage_content
         assert "\\u" not in storage_content
+
+        subtitle_rows = list(
+            csv.reader(subtitle_csv.read_text(encoding="utf-8").splitlines(), delimiter="\t")
+        )
+        assert subtitle_rows == [[video_id, "0.0", '괄호 따옴표"quotes" 한국어']]
 
     def test_build_artifacts_schema_correctness(self, tmp_path: Path) -> None:
         """build command must produce artifacts with correct schema from raw JSON."""
@@ -227,7 +299,17 @@ class TestE2EPipeline:
             json.dumps(MOCK_RAW_JSON, ensure_ascii=False, indent=2), encoding="utf-8"
         )
 
-        result = runner.invoke(app, ["build", str(raw_json_path), "-d", str(build_dir)])
+        result = runner.invoke(
+            app,
+            [
+                "build",
+                str(raw_json_path),
+                "-d",
+                str(build_dir),
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
+        )
         assert result.exit_code == 0
 
         # Validate storage.json schema
@@ -248,11 +330,12 @@ class TestE2EPipeline:
         video_rows = video_csv.read_text(encoding="utf-8").strip().splitlines()
         assert len(video_rows) >= 1
         cols = video_rows[0].split("\t")
-        assert len(cols) == 4
+        assert len(cols) == 5
         assert cols[0] == VIDEO_ID
         assert cols[1] == "파이프라인 테스트 영상"
         assert cols[2] == "테스트 채널"
         assert cols[3] == "2024-06-15T00:00:00Z"
+        assert cols[4] == "ko"
 
         # Validate subtitle.csv has correct tab-delimited columns
         subtitle_csv = build_dir / f"{VIDEO_ID}_subtitle.csv"

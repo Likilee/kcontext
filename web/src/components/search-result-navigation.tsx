@@ -22,7 +22,10 @@ export function SearchResultNavigation({
   const isNextDisabled = totalCount <= 1 || safeCurrent >= totalCount;
 
   return (
-    <div className="flex items-center gap-[var(--space-gap-item)]">
+    <div
+      data-testid="search-result-navigation"
+      className="flex items-center gap-[var(--space-gap-item)]"
+    >
       <Button
         type="button"
         variant="outline"

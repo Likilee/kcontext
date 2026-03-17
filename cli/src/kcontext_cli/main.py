@@ -10,6 +10,7 @@ from kcontext_cli.commands import (
     list_cmd,
     push,
     push_metadata,
+    snapshot_fixtures,
 )
 
 app = typer.Typer(
@@ -25,6 +26,7 @@ app.command(name="build")(build.build_artifacts)
 app.command(name="build-metadata")(build_metadata.build_metadata_artifact)
 app.command(name="push")(push.push_data)
 app.command(name="push-metadata")(push_metadata.push_metadata)
+app.command(name="snapshot-fixtures")(snapshot_fixtures.snapshot_fixtures)
 
 if __name__ == "__main__":
     app()

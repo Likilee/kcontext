@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from kcontext_cli.audio_language import resolve_audio_language_code
 from kcontext_cli.fetch_backends.base import (
     FetchBackendError,
     FetchResult,
@@ -22,11 +23,16 @@ YTDLP_SUBTITLE_FORMAT = "json3"
 YTDLP_EXTRACTOR_ARGS = "youtube:skip=translated_subs"
 YTDLP_METADATA_TEMPLATE = (
     "%(.{id,title,channel,upload_date,channel_id,uploader_id,uploader_url,"
-    "duration,description,categories,tags,thumbnail})j"
+    "duration,description,categories,tags,thumbnail,language})j"
 )
 
 
-def fetch(video_id: str, youtube_proxy_url: str | None) -> FetchResult:
+def fetch(
+    video_id: str,
+    youtube_proxy_url: str | None,
+    *,
+    default_audio_language_code: str,
+) -> FetchResult:
     """Fetch minimal metadata and manual Korean subtitles via yt-dlp."""
     with tempfile.TemporaryDirectory(prefix=f"kcontext-fetch-{video_id}-") as tmp_dir:
         temp_dir = Path(tmp_dir)
@@ -70,7 +76,11 @@ def fetch(video_id: str, youtube_proxy_url: str | None) -> FetchResult:
                 error_class=classify_proxy_failure_message(message),
             )
 
-        metadata = _normalize_metadata(video_id, _parse_ytdlp_metadata(result.stdout))
+        metadata = _normalize_metadata(
+            video_id,
+            _parse_ytdlp_metadata(result.stdout),
+            default_audio_language_code=default_audio_language_code,
+        )
         subtitle_path = _find_json3_subtitle_file(temp_dir)
         if subtitle_path is None:
             raise FetchBackendError(f"No manual Korean subtitle found for {video_id}")
@@ -111,7 +121,12 @@ def _find_json3_subtitle_file(directory: Path) -> Path | None:
     return None
 
 
-def _normalize_metadata(video_id: str, metadata: dict) -> VideoMetadata:
+def _normalize_metadata(
+    video_id: str,
+    metadata: dict,
+    *,
+    default_audio_language_code: str,
+) -> VideoMetadata:
     upload_date = str(metadata.get("upload_date") or "").strip()
     categories = metadata.get("categories")
     tags = metadata.get("tags")
@@ -121,6 +136,10 @@ def _normalize_metadata(video_id: str, metadata: dict) -> VideoMetadata:
         title=str(metadata.get("title") or ""),
         channel_name=str(metadata.get("channel") or ""),
         published_at=parse_upload_date(upload_date) if upload_date else "",
+        audio_language_code=resolve_audio_language_code(
+            metadata.get("language"),
+            default_audio_language_code=default_audio_language_code,
+        ),
         channel_id=_optional_str(metadata.get("channel_id")),
         uploader_id=_optional_str(metadata.get("uploader_id")),
         uploader_url=_optional_str(metadata.get("uploader_url")),

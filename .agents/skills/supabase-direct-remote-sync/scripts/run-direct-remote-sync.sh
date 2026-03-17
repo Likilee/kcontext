@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 SKILL_DIR="$ROOT_DIR/.agents/skills/supabase-direct-remote-sync"
-STATE_DB="$ROOT_DIR/cli/.state/direct_remote_sync.sqlite"
+STATE_DB="$ROOT_DIR/cli/.state/direct_remote_sync_filtered.sqlite"
 ENV_FILE="$ROOT_DIR/.env.remote-sync"
 BATCH_SIZE=50
 MAX_VIDEOS=200
@@ -17,7 +17,7 @@ usage() {
 Usage: $0 [options]
 
 Options:
-  --state-db <path>      Sync state DB (default: $ROOT_DIR/cli/.state/direct_remote_sync.sqlite)
+  --state-db <path>      Sync state DB (default: $ROOT_DIR/cli/.state/direct_remote_sync_filtered.sqlite)
   --env-file <path>      Remote env file (default: $ROOT_DIR/.env.remote-sync)
   --batch-size <n>       Videos per batch (default: 50)
   --max-videos <n>       Max videos per run (default: 200)

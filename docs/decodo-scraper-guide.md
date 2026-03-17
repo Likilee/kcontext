@@ -31,7 +31,9 @@ cd cli
 set -a
 source ../.env.decodo
 set +a
-uv run tubelang fetch DucXv5xjhW4 -o /tmp/DucXv5xjhW4_raw.json --fetch-backend decodo-scraper
+uv run tubelang fetch DucXv5xjhW4 -o /tmp/DucXv5xjhW4_raw.json \
+  --fetch-backend decodo-scraper \
+  --default-audio-language-code ko
 ```
 
 Resume manual CSV ingest through Decodo scraper:
@@ -39,6 +41,10 @@ Resume manual CSV ingest through Decodo scraper:
 ```bash
 ./scripts/run-manual-csv-ingest-via-decodo-scraper.sh --max-videos-per-run 3
 ```
+
+Manual CSV ingest now uses `docs/manual_ko_subtitle_videos_filtered.csv` by default.
+If you update `docs/manual_ko_subtitle_videos.csv`, re-run `python3 ./scripts/check_playable.py`
+before restarting ingest.
 
 Backfill metadata storage artifacts and upload them:
 

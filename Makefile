@@ -4,6 +4,7 @@ SHELL := /bin/bash
 E2E_SUPABASE_WORKDIR ?= testing/supabase-e2e
 E2E_SEED_DIR ?= testing/supabase-e2e/supabase/storage-seed
 E2E_BUCKET ?= subtitles
+E2E_WEB_PORT ?= 3410
 INGEST_CONFIG ?= $(CURDIR)/cli/config/sources.json
 INGEST_WORKSPACE_ROOT ?= /tmp/kcontext_ingest_runs
 INGEST_MAX_SOURCES ?= 999
@@ -18,6 +19,7 @@ SYNC_DRY_RUN ?= 0
 	e2e-smoke \
 	e2e-real \
 	e2e-down \
+	github-labels-sync \
 	ingest-local \
 	sync-remote \
 	sync-all \
@@ -34,11 +36,11 @@ e2e-reset: e2e-up
 		--bucket "$(E2E_BUCKET)"
 	@status_env="$$(supabase status --workdir "$(E2E_SUPABASE_WORKDIR)" -o env)"; \
 		api_url="$$(echo "$$status_env" | awk -F= '$$1=="API_URL"{print $$2}' | sed 's/^"//; s/"$$//')"; \
-		anon_key="$$(echo "$$status_env" | awk -F= '$$1=="ANON_KEY"{print $$2}' | sed 's/^"//; s/"$$//')"; \
+		service_role_key="$$(echo "$$status_env" | awk -F= '$$1=="SERVICE_ROLE_KEY"{print $$2}' | sed 's/^"//; s/"$$//')"; \
 		video_count="$$(curl --fail --silent --show-error \
 			"$${api_url}/rest/v1/video?select=id&id=like.test_%" \
-			-H "apikey: $${anon_key}" \
-			-H "Authorization: Bearer $${anon_key}" \
+			-H "apikey: $${service_role_key}" \
+			-H "Authorization: Bearer $${service_role_key}" \
 			-H "Content-Type: application/json" | \
 			python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')"; \
 		if [[ "$$video_count" != "3" ]]; then \
@@ -51,8 +53,9 @@ e2e-smoke: e2e-reset
 		eval "$$(echo "$$status_env" | grep -E '^[A-Z0-9_]+=')"; \
 		export NEXT_PUBLIC_SUPABASE_URL="$$API_URL"; \
 		export NEXT_PUBLIC_SUPABASE_ANON_KEY="$$ANON_KEY"; \
+		export SUPABASE_SECRET_KEY="$$SERVICE_ROLE_KEY"; \
 		export NEXT_PUBLIC_CDN_URL="$$API_URL/storage/v1/object/public"; \
-		export PLAYWRIGHT_BASE_URL="http://127.0.0.1:3100"; \
+		export PLAYWRIGHT_BASE_URL="http://localhost:$(E2E_WEB_PORT)"; \
 		export CI="true"; \
 		pnpm -C web test:e2e:smoke
 
@@ -61,6 +64,9 @@ e2e-real:
 
 e2e-down:
 	supabase stop --workdir "$(E2E_SUPABASE_WORKDIR)" --no-backup || true
+
+github-labels-sync:
+	./scripts/sync-github-labels.sh
 
 ingest-local:
 	./scripts/run-local-ingest.sh \

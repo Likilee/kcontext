@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "이슈 우선 워크플로 가이드"
+    url: "https://github.com/Likilee/kcontext/blob/main/docs/github-issue-first-workflow.md"
+    about: "저장소의 GitHub 이슈 운영 방식, 라벨 규칙, Codex 전달 기준을 확인합니다."

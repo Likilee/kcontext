@@ -1,0 +1,35 @@
+name: "Reusable - Pre-commit parity"
+
+on:
+  workflow_call:
+    inputs:
+      base_sha:
+        description: "Base commit SHA used to compute changed files."
+        required: false
+        type: string
+      head_sha:
+        description: "Head commit SHA used to compute changed files."
+        required: false
+        type: string
+
+jobs:
+  precommit-parity:
+    name: "Pre-commit parity"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup-web
+
+      - uses: ./.github/actions/setup-cli
+
+      - name: Run lefthook pre-commit on changed files
+        shell: bash
+        run: |
+          ./scripts/ci/run-precommit-parity.sh \
+            --base-sha "${{ inputs.base_sha }}" \
+            --head-sha "${{ inputs.head_sha }}"

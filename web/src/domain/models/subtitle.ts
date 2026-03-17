@@ -1,7 +1,7 @@
 export interface VideoMeta {
   videoId: string;
-  title: string;
-  channelName: string;
+  title: string | null;
+  channelName: string | null;
 }
 
 export interface SearchResult extends VideoMeta {

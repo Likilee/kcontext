@@ -7,18 +7,27 @@ export async function getRequestSiteConfig() {
   return getSiteConfigForHost(host);
 }
 
-export async function getRequestUrl(): Promise<URL> {
+export async function getRequestUrl({
+  usePrimaryHost = false,
+}: {
+  readonly usePrimaryHost?: boolean;
+} = {}): Promise<URL> {
   const requestHeaders = await headers();
   const hostHeader = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host");
   const host = normalizeHost(hostHeader);
+  const siteConfig = getSiteConfigForHost(host);
   const pathname = requestHeaders.get("x-pathname") ?? "/";
   const search = requestHeaders.get("x-search") ?? "";
   const forwardedProto = requestHeaders.get("x-forwarded-proto");
-  const protocol = forwardedProto
-    ? `${forwardedProto}:`
-    : isDevelopmentHost(host)
-      ? "http:"
-      : "https:";
+  const shouldUseRequestHost = isDevelopmentHost(host) || !usePrimaryHost;
+  const effectiveHost = shouldUseRequestHost ? host : siteConfig.primaryHost;
+  const protocol = shouldUseRequestHost
+    ? forwardedProto
+      ? `${forwardedProto}:`
+      : isDevelopmentHost(host)
+        ? "http:"
+        : "https:"
+    : "https:";
 
-  return new URL(`${protocol}//${host}${pathname}${search}`);
+  return new URL(`${protocol}//${effectiveHost}${pathname}${search}`);
 }

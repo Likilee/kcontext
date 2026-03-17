@@ -45,7 +45,7 @@ class SyncConfig:
     local_supabase_url: str
     storage_bucket: str
     remote_supabase_url: str | None
-    remote_service_role_key: str | None
+    remote_secret_key: str | None
     remote_db_url: str | None
 
 
@@ -148,7 +148,7 @@ def parse_args() -> SyncConfig:
         local_supabase_url=str(args.local_supabase_url).rstrip("/"),
         storage_bucket=str(args.storage_bucket),
         remote_supabase_url=os.getenv("REMOTE_SUPABASE_URL"),
-        remote_service_role_key=os.getenv("REMOTE_SUPABASE_SERVICE_ROLE_KEY"),
+        remote_secret_key=os.getenv("REMOTE_SUPABASE_SECRET_KEY"),
         remote_db_url=os.getenv("REMOTE_DB_URL"),
     )
 
@@ -327,10 +327,14 @@ def fetch_synced_video_ids(state_conn: sqlite3.Connection) -> set[str]:
 def fetch_local_video(
     local_conn: PsycopgConnection,
     video_id: str,
-) -> tuple[str, str, str, Any] | None:
+) -> tuple[str, str, str, Any, str] | None:
     with local_conn.cursor() as cur:
         cur.execute(
-            "SELECT id, title, channel_name, published_at FROM video WHERE id = %s",
+            """
+            SELECT id, title, channel_name, published_at, audio_language_code
+            FROM video
+            WHERE id = %s
+            """,
             (video_id,),
         )
         row = cur.fetchone()
@@ -338,7 +342,7 @@ def fetch_local_video(
     if row is None:
         return None
 
-    return (str(row[0]), str(row[1]), str(row[2]), row[3])
+    return (str(row[0]), str(row[1]), str(row[2]), row[3], str(row[4] or "ko"))
 
 
 def fetch_local_subtitles(
@@ -386,8 +390,8 @@ def download_local_storage_json(config: SyncConfig, video_id: str) -> bytes:
     try:
         return http_request(url=public_url, method="GET")
     except RuntimeError as public_error:
-        local_service_role_key = os.getenv("LOCAL_SUPABASE_SERVICE_ROLE_KEY")
-        if not local_service_role_key:
+        local_secret_key = os.getenv("LOCAL_SUPABASE_SECRET_KEY")
+        if not local_secret_key:
             raise RuntimeError(
                 f"Local storage fetch failed via public URL for {video_id}: {public_error}"
             ) from public_error
@@ -395,7 +399,7 @@ def download_local_storage_json(config: SyncConfig, video_id: str) -> bytes:
         api_url = (
             f"{config.local_supabase_url}/storage/v1/object/{config.storage_bucket}/{video_id}.json"
         )
-        headers = {"Authorization": f"Bearer {local_service_role_key}"}
+        headers = {"apikey": local_secret_key}
         try:
             return http_request(url=api_url, method="GET", headers=headers)
         except RuntimeError as api_error:
@@ -408,17 +412,15 @@ def download_local_storage_json(config: SyncConfig, video_id: str) -> bytes:
 def upload_remote_storage_json(config: SyncConfig, video_id: str, payload: bytes) -> None:
     if not config.remote_supabase_url:
         raise RuntimeError("Missing required environment variable: REMOTE_SUPABASE_URL")
-    if not config.remote_service_role_key:
-        raise RuntimeError(
-            "Missing required environment variable: REMOTE_SUPABASE_SERVICE_ROLE_KEY"
-        )
+    if not config.remote_secret_key:
+        raise RuntimeError("Missing required environment variable: REMOTE_SUPABASE_SECRET_KEY")
 
     url = (
         f"{config.remote_supabase_url.rstrip('/')}/storage/v1/object/"
         f"{config.storage_bucket}/{video_id}.json"
     )
     headers = {
-        "Authorization": f"Bearer {config.remote_service_role_key}",
+        "apikey": config.remote_secret_key,
         "Content-Type": "application/json",
         "x-upsert": "true",
     }
@@ -427,22 +429,23 @@ def upload_remote_storage_json(config: SyncConfig, video_id: str, payload: bytes
 
 def upsert_remote_db(
     remote_conn: PsycopgConnection,
-    video: tuple[str, str, str, Any],
+    video: tuple[str, str, str, Any, str],
     subtitles: list[tuple[str, float, str]],
 ) -> None:
-    video_id, title, channel_name, published_at = video
+    video_id, title, channel_name, published_at, audio_language_code = video
 
     with remote_conn.cursor() as cur:
         cur.execute(
             """
-            INSERT INTO video (id, title, channel_name, published_at)
-            VALUES (%s, %s, %s, %s)
+            INSERT INTO video (id, title, channel_name, published_at, audio_language_code)
+            VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT (id) DO UPDATE SET
               title = EXCLUDED.title,
               channel_name = EXCLUDED.channel_name,
-              published_at = EXCLUDED.published_at
+              published_at = EXCLUDED.published_at,
+              audio_language_code = EXCLUDED.audio_language_code
             """,
-            (video_id, title, channel_name, published_at),
+            (video_id, title, channel_name, published_at, audio_language_code),
         )
 
         cur.execute("DELETE FROM subtitle WHERE video_id = %s", (video_id,))

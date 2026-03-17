@@ -1,122 +1,155 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Response } from "@playwright/test";
 
-/**
- * Full Stack Integration Test
- *
- * Prerequisites:
- * - Local Supabase running with real data from 세바시 강연 channel
- * - CLI pipeline has loaded at least 1 video with manual Korean CC
- * - web/.env.local configured with local Supabase URLs
- */
-test.describe("Full Stack Integration — 세바시 강연 Real Data", () => {
-  const emptyState = "even native speakers rarely use";
+const EMPTY_STATE_TEXT = "even native speakers rarely use";
 
-  async function searchKeyword(page: Page, keyword: string) {
-    const searchBar = page.locator('input[type="search"]').first();
-    await searchBar.fill(keyword);
-    await searchBar.press("Enter");
-  }
+interface SearchResponseRow {
+  videoId: string;
+  startTime: number;
+  matchedText: string;
+}
 
-  async function waitForSearchResolution(page: Page): Promise<"results" | "empty"> {
-    const summaryText = page.getByText("in native videos").first();
-    const emptyStateMessage = page.getByText(emptyState);
+interface TranscriptResponseChunk {
+  start_time: number;
+  duration: number;
+  text: string;
+}
 
-    await expect
-      .poll(
-        async () => {
-          const hasSummary = await summaryText
-            .isVisible()
-            .then((visible) => visible)
-            .catch(() => false);
-          if (hasSummary) {
-            return "results";
-          }
+async function searchKeyword(page: Page, keyword: string) {
+  const searchBar = page.locator('[data-tubelang-search-input="true"]').first();
+  await expect(searchBar).toBeVisible();
+  await searchBar.fill(keyword);
+  await searchBar.press("Enter");
+}
 
-          const hasEmpty = await emptyStateMessage
-            .isVisible()
-            .then((visible) => visible)
-            .catch(() => false);
-          return hasEmpty ? "empty" : "pending";
-        },
-        {
-          timeout: 20_000,
-        },
-      )
-      .not.toBe("pending");
-
-    const finalSummaryVisible = await summaryText
-      .isVisible()
-      .then((visible) => visible)
-      .catch(() => false);
-
-    return finalSummaryVisible ? "results" : "empty";
-  }
-
-  test('Search "행복" → real results from 세바시 강연 appear', async ({ page }) => {
-    await page.goto("/");
-    await searchKeyword(page, "행복");
-
-    await expect(page).toHaveURL(/\/search\?q=/);
-    await expect(page.getByText("in native videos").first()).toBeVisible({ timeout: 20_000 });
-  });
-
-  test('Search "인생" → player panel loads', async ({ page }) => {
-    await page.goto("/");
-    await searchKeyword(page, "인생");
-
-    const playerContainer = page.locator("#yt-player-container");
-    await expect(playerContainer).toBeVisible({ timeout: 15_000 });
-
-    const chunkViewer = page.locator('[data-testid="chunk-viewer"]');
-    await expect(chunkViewer).toBeVisible();
-  });
-
-  test('Search "사랑합니다" → results appear or empty state shows', async ({ page }) => {
-    await page.goto("/");
-    await searchKeyword(page, "사랑합니다");
-    const state = await waitForSearchResolution(page);
-
-    if (state === "results") {
-      await expect(page.getByText("in native videos").first()).toBeVisible();
-    } else {
-      const emptyMsg = page.getByText(emptyState);
-      await expect(emptyMsg).toBeVisible();
+function waitForSearchResponse(page: Page, keyword: string): Promise<Response> {
+  return page.waitForResponse((response) => {
+    if (response.request().method() !== "GET") {
+      return false;
     }
+
+    const url = new URL(response.url());
+    return url.pathname === "/api/search" && url.searchParams.get("q") === keyword;
   });
+}
 
-  test('Search "어쩔티비" → empty state shows for slang not in lectures', async ({ page }) => {
-    await page.goto("/");
-    await searchKeyword(page, "어쩔티비");
-    const state = await waitForSearchResolution(page);
-
-    expect(state).toBe("empty");
-    const emptyMsg = page.getByText(emptyState);
-    await expect(emptyMsg).toBeVisible();
-  });
-
-  test('Search "대한민국" → compound word search works', async ({ page }) => {
-    await page.goto("/");
-    await searchKeyword(page, "대한민국");
-    const state = await waitForSearchResolution(page);
-
-    if (state === "results") {
-      await expect(page.getByText("in native videos").first()).toBeVisible();
-    } else {
-      const emptyMsg = page.getByText(emptyState);
-      await expect(emptyMsg).toBeVisible();
+function waitForTranscriptResponse(page: Page, videoId?: string): Promise<Response> {
+  return page.waitForResponse((response) => {
+    if (response.request().method() !== "GET") {
+      return false;
     }
+
+    const url = new URL(response.url());
+    if (!url.pathname.includes("/storage/v1/object/public/subtitles/")) {
+      return false;
+    }
+
+    return !videoId || url.pathname.endsWith(`/storage/v1/object/public/subtitles/${videoId}.json`);
+  });
+}
+
+async function expectJsonResponse<T>(response: Response, expectedStatus = 200): Promise<T> {
+  expect(response.status()).toBe(expectedStatus);
+  return (await response.json()) as T;
+}
+
+test.describe("Full stack integration", () => {
+  test('Search "떡볶이" hydrates the player UI from live API data', async ({ page }) => {
+    await page.goto("/");
+
+    const searchResponsePromise = waitForSearchResponse(page, "떡볶이");
+    await searchKeyword(page, "떡볶이");
+
+    const searchResponse = await searchResponsePromise;
+    const results = await expectJsonResponse<SearchResponseRow[]>(searchResponse);
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.some((result) => result.matchedText.includes("떡볶이"))).toBe(true);
+
+    await expect(page).toHaveURL("/ko/search?q=%EB%96%A1%EB%B3%B6%EC%9D%B4");
+    await expect(page.getByTestId("search-result-navigation")).toBeVisible();
+    await expect(page.getByTestId("search-result-navigation")).toContainText(`(1/${results.length})`);
+    await expect(page.locator("#yt-player-container")).toBeVisible();
+    await expect(page.getByTestId("replay-context-btn")).toBeEnabled();
+    await expect(page.getByTestId("search-empty-state")).toBeHidden();
   });
 
-  test("Replay context with real video data", async ({ page }) => {
+  test('Search "전분당" loads transcript data for the selected result', async ({ page }) => {
     await page.goto("/");
-    await searchKeyword(page, "행복");
 
-    const replayBtn = page.locator('[data-testid="replay-context-btn"]');
-    await expect(replayBtn).toBeVisible({ timeout: 15_000 });
-    await expect(replayBtn).toBeEnabled();
-    await replayBtn.click();
+    const searchResponsePromise = waitForSearchResponse(page, "전분당");
+    const transcriptResponsePromise = waitForTranscriptResponse(page);
+    await searchKeyword(page, "전분당");
 
-    const playerContainer = page.locator("#yt-player-container");
-    await expect(playerContainer).toBeVisible();
+    const searchResponse = await searchResponsePromise;
+    const results = await expectJsonResponse<SearchResponseRow[]>(searchResponse);
+    expect(results.length).toBeGreaterThan(0);
+
+    const firstResult = results[0];
+    if (!firstResult) {
+      throw new Error("Expected at least one fixture-backed result for 전분당.");
+    }
+
+    expect(firstResult.matchedText).toContain("전분당");
+
+    const transcriptResponse = await transcriptResponsePromise;
+    expect(transcriptResponse.url()).toContain(`${firstResult.videoId}.json`);
+    const transcriptChunks = await expectJsonResponse<TranscriptResponseChunk[]>(transcriptResponse);
+    expect(transcriptChunks.length).toBeGreaterThan(0);
+    expect(transcriptChunks.some((chunk) => chunk.text.includes("전분당"))).toBe(true);
+
+    await expect(page.getByTestId("chunk-viewer")).toBeVisible();
+    await expect(page.getByTestId("replay-context-btn")).toBeEnabled();
+    await expect(page.getByTestId("search-empty-state")).toBeHidden();
+  });
+
+  test('Search "죽마고우" exposes multi-result navigation from live data', async ({ page }) => {
+    await page.goto("/");
+
+    const searchResponsePromise = waitForSearchResponse(page, "죽마고우");
+    await searchKeyword(page, "죽마고우");
+
+    const searchResponse = await searchResponsePromise;
+    const results = await expectJsonResponse<SearchResponseRow[]>(searchResponse);
+    expect(results.length).toBeGreaterThan(1);
+    expect(results.some((result) => result.matchedText.includes("죽마고우"))).toBe(true);
+
+    await expect(page.getByTestId("search-result-navigation")).toBeVisible();
+    await expect(page.getByTestId("search-result-navigation")).toContainText(`(1/${results.length})`);
+    await expect(page.getByRole("button", { name: "Next" })).toBeEnabled();
+  });
+
+  test("a nonce keyword stays empty when the dataset does not contain it", async ({ page }) => {
+    const keyword = `zz-codex-e2e-${Date.now()}-nohit`;
+
+    await page.goto("/");
+
+    const searchResponsePromise = waitForSearchResponse(page, keyword);
+    await searchKeyword(page, keyword);
+
+    const searchResponse = await searchResponsePromise;
+    const results = await expectJsonResponse<SearchResponseRow[]>(searchResponse);
+    expect(results).toEqual([]);
+
+    await expect(page.getByTestId("search-empty-state")).toBeVisible();
+    await expect(page.getByText(EMPTY_STATE_TEXT).first()).toBeVisible();
+    await expect(page.getByTestId("search-result-navigation")).toBeHidden();
+    await expect(page.getByTestId("replay-context-btn")).toBeHidden();
+  });
+
+  test('Search "과징금" keeps replay enabled for a live result', async ({ page }) => {
+    await page.goto("/");
+
+    const searchResponsePromise = waitForSearchResponse(page, "과징금");
+    await searchKeyword(page, "과징금");
+
+    const searchResponse = await searchResponsePromise;
+    const results = await expectJsonResponse<SearchResponseRow[]>(searchResponse);
+    expect(results.length).toBeGreaterThan(0);
+    expect(results.some((result) => result.matchedText.includes("과징금"))).toBe(true);
+
+    const replayButton = page.getByTestId("replay-context-btn");
+    await expect(replayButton).toBeVisible();
+    await expect(replayButton).toBeEnabled();
+    await replayButton.click();
+    await expect(page.locator("#yt-player-container")).toBeVisible();
   });
 });

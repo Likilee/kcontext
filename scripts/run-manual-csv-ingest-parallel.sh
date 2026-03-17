@@ -2,8 +2,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DEFAULT_CSV_PATH="$ROOT_DIR/docs/manual_ko_subtitle_videos.csv"
-WORKSPACE="$ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_full"
+RAW_CSV_PATH="$ROOT_DIR/docs/manual_ko_subtitle_videos.csv"
+DEFAULT_CSV_PATH="$ROOT_DIR/docs/manual_ko_subtitle_videos_filtered.csv"
+WORKSPACE="$ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_filtered_full"
 MAX_VIDEOS=500
 CONCURRENCY=4
 ENV_FILE="$ROOT_DIR/.env.decodo"
@@ -13,6 +14,7 @@ STATE_LOCK_PATH=""
 ORCHESTRATOR_LOCK_PATH=""
 IN_FLIGHT_PATH=""
 STOP_REASON_PATH=""
+SKIPPED_IDS_PATH=""
 RUN_STARTED_AT=""
 TOTAL_CLAIMED=0
 TOTAL_COMPLETED=0
@@ -28,7 +30,8 @@ Usage: $0 [options]
 
 Options:
   --workspace <path>       Main workspace to use as source of truth
-                           (default: $ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_full)
+                           (default: $ROOT_DIR/cli/.state/manual_csv_ingest/manual_ko_filtered_full)
+                           Default source CSV: $ROOT_DIR/docs/manual_ko_subtitle_videos_filtered.csv
   --max-videos <n>         Maximum number of videos to process in this run (default: 500)
   --concurrency <n>        Number of concurrent workers (default: 4)
   --env-file <path>        Decodo env file to source (default: $ROOT_DIR/.env.decodo)
@@ -97,11 +100,20 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
+(
+  cd "$ROOT_DIR/cli"
+  uv run python -m kcontext_cli.manual_csv_source \
+    --selected "$DEFAULT_CSV_PATH" \
+    --raw "$RAW_CSV_PATH" \
+    --filtered "$DEFAULT_CSV_PATH"
+)
+
 mkdir -p "$WORKSPACE" "$WORKSPACE/raw" "$WORKSPACE/build" "$WORKSPACE/logs"
 STATE_LOCK_PATH="$WORKSPACE/.parallel_ingest.lock"
 ORCHESTRATOR_LOCK_PATH="$WORKSPACE/.parallel_orchestrator.lock"
 IN_FLIGHT_PATH="$WORKSPACE/.parallel_in_flight_ids.txt"
 STOP_REASON_PATH="$WORKSPACE/.parallel_stop_reason"
+SKIPPED_IDS_PATH="$WORKSPACE/skipped_ids.txt"
 RUN_STARTED_AT="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 
 cleanup() {
@@ -171,28 +183,27 @@ remaining_path = workspace / "remaining_ids.txt"
 failed_path = workspace / "failed_attempts.tsv"
 summary_path = workspace / "run_summary.json"
 in_flight_path = workspace / ".parallel_in_flight_ids.txt"
+skipped_path = workspace / "skipped_ids.txt"
 
 workspace.mkdir(parents=True, exist_ok=True)
 succeeded_path.touch()
+skipped_path.touch()
 in_flight_path.write_text("", encoding="utf-8")
 if not failed_path.exists():
     failed_path.write_text("timestamp\tvideo_id\tstage\terror_class\tlog_path\n", encoding="utf-8")
 
-if not planned_path.exists():
-    if not default_csv_path.exists():
-        raise SystemExit(
-            f"Error: planned_ids.txt is missing and default CSV was not found: {default_csv_path}"
-        )
+if not default_csv_path.exists():
+    raise SystemExit(f"Error: default CSV was not found: {default_csv_path}")
 
-    try:
-        ordered_ids = load_unique_video_ids(default_csv_path)
-    except ValueError as exc:
-        raise SystemExit(f"Error: {exc}") from exc
+try:
+    ordered_ids = load_unique_video_ids(default_csv_path)
+except ValueError as exc:
+    raise SystemExit(f"Error: {exc}") from exc
 
-    planned_path.write_text(
-        "\n".join(ordered_ids) + ("\n" if ordered_ids else ""),
-        encoding="utf-8",
-    )
+planned_path.write_text(
+    "\n".join(ordered_ids) + ("\n" if ordered_ids else ""),
+    encoding="utf-8",
+)
 
 planned_ids = [line.strip() for line in planned_path.read_text(encoding="utf-8").splitlines() if line.strip()]
 succeeded_ids = {
@@ -200,7 +211,14 @@ succeeded_ids = {
     for line in succeeded_path.read_text(encoding="utf-8").splitlines()
     if line.strip()
 }
-remaining_ids = [video_id for video_id in planned_ids if video_id not in succeeded_ids]
+skipped_ids = {
+    line.strip()
+    for line in skipped_path.read_text(encoding="utf-8").splitlines()
+    if line.strip()
+}
+remaining_ids = [
+    video_id for video_id in planned_ids if video_id not in succeeded_ids and video_id not in skipped_ids
+]
 remaining_path.write_text(
     "\n".join(remaining_ids) + ("\n" if remaining_ids else ""),
     encoding="utf-8",
@@ -216,6 +234,7 @@ if not summary_path.exists():
                 "planned_count": len(planned_ids),
                 "succeeded_count": len(succeeded_ids),
                 "remaining_count": len(remaining_ids),
+                "skipped_count": len(skipped_ids),
                 "failed_attempt_count": max(0, len(failed_path.read_text(encoding="utf-8").splitlines()) - 1),
                 "last_run": {
                     "processed": 0,
@@ -248,6 +267,8 @@ planned_path = workspace / "planned_ids.txt"
 succeeded_path = workspace / "succeeded_ids.txt"
 remaining_path = workspace / "remaining_ids.txt"
 in_flight_path = workspace / ".parallel_in_flight_ids.txt"
+skipped_path = workspace / "skipped_ids.txt"
+failed_path = workspace / "failed_attempts.tsv"
 
 lock_path.parent.mkdir(parents=True, exist_ok=True)
 with lock_path.open("a+", encoding="utf-8") as lock_file:
@@ -268,15 +289,39 @@ with lock_path.open("a+", encoding="utf-8") as lock_file:
         for line in in_flight_path.read_text(encoding="utf-8").splitlines()
         if line.strip()
     }
+    skipped_ids = {
+        line.strip()
+        for line in skipped_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    }
+
+    failure_counts: dict[str, int] = {}
+    if failed_path.exists():
+        for row in failed_path.read_text(encoding="utf-8").splitlines()[1:]:
+            parts = row.split("\t")
+            if len(parts) != 5:
+                continue
+            failure_video_id = parts[1].strip()
+            if not failure_video_id:
+                continue
+            failure_counts[failure_video_id] = failure_counts.get(failure_video_id, 0) + 1
+
+    for failed_video_id, failure_count in failure_counts.items():
+        if failure_count >= 3 and failed_video_id not in succeeded_ids:
+            skipped_ids.add(failed_video_id)
 
     remaining_ids = [
         video_id
         for video_id in planned_ids
-        if video_id not in succeeded_ids and video_id not in in_flight_ids
+        if video_id not in succeeded_ids and video_id not in in_flight_ids and video_id not in skipped_ids
     ]
 
     if not remaining_ids:
         remaining_path.write_text("", encoding="utf-8")
+        skipped_path.write_text(
+            "\n".join(sorted(skipped_ids)) + ("\n" if skipped_ids else ""),
+            encoding="utf-8",
+        )
         print("")
         raise SystemExit(0)
 
@@ -290,6 +335,10 @@ with lock_path.open("a+", encoding="utf-8") as lock_file:
     )
     remaining_path.write_text(
         "\n".join(updated_remaining) + ("\n" if updated_remaining else ""),
+        encoding="utf-8",
+    )
+    skipped_path.write_text(
+        "\n".join(sorted(skipped_ids)) + ("\n" if skipped_ids else ""),
         encoding="utf-8",
     )
     print(video_id)
@@ -332,6 +381,7 @@ remaining_path = workspace / "remaining_ids.txt"
 failed_path = workspace / "failed_attempts.tsv"
 summary_path = workspace / "run_summary.json"
 in_flight_path = workspace / ".parallel_in_flight_ids.txt"
+skipped_path = workspace / "skipped_ids.txt"
 main_raw_dir = workspace / "raw"
 main_build_dir = workspace / "build"
 main_log_dir = workspace / "logs"
@@ -348,6 +398,7 @@ main_raw_dir.mkdir(parents=True, exist_ok=True)
 main_build_dir.mkdir(parents=True, exist_ok=True)
 main_log_dir.mkdir(parents=True, exist_ok=True)
 succeeded_path.touch()
+skipped_path.touch()
 in_flight_path.touch()
 if not failed_path.exists():
     failed_path.write_text("timestamp\tvideo_id\tstage\terror_class\tlog_path\n", encoding="utf-8")
@@ -415,21 +466,44 @@ with lock_path.open("a+", encoding="utf-8") as lock_file:
         for line in in_flight_path.read_text(encoding="utf-8").splitlines()
         if line.strip()
     }
+    skipped_ids = {
+        line.strip()
+        for line in skipped_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    }
     in_flight_ids.discard(video_id)
 
     if worker_success and video_id not in succeeded_set:
         succeeded_ids.append(video_id)
         succeeded_set.add(video_id)
+        skipped_ids.discard(video_id)
 
     if failure_rows:
         with failed_path.open("a", encoding="utf-8") as file_obj:
             for row in failure_rows:
                 file_obj.write(f"{row}\n")
 
+    failure_counts: dict[str, int] = {}
+    for row in failed_path.read_text(encoding="utf-8").splitlines()[1:]:
+        parts = row.split("\t")
+        if len(parts) != 5:
+            continue
+        failure_video_id = parts[1].strip()
+        if not failure_video_id:
+            continue
+        failure_counts[failure_video_id] = failure_counts.get(failure_video_id, 0) + 1
+
+    skipped_this_video = False
+    if not worker_success and failure_counts.get(video_id, 0) >= 3 and video_id not in succeeded_set:
+        skipped_ids.add(video_id)
+        skipped_this_video = True
+
     remaining_ids = [
         claimed_video_id
         for claimed_video_id in planned_ids
-        if claimed_video_id not in succeeded_set and claimed_video_id not in in_flight_ids
+        if claimed_video_id not in succeeded_set
+        and claimed_video_id not in in_flight_ids
+        and claimed_video_id not in skipped_ids
     ]
 
     succeeded_path.write_text(
@@ -438,6 +512,10 @@ with lock_path.open("a+", encoding="utf-8") as lock_file:
     )
     in_flight_path.write_text(
         "\n".join(sorted(in_flight_ids)) + ("\n" if in_flight_ids else ""),
+        encoding="utf-8",
+    )
+    skipped_path.write_text(
+        "\n".join(sorted(skipped_ids)) + ("\n" if skipped_ids else ""),
         encoding="utf-8",
     )
     remaining_path.write_text(
@@ -461,6 +539,7 @@ with lock_path.open("a+", encoding="utf-8") as lock_file:
             "planned_count": len(planned_ids),
             "succeeded_count": len(succeeded_set),
             "remaining_count": len(remaining_ids),
+            "skipped_count": len(skipped_ids),
             "failed_attempt_count": failed_attempt_count,
             "last_run": {
                 "started_at": run_started_at,
@@ -476,12 +555,21 @@ with lock_path.open("a+", encoding="utf-8") as lock_file:
                 "concurrency": concurrency,
                 "max_videos": max_videos,
                 "worker_video_id": video_id,
+                "worker_skipped": skipped_this_video,
             },
         }
     )
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")
 
-print(json.dumps({"worker_success": worker_success, "remaining_count": len(remaining_ids)}))
+print(
+    json.dumps(
+        {
+            "worker_success": worker_success,
+            "remaining_count": len(remaining_ids),
+            "worker_skipped": skipped_this_video,
+        }
+    )
+)
 PY
 }
 
@@ -539,10 +627,17 @@ with lock_path.open("a+", encoding="utf-8") as lock_file:
         for line in in_flight_path.read_text(encoding="utf-8").splitlines()
         if line.strip()
     }
+    skipped_ids = {
+        line.strip()
+        for line in skipped_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    }
     remaining_ids = [
         video_id
         for video_id in planned_ids
-        if video_id not in set(succeeded_ids) and video_id not in in_flight_ids
+        if video_id not in set(succeeded_ids)
+        and video_id not in in_flight_ids
+        and video_id not in skipped_ids
     ]
     remaining_path.write_text(
         "\n".join(remaining_ids) + ("\n" if remaining_ids else ""),
@@ -565,6 +660,7 @@ with lock_path.open("a+", encoding="utf-8") as lock_file:
             "planned_count": len(planned_ids),
             "succeeded_count": len(set(succeeded_ids)),
             "remaining_count": len(remaining_ids),
+            "skipped_count": len(skipped_ids),
             "failed_attempt_count": failed_attempt_count,
             "last_run": {
                 "started_at": run_started_at,
@@ -600,10 +696,12 @@ summary_path = temp_workspace / "run_summary.json"
 succeeded_path = temp_workspace / "succeeded_ids.txt"
 
 stop_reason = "unknown"
+worker_skipped = False
 if summary_path.exists():
     try:
         summary = json.loads(summary_path.read_text(encoding="utf-8"))
         stop_reason = str(summary.get("last_run", {}).get("stop_reason") or stop_reason)
+        worker_skipped = bool(summary.get("last_run", {}).get("worker_skipped"))
     except json.JSONDecodeError:
         pass
 
@@ -615,7 +713,7 @@ if succeeded_path.exists():
         if line.strip()
     }
 
-print(json.dumps({"success": success, "stop_reason": stop_reason}))
+print(json.dumps({"success": success, "stop_reason": stop_reason, "worker_skipped": worker_skipped}))
 PY
 }
 
@@ -657,10 +755,12 @@ handle_worker_completion() {
   local worker_json=""
   local worker_success=""
   local worker_stop_reason=""
+  local worker_skipped=""
 
   worker_json="$(describe_worker_result "$temp_workspace" "$video_id")"
   worker_success="$(printf '%s' "$worker_json" | python3 -c 'import json,sys; print("1" if json.load(sys.stdin)["success"] else "0")')"
   worker_stop_reason="$(printf '%s' "$worker_json" | python3 -c 'import json,sys; print(json.load(sys.stdin)["stop_reason"])')"
+  worker_skipped="$(printf '%s' "$worker_json" | python3 -c 'import json,sys; print("1" if json.load(sys.stdin).get("worker_skipped") else "0")')"
 
   TOTAL_COMPLETED=$((TOTAL_COMPLETED + 1))
   if [[ "$worker_success" == "1" ]]; then
@@ -686,6 +786,9 @@ handle_worker_completion() {
     echo "[slot ${slot}] ${video_id} succeeded (pid=${pid})"
   else
     echo "[slot ${slot}] ${video_id} failed stop_reason=${worker_stop_reason} exit_code=${exit_code}" >&2
+    if [[ "$worker_skipped" == "1" ]]; then
+      echo "[slot ${slot}] ${video_id} quarantined after 3 failed attempts" >&2
+    fi
   fi
 
   if [[ -z "$GLOBAL_STOP_REASON" ]]; then

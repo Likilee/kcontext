@@ -13,8 +13,9 @@ from supabase import create_client
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "http://127.0.0.1:54321")
-SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY", "")
 METADATA_STORAGE_BUCKET = "video-metadata"
+METADATA_CACHE_CONTROL = "public, max-age=86400, stale-while-revalidate=604800"
 METADATA_STORAGE_OPTION = typer.Option(
     ...,
     "-m",
@@ -44,12 +45,16 @@ def push_metadata(
 
     typer.echo(f"Uploading {metadata_storage.name} to Storage...", err=True)
     try:
-        supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+        supabase = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
         with open(metadata_storage, "rb") as file_obj:
             supabase.storage.from_(METADATA_STORAGE_BUCKET).upload(
                 path=f"{video_id}.json",
                 file=file_obj,
-                file_options={"content-type": "application/json", "upsert": "true"},
+                file_options={
+                    "cache-control": METADATA_CACHE_CONTROL,
+                    "content-type": "application/json",
+                    "upsert": "true",
+                },
             )
     except Exception as exc:
         typer.echo(f"Error: Metadata storage upload failed: {exc}", err=True)

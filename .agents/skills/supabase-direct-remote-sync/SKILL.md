@@ -12,9 +12,15 @@ Prompt for the remote DB password every run. Do not persist it to files or shell
 
 ## Quick Start
 
-1. Ensure the repo has `.env.remote-sync` with `REMOTE_PROJECT_REF`, `REMOTE_SUPABASE_URL`, and `REMOTE_SUPABASE_SERVICE_ROLE_KEY`.
-2. Decide whether to run incremental sync or a full re-sync.
-3. Run the wrapper script:
+1. If running inside a Codex worktree, bootstrap local env files first:
+
+```bash
+./scripts/bootstrap-worktree-env.sh --symlink
+```
+
+2. Ensure the repo has `.env.remote-sync` with `REMOTE_PROJECT_REF`, `REMOTE_SUPABASE_URL`, and `REMOTE_SUPABASE_SERVICE_ROLE_KEY`.
+3. Decide whether to run incremental sync or a full re-sync.
+4. Run the wrapper script:
 
 ```bash
 /Users/kihoon/Documents/Project/dozboon/products/kcontext/.agents/skills/supabase-direct-remote-sync/scripts/run-direct-remote-sync.sh --status
@@ -23,6 +29,9 @@ Prompt for the remote DB password every run. Do not persist it to files or shell
 ```
 
 The wrapper always asks for the remote DB password before it runs a sync or status command.
+The default incremental state DB now points at the filtered canonical corpus:
+`/Users/kihoon/Documents/Project/dozboon/products/kcontext/cli/.state/direct_remote_sync_filtered.sqlite`.
+Read `docs/codex-worktree-bootstrap.md` if `.env.remote-sync` is missing in the current worktree.
 
 ## Workflow
 
@@ -37,6 +46,14 @@ The wrapper always asks for the remote DB password before it runs a sync or stat
 6. Report `processed`, `succeeded`, `failed`, `storage_mode`, `db_strategy`, and the latest synced IDs.
 
 Read [strategy.md](references/strategy.md) when choosing between incremental sync, full re-sync, or storage mode.
+
+## Operational Guidance
+
+- Prefer incremental runs that reuse the same state DB.
+- In practice, `rest` storage mode can time out on very large runs even when the sync is otherwise healthy.
+- Default to `--max-videos 100` to `--max-videos 200` for hosted sync runs unless S3 upload is available.
+- If a large run times out, do not reset state. Re-run with the same state DB and a smaller `--max-videos` value until `pending_estimate = 0`.
+- Always verify with `--status` after each run when syncing a large backlog.
 
 ## Strategy Rules
 

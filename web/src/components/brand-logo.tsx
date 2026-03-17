@@ -1,8 +1,16 @@
 import Image from "next/image";
 import { cn } from "@/components/ui/utils";
 import type { SiteConfig } from "@/lib/site-config";
-import horizontalLogo from "../../public/brand/tubelang-ko-horizontal.png";
-import verticalLogo from "../../public/brand/tubelang-ko-vertical.png";
+
+const HORIZONTAL_LOGO_DIMENSIONS = {
+  width: 695,
+  height: 144,
+} as const;
+
+const VERTICAL_LOGO_DIMENSIONS = {
+  width: 512,
+  height: 512,
+} as const;
 
 interface BrandLogoProps {
   siteConfig: SiteConfig;
@@ -11,7 +19,16 @@ interface BrandLogoProps {
 }
 
 export function BrandLogo({ siteConfig, variant, className }: BrandLogoProps) {
-  const logo = variant === "horizontal" ? horizontalLogo : verticalLogo;
+  const logo =
+    variant === "horizontal"
+      ? {
+          src: siteConfig.brandAssets.horizontalLogoPath,
+          ...HORIZONTAL_LOGO_DIMENSIONS,
+        }
+      : {
+          src: siteConfig.brandAssets.verticalLogoPath,
+          ...VERTICAL_LOGO_DIMENSIONS,
+        };
   const sizes =
     variant === "horizontal"
       ? "(max-width: 1024px) 184px, 232px"
@@ -19,11 +36,13 @@ export function BrandLogo({ siteConfig, variant, className }: BrandLogoProps) {
 
   return (
     <Image
-      src={logo}
+      src={logo.src}
       alt={`${siteConfig.appName} ${siteConfig.learningLanguageName}`}
       className={cn("block h-auto w-auto object-contain", className)}
       priority={variant === "vertical"}
       sizes={sizes}
+      width={logo.width}
+      height={logo.height}
     />
   );
 }

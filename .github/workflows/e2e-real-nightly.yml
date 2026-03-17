@@ -1,4 +1,4 @@
-name: E2E Real Data (Nightly)
+name: E2E CLI Integration (Nightly)
 
 on:
   schedule:
@@ -7,55 +7,5 @@ on:
 
 jobs:
   real-data-integration:
-    name: "Web: Real-data integration"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: "pnpm"
-          cache-dependency-path: web/pnpm-lock.yaml
-
-      - uses: astral-sh/setup-uv@v5
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - uses: supabase/setup-cli@v1
-        with:
-          version: 2.67.1
-
-      - name: Install web dependencies
-        run: pnpm -C web install --frozen-lockfile
-
-      - name: Install Playwright Chromium
-        run: pnpm -C web exec playwright install --with-deps chromium
-
-      - name: Install cli dependencies
-        run: cd cli && uv sync
-
-      - name: Run real-data integration flow
-        env:
-          CI: true
-        run: ./scripts/integration-test.sh
-
-      - name: Upload Playwright artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-real-data-artifacts
-          path: |
-            web/test-results
-            web/playwright-report
-          if-no-files-found: ignore
-
-      - name: Stop default Supabase stack
-        if: always()
-        run: supabase stop --workdir . --no-backup || true
+    name: "Web: Fixture-backed CLI integration"
+    uses: ./.github/workflows/reusable-web-e2e-real.yml

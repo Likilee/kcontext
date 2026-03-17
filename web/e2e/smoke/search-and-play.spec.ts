@@ -1,105 +1,154 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Response } from "@playwright/test";
 
 const EMPTY_STATE_TEXT = "even native speakers rarely use";
+const UI_READY_TIMEOUT_MS = 10_000;
+
+interface SearchResponseRow {
+  videoId: string;
+  startTime: number;
+  matchedText: string;
+}
+
+interface TranscriptResponseChunk {
+  start_time: number;
+  duration: number;
+  text: string;
+}
 
 async function searchKeyword(page: Page, keyword: string) {
-  const searchBar = page.locator('input[type="search"]').first();
+  const searchBar = page.locator('[data-tubelang-search-input="true"]').first();
   await expect(searchBar).toBeVisible();
   await searchBar.fill(keyword);
   await searchBar.press("Enter");
 }
 
-async function waitForSearchState(page: Page): Promise<"results" | "empty"> {
-  const summary = page.getByText("in native videos").first();
-  const empty = page.getByText(EMPTY_STATE_TEXT).first();
+function waitForSearchResponse(page: Page, keyword: string): Promise<Response> {
+  return page.waitForResponse((response) => {
+    if (response.request().method() !== "GET") {
+      return false;
+    }
 
-  await expect
-    .poll(
-      async () => {
-        const hasSummary = await summary
-          .isVisible()
-          .then((visible) => visible)
-          .catch(() => false);
-        if (hasSummary) {
-          return "results";
-        }
-
-        const hasEmpty = await empty
-          .isVisible()
-          .then((visible) => visible)
-          .catch(() => false);
-        return hasEmpty ? "empty" : "pending";
-      },
-      { timeout: 20_000 },
-    )
-    .not.toBe("pending");
-
-  const hasSummary = await summary
-    .isVisible()
-    .then((visible) => visible)
-    .catch(() => false);
-
-  return hasSummary ? "results" : "empty";
+    const url = new URL(response.url());
+    return url.pathname === "/api/search" && url.searchParams.get("q") === keyword;
+  });
 }
 
-test.describe("Tubelang User Scenarios", () => {
-  test("Scenario 1: Home search routes to /search?q=", async ({ page }) => {
+function waitForTranscriptResponse(page: Page, videoId?: string): Promise<Response> {
+  return page.waitForResponse((response) => {
+    if (response.request().method() !== "GET") {
+      return false;
+    }
+
+    const url = new URL(response.url());
+    if (!url.pathname.includes("/storage/v1/object/public/subtitles/")) {
+      return false;
+    }
+
+    return !videoId || url.pathname.endsWith(`/storage/v1/object/public/subtitles/${videoId}.json`);
+  });
+}
+
+async function expectJsonResponse<T>(response: Response, expectedStatus = 200): Promise<T> {
+  expect(response.status()).toBe(expectedStatus);
+  return (await response.json()) as T;
+}
+
+test.describe("Tubelang smoke E2E", () => {
+  test("search returns live results and enables the player controls", async ({ page }) => {
     await page.goto("/");
+
+    const searchResponsePromise = waitForSearchResponse(page, "김치찌개");
     await searchKeyword(page, "김치찌개");
 
-    await expect(page).toHaveURL(/\/search\?q=/);
+    const searchResponse = await searchResponsePromise;
+    const results = await expectJsonResponse<SearchResponseRow[]>(searchResponse);
+    expect(results.length).toBeGreaterThan(0);
+
+    const firstResult = results[0];
+    if (!firstResult) {
+      throw new Error("Expected at least one live search result for 김치찌개.");
+    }
+
+    expect(firstResult.matchedText).toContain("김치찌개");
+
+    await expect(page).toHaveURL("/ko/search?q=%EA%B9%80%EC%B9%98%EC%B0%8C%EA%B0%9C", {
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("search-result-navigation")).toBeVisible({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("search-result-navigation")).toContainText(
+      `(1/${results.length})`,
+      { timeout: UI_READY_TIMEOUT_MS },
+    );
+    await expect(page.locator("#yt-player-container")).toBeVisible({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("replay-context-btn")).toBeVisible({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("replay-context-btn")).toBeEnabled({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("search-empty-state")).toBeHidden();
   });
 
-  test("Scenario 2: Search page resolves into player or empty state", async ({ page }) => {
+  test("search loads the transcript object for the selected result", async ({ page }) => {
     await page.goto("/");
+
+    const searchResponsePromise = waitForSearchResponse(page, "행복해요");
+    const transcriptResponsePromise = waitForTranscriptResponse(page);
+
     await searchKeyword(page, "행복해요");
 
-    const state = await waitForSearchState(page);
-
-    if (state === "results") {
-      const playerContainer = page.locator("#yt-player-container");
-      await expect(playerContainer).toBeVisible({ timeout: 15_000 });
-
-      const chunkViewer = page.locator('[data-testid="chunk-viewer"]');
-      await expect(chunkViewer).toBeVisible();
-    } else {
-      await expect(page.getByText(EMPTY_STATE_TEXT).first()).toBeVisible();
+    const searchResponse = await searchResponsePromise;
+    const results = await expectJsonResponse<SearchResponseRow[]>(searchResponse);
+    const firstResult = results[0];
+    if (!firstResult) {
+      throw new Error("Expected a live search result for 행복해요.");
     }
+
+    expect(firstResult.matchedText).toContain("행복해요");
+
+    const transcriptResponse = await transcriptResponsePromise;
+    expect(transcriptResponse.url()).toContain(`${firstResult.videoId}.json`);
+    const transcriptChunks = await expectJsonResponse<TranscriptResponseChunk[]>(transcriptResponse);
+    expect(transcriptChunks.length).toBeGreaterThan(0);
+
+    const highlightedChunk = transcriptChunks.find((chunk) => chunk.text.includes("행복해요"));
+    expect(highlightedChunk?.text).toContain("행복해요");
+
+    await expect(page.getByTestId("search-result-navigation")).toBeVisible({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("search-result-navigation")).toContainText(
+      `(1/${results.length})`,
+      { timeout: UI_READY_TIMEOUT_MS },
+    );
+    await expect(page.getByTestId("chunk-viewer")).toBeVisible({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("replay-context-btn")).toBeEnabled({
+      timeout: UI_READY_TIMEOUT_MS,
+    });
+    await expect(page.getByTestId("search-empty-state")).toBeHidden();
   });
 
-  test("Scenario 3: Replay button works when results exist", async ({ page }) => {
+  test("unknown search stays in empty state and does not expose player controls", async ({ page }) => {
+    const keyword = `zz-codex-e2e-${Date.now()}-nohit`;
+
     await page.goto("/");
-    await searchKeyword(page, "행복해요");
 
-    const state = await waitForSearchState(page);
+    const searchResponsePromise = waitForSearchResponse(page, keyword);
+    await searchKeyword(page, keyword);
 
-    if (state === "results") {
-      const replayButton = page.locator('[data-testid="replay-context-btn"]');
-      await expect(replayButton).toBeVisible({ timeout: 15_000 });
-      await expect(replayButton).toBeEnabled();
-      await replayButton.click();
-      await expect(replayButton).toBeVisible();
-    } else {
-      await expect(page.getByText(EMPTY_STATE_TEXT).first()).toBeVisible();
-    }
-  });
+    const searchResponse = await searchResponsePromise;
+    const results = await expectJsonResponse<SearchResponseRow[]>(searchResponse);
+    expect(results).toEqual([]);
 
-  test("Scenario 4: Empty search results shows helpful message", async ({ page }) => {
-    await page.goto("/");
-    await searchKeyword(page, "zxcvbnmasdfghjkl1234567890");
-    const emptyMessage = page.getByText(EMPTY_STATE_TEXT);
-    await expect(emptyMessage).toBeVisible({ timeout: 20_000 });
-  });
-
-  test("Scenario 5: Search shows summary or empty state", async ({ page }) => {
-    await page.goto("/");
-    await searchKeyword(page, "안녕하세요");
-
-    const state = await waitForSearchState(page);
-    if (state === "results") {
-      await expect(page.getByText("in native videos").first()).toBeVisible({ timeout: 15_000 });
-    } else {
-      await expect(page.getByText(EMPTY_STATE_TEXT).first()).toBeVisible();
-    }
+    await expect(page.getByTestId("search-empty-state")).toBeVisible();
+    await expect(page.getByText(EMPTY_STATE_TEXT).first()).toBeVisible();
+    await expect(page.getByTestId("search-result-navigation")).toBeHidden();
+    await expect(page.getByTestId("replay-context-btn")).toBeHidden();
   });
 });
