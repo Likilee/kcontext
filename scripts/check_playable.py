@@ -5,12 +5,14 @@ CSV의 video_id들이 재생 가능한지 YouTube oEmbed API로 확인.
 - 404: 삭제/비공개
 결과: unplayable 목록 + 필터링된 CSV 생성
 """
+
 import csv
-import time
 import random
-import requests
-from pathlib import Path
+import time
 from datetime import datetime
+from pathlib import Path
+
+import requests
 
 BASE_DIR = Path(__file__).parent.parent
 CSV_PATH = BASE_DIR / "docs" / "manual_ko_subtitle_videos.csv"
@@ -27,12 +29,27 @@ PAUSE_DURATION = (5, 10)
 PROGRESS_PATH = BASE_DIR / "docs" / "check_playable_progress.csv"
 
 
+def dedupe_rows_by_video_id(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Keep the first row for each video_id while preserving input order."""
+    deduped_rows: list[dict[str, str]] = []
+    seen_video_ids: set[str] = set()
+
+    for row in rows:
+        video_id = row["video_id"]
+        if video_id in seen_video_ids:
+            continue
+        seen_video_ids.add(video_id)
+        deduped_rows.append(row)
+
+    return deduped_rows
+
+
 def load_csv(path):
-    rows = []
-    with open(path, "r", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            rows.append(row)
-    return rows
+    with open(path, encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+        fieldnames = list(reader.fieldnames or [])
+    return fieldnames, rows
 
 
 def check_oembed(video_id):
@@ -54,7 +71,7 @@ def load_progress():
     """Load already-checked results for resume."""
     checked = {}
     if PROGRESS_PATH.exists():
-        with open(PROGRESS_PATH, "r", encoding="utf-8") as f:
+        with open(PROGRESS_PATH, encoding="utf-8") as f:
             for row in csv.DictReader(f):
                 checked[row["video_id"]] = int(row["status"])
     return checked
@@ -69,7 +86,7 @@ def save_progress_row(video_id, status):
 
 
 def main():
-    rows = load_csv(CSV_PATH)
+    fieldnames, rows = load_csv(CSV_PATH)
     total = len(rows)
     print(f"총 {total}개 영상 확인 시작 ({datetime.now().strftime('%H:%M:%S')})")
 
@@ -87,7 +104,7 @@ def main():
     for i, row in enumerate(rows):
         vid = row["video_id"]
 
-        if vid in already_checked:
+        if vid in results:
             continue
 
         status = check_oembed(vid)
@@ -108,13 +125,21 @@ def main():
         new_checks += 1
 
         if status != 200:
-            label = "임베딩차단" if status == 401 else "삭제/비공개" if status == 404 else f"HTTP{status}"
+            if status == 401:
+                label = "임베딩차단"
+            elif status == 404:
+                label = "삭제/비공개"
+            else:
+                label = f"HTTP{status}"
             print(f"  [{i+1}/{total}] {vid} — {label}")
 
         if new_checks % BATCH_SIZE == 0:
             playable = sum(1 for v in results.values() if v == 200)
             unplayable = sum(1 for v in results.values() if v != 200)
-            print(f"  --- {len(results)}/{total} 완료 (재생가능: {playable}, 불가: {unplayable}) ---")
+            print(
+                f"  --- {len(results)}/{total} 완료 "
+                f"(재생가능: {playable}, 불가: {unplayable}) ---"
+            )
 
         # Rate limiting
         if new_checks % PAUSE_EVERY == 0:
@@ -140,15 +165,27 @@ def main():
             row_with_status["status"] = status
             unplayable_rows.append(row_with_status)
 
+    deduped_playable_rows = dedupe_rows_by_video_id(playable_rows)
+    deduped_unplayable_rows = dedupe_rows_by_video_id(unplayable_rows)
+    duplicate_rows_removed = (
+        len(playable_rows)
+        - len(deduped_playable_rows)
+        + len(unplayable_rows)
+        - len(deduped_unplayable_rows)
+    )
+    playable_rows = deduped_playable_rows
+    unplayable_rows = deduped_unplayable_rows
+
     # Filtered CSV
     with open(FILTERED_CSV_PATH, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["channel_id", "channel_name", "video_id"])
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(playable_rows)
 
     # Unplayable CSV
     with open(UNPLAYABLE_CSV_PATH, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["channel_id", "channel_name", "video_id", "status"])
+        unplayable_fieldnames = fieldnames if "status" in fieldnames else [*fieldnames, "status"]
+        writer = csv.DictWriter(f, fieldnames=unplayable_fieldnames)
         writer.writeheader()
         writer.writerows(unplayable_rows)
 
@@ -157,6 +194,8 @@ def main():
     print(f"  전체: {total}")
     print(f"  재생 가능: {len(playable_rows)}")
     print(f"  재생 불가: {len(unplayable_rows)}")
+    if duplicate_rows_removed:
+        print(f"  중복 video_id 제거: {duplicate_rows_removed}")
     print(f"  필터링 CSV: {FILTERED_CSV_PATH}")
     print(f"  재생불가 CSV: {UNPLAYABLE_CSV_PATH}")
     print(f"{'='*60}")
