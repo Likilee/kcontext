@@ -1,7 +1,7 @@
 import { act, createElement, forwardRef, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { KOREAN_SITE_CONFIG } from "@/lib/site-config";
+import { getSiteConfig } from "@/lib/site-config";
 import { SearchPageClient } from "./search-page-client";
 
 interface MockPlayerProps {
@@ -16,6 +16,7 @@ const useSubtitleSyncMock = vi.fn();
 const pushMock = vi.fn();
 const searchParamsGetMock = vi.fn();
 const roots: Array<{ container: HTMLDivElement; root: ReturnType<typeof createRoot> }> = [];
+const siteConfig = getSiteConfig({ learningLanguageCode: "ko", uiLanguageCode: "en" });
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -86,7 +87,7 @@ function renderSearchPageClient() {
 
   const root = createRoot(container);
   act(() => {
-    root.render(createElement(SearchPageClient, { siteConfig: KOREAN_SITE_CONFIG }));
+    root.render(createElement(SearchPageClient, { siteConfig }));
   });
 
   roots.push({ container, root });
@@ -147,7 +148,7 @@ describe("SearchPageClient", () => {
     }
 
     act(() => {
-      root.render(createElement(SearchPageClient, { siteConfig: KOREAN_SITE_CONFIG }));
+      root.render(createElement(SearchPageClient, { siteConfig }));
     });
 
     const secondProps = capturedPlayerProps.at(-1);

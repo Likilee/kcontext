@@ -16,7 +16,6 @@ interface TranscriptResponseChunk {
   text: string;
 }
 
-async function mockYouTubeIframeApi(page: Page) {
 type YouTubeIframeApiMode = "ready" | "throw-on-init";
 
 async function mockYouTubeIframeApi(page: Page, mode: YouTubeIframeApiMode) {
