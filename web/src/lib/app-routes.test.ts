@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  BLOG_INDEX_PATH,
+  getBlogPostPath,
   getCanonicalSearch,
   getDefaultLearningHomePath,
   getDefaultLearningSearchPagePath,
@@ -8,8 +10,6 @@ import {
   getLearningSearchPagePath,
   getLearningSearchPath,
   getUiLanguageSwitchPath,
-  BLOG_INDEX_PATH,
-  getBlogPostPath,
 } from "./app-routes";
 
 describe("app-routes", () => {
