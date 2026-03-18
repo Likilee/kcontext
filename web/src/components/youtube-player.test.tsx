@@ -31,7 +31,12 @@ interface MockPlayerOptions {
   };
 }
 
-type MockPlayerConstructor = new (elementId: string, options: MockPlayerOptions) => MockPlayer;
+type MockPlayerMountTarget = HTMLElement | string;
+
+type MockPlayerConstructor = new (
+  mountTarget: MockPlayerMountTarget,
+  options: MockPlayerOptions,
+) => MockPlayer;
 
 type MockYouTubeWindow = {
   YT?: {
@@ -97,7 +102,7 @@ function createThrowingPlayerConstructor(message: string): MockPlayerConstructor
 }
 
 function createReadyPlayerConstructor(): MockPlayerConstructor {
-  return function MockPlayer(_elementId: string, options: MockPlayerOptions) {
+  return function MockPlayer(_mountTarget: MockPlayerMountTarget, options: MockPlayerOptions) {
     return createReadyPlayer(options);
   } as unknown as MockPlayerConstructor;
 }
@@ -105,7 +110,10 @@ function createReadyPlayerConstructor(): MockPlayerConstructor {
 function createRetryingPlayerConstructor() {
   let callCount = 0;
 
-  const playerConstructor = function MockPlayer(_elementId: string, options: MockPlayerOptions) {
+  const playerConstructor = function MockPlayer(
+    _mountTarget: MockPlayerMountTarget,
+    options: MockPlayerOptions,
+  ) {
     callCount += 1;
     if (callCount === 1) {
       throw new Error("player init failed");
@@ -142,9 +150,23 @@ function renderPlayer(
   const renderedPlayer = { container, root };
   roots.push(renderedPlayer);
 
+  const rerender = (nextProps: Partial<ComponentProps<typeof YouTubePlayer>>) => {
+    act(() => {
+      root.render(
+        createElement(YouTubePlayer, {
+          ref,
+          videoId: "video-1",
+          playbackRate: 1,
+          ...nextProps,
+        }),
+      );
+    });
+  };
+
   return {
     container,
     ref,
+    rerender,
     unmount: () => {
       const renderedPlayerIndex = roots.indexOf(renderedPlayer);
       if (renderedPlayerIndex >= 0) {
@@ -157,6 +179,21 @@ function renderPlayer(
       container.remove();
     },
   };
+}
+
+function createDomReplacingPlayerConstructor(): MockPlayerConstructor {
+  return function MockPlayer(mountTarget: MockPlayerMountTarget, options: MockPlayerOptions) {
+    const mountElement =
+      mountTarget instanceof HTMLElement ? mountTarget : document.getElementById(mountTarget);
+    if (!(mountElement instanceof HTMLElement)) {
+      throw new Error("Expected player mount target to resolve to an element.");
+    }
+
+    const iframe = document.createElement("iframe");
+    mountElement.replaceWith(iframe);
+
+    return createReadyPlayer(options);
+  } as unknown as MockPlayerConstructor;
 }
 
 afterEach(() => {
@@ -346,5 +383,24 @@ describe("YouTubePlayer", () => {
       ).toBeNull();
       expect(onReady).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it("keeps rerenders stable when the YouTube iframe API replaces its mount node", async () => {
+    const onReady = vi.fn();
+
+    installPlayerConstructor(createDomReplacingPlayerConstructor());
+    const { container, rerender } = renderPlayer({ onReady });
+
+    await waitFor(() => {
+      expect(onReady).toHaveBeenCalledTimes(1);
+      expect(container.querySelector("#yt-player-container iframe")).not.toBeNull();
+    });
+
+    expect(() => {
+      rerender({ playbackRate: 1.25 });
+    }).not.toThrow();
+
+    expect(container.querySelector("#yt-player-container iframe")).not.toBeNull();
+    expect(container.querySelector('[data-testid="youtube-player-fallback"]')).toBeNull();
   });
 });

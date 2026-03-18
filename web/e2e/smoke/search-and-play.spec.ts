@@ -121,6 +121,12 @@ test.describe("Tubelang smoke E2E", () => {
     await expect(globalSearchInput).not.toBeFocused();
 
     await page.keyboard.press("Shift+Tab");
+    await expect(page.getByTestId("ui-language-btn-ko")).toBeFocused();
+
+    await page.keyboard.press("Shift+Tab");
+    await expect(page.getByTestId("ui-language-btn-en")).toBeFocused();
+
+    await page.keyboard.press("Shift+Tab");
     await expect(page.getByRole("button", { name: "Submit search" })).toBeFocused();
 
     await page.keyboard.press("Shift+Tab");

@@ -57,10 +57,34 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
     ref,
   ) {
     const playerRef = useRef<YT.Player | null>(null);
+    const playerMountHostRef = useRef<HTMLDivElement | null>(null);
     const [apiReady, setApiReady] = useState(false);
     const [playerError, setPlayerError] = useState<string | null>(null);
     const [retryCount, setRetryCount] = useState(0);
-    const iframeElementId = `yt-player-iframe-${retryCount}`;
+
+    const clearPlayerMountHost = useCallback(() => {
+      const host = playerMountHostRef.current;
+      if (!host) {
+        return;
+      }
+
+      host.textContent = "";
+    }, []);
+
+    const createPlayerMountElement = useCallback(() => {
+      const host = playerMountHostRef.current;
+      if (!host) {
+        return null;
+      }
+
+      clearPlayerMountHost();
+
+      const mountElement = document.createElement("div");
+      mountElement.id = `yt-player-iframe-${retryCount}`;
+      mountElement.className = "h-full w-full";
+      host.append(mountElement);
+      return mountElement;
+    }, [clearPlayerMountHost, retryCount]);
 
     const destroyPlayer = useCallback(() => {
       try {
@@ -69,7 +93,8 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
         // ignore cleanup errors
       }
       playerRef.current = null;
-    }, []);
+      clearPlayerMountHost();
+    }, [clearPlayerMountHost]);
 
     const markPlayerUnavailable = useCallback(() => {
       destroyPlayer();
@@ -247,7 +272,12 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       }
 
       try {
-        playerRef.current = new window.YT.Player(iframeElementId, {
+        const mountElement = createPlayerMountElement();
+        if (!mountElement) {
+          return;
+        }
+
+        playerRef.current = new window.YT.Player(mountElement.id, {
           videoId,
           playerVars: {
             autoplay: 1,
@@ -290,7 +320,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       }
     }, [
       apiReady,
-      iframeElementId,
+      createPlayerMountElement,
       markPlayerUnavailable,
       onReady,
       onStateChange,
@@ -347,7 +377,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
             </CardContent>
           </Card>
         ) : (
-          <div id={iframeElementId} className="h-full w-full" />
+          <div ref={playerMountHostRef} className="h-full w-full" />
         )}
       </div>
     );
