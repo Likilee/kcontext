@@ -1,10 +1,23 @@
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { KOREAN_SEARCH_PATH } from "@/lib/app-routes";
+import { getDefaultLearningSearchPagePath, getDefaultLearningSearchPath } from "@/lib/app-routes";
+import { resolveRequestedUiLanguageCode, UI_LANGUAGE_QUERY_PARAM } from "@/lib/site-config";
+import { getRequestUrl } from "../request-site-config";
 
 export default async function SearchPage() {
-  const requestHeaders = await headers();
-  const search = requestHeaders.get("x-search") ?? "";
+  const requestUrl = await getRequestUrl();
+  const keyword = requestUrl.searchParams.get("q") ?? "";
+  const requestedUiLanguageCode = resolveRequestedUiLanguageCode(
+    requestUrl.searchParams.get(UI_LANGUAGE_QUERY_PARAM),
+  );
 
-  redirect(`${KOREAN_SEARCH_PATH}${search}`);
+  if (!keyword.trim()) {
+    redirect(getDefaultLearningSearchPagePath(requestedUiLanguageCode));
+  }
+
+  redirect(
+    getDefaultLearningSearchPath({
+      keyword,
+      uiLanguageCode: requestedUiLanguageCode,
+    }),
+  );
 }

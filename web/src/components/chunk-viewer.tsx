@@ -11,6 +11,7 @@ interface ChunkViewerProps {
   isLoading: boolean;
   className?: string;
   contentClassName?: string;
+  loadingAriaLabel: string;
 }
 
 export function ChunkViewer({
@@ -19,13 +20,14 @@ export function ChunkViewer({
   isLoading,
   className,
   contentClassName,
+  loadingAriaLabel,
 }: ChunkViewerProps) {
   let content: ReactNode = null;
 
   if (isLoading) {
     content = (
       <output
-        aria-label="Loading subtitles"
+        aria-label={loadingAriaLabel}
         aria-live="polite"
         className="flex h-full flex-col justify-center gap-[var(--space-gap-group)]"
       >

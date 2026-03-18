@@ -9,6 +9,10 @@ interface PlayerControlsProps {
   onToggleSpeed: () => void;
   playbackRate: number;
   isDisabled: boolean;
+  replayContextLabel: string;
+  seekBackwardAriaLabel: string;
+  seekForwardAriaLabel: string;
+  togglePlaybackSpeedAriaLabel: string;
 }
 
 export function PlayerControls({
@@ -18,6 +22,10 @@ export function PlayerControls({
   onToggleSpeed,
   playbackRate,
   isDisabled,
+  replayContextLabel,
+  seekBackwardAriaLabel,
+  seekForwardAriaLabel,
+  togglePlaybackSpeedAriaLabel,
 }: PlayerControlsProps) {
   return (
     <div className="grid grid-cols-2 gap-[var(--space-gap-item)]">
@@ -28,9 +36,9 @@ export function PlayerControls({
         onClick={onReplayContext}
         disabled={isDisabled}
         className="col-span-2 font-semibold"
-        aria-label="Replay context"
+        aria-label={replayContextLabel}
       >
-        Replay context
+        {replayContextLabel}
       </Button>
 
       <Button
@@ -38,7 +46,7 @@ export function PlayerControls({
         variant="outline"
         onClick={onSeekBackward}
         disabled={isDisabled}
-        aria-label="Seek backward 5 seconds"
+        aria-label={seekBackwardAriaLabel}
       >
         -5s
       </Button>
@@ -48,7 +56,7 @@ export function PlayerControls({
         variant="outline"
         onClick={onSeekForward}
         disabled={isDisabled}
-        aria-label="Seek forward 5 seconds"
+        aria-label={seekForwardAriaLabel}
       >
         +5s
       </Button>
@@ -59,7 +67,7 @@ export function PlayerControls({
         onClick={onToggleSpeed}
         disabled={isDisabled}
         className="col-span-2"
-        aria-label="Toggle playback speed"
+        aria-label={togglePlaybackSpeedAriaLabel}
       >
         {`${playbackRate.toFixed(2).replace(".00", "")}x`}
       </Button>
