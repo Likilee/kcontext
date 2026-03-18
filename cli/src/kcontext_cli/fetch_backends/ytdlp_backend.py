@@ -16,9 +16,10 @@ from kcontext_cli.fetch_backends.base import (
     utc_now_iso,
 )
 from kcontext_cli.network.proxy import build_ytdlp_proxy_args, classify_proxy_failure_message
+from kcontext_cli.subtitle.manual_ko import find_manual_korean_subtitle_file
 from kcontext_cli.subtitle.parser import parse_json3_to_chunks
 
-YTDLP_SUBTITLE_LANGUAGE = "ko"
+YTDLP_SUBTITLE_LANGUAGE = "ko,ko.*"
 YTDLP_SUBTITLE_FORMAT = "json3"
 YTDLP_EXTRACTOR_ARGS = "youtube:skip=translated_subs"
 YTDLP_METADATA_TEMPLATE = (
@@ -110,15 +111,7 @@ def _parse_ytdlp_metadata(stdout: str) -> dict:
 
 
 def _find_json3_subtitle_file(directory: Path) -> Path | None:
-    preferred_matches = sorted(directory.glob("*.ko.json3"))
-    if preferred_matches:
-        return preferred_matches[0]
-
-    fallback_matches = sorted(directory.glob("*.json3"))
-    if fallback_matches:
-        return fallback_matches[0]
-
-    return None
+    return find_manual_korean_subtitle_file(sorted(directory.glob("*.json3")))
 
 
 def _normalize_metadata(

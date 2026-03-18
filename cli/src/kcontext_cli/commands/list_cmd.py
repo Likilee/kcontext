@@ -13,6 +13,7 @@ from kcontext_cli.network.proxy import (
     describe_proxy_target,
     resolve_youtube_proxy_url,
 )
+from kcontext_cli.subtitle.manual_ko import find_manual_korean_track_key
 
 PROBE_CACHE_FILE_OPTION = typer.Option(
     Path(".kcontext_manual_ko_probe_cache.json"),
@@ -92,7 +93,9 @@ def _has_manual_ko_subtitle(video_id: str, youtube_proxy_url: str | None) -> boo
         return False
 
     manual_subs = video_data.get("subtitles") or {}
-    return "ko" in manual_subs
+    if not isinstance(manual_subs, dict):
+        return False
+    return find_manual_korean_track_key(manual_subs) is not None
 
 
 def _load_probe_cache(cache_file: Path) -> dict[str, bool]:
