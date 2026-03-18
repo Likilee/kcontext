@@ -24,6 +24,8 @@ import { useSubtitleSync } from "@/lib/use-subtitle-sync";
 const repository = new SupabaseSubtitleRepository();
 const PLAYBACK_RATES = [0.75, 1, 1.25] as const;
 const PRE_ROLL_SECONDS = 0.7;
+const FOCUS_TARGET_CLASSNAME =
+  "rounded-[var(--radius-08)] focus:outline-none focus:ring-1 focus:ring-[var(--border-focus)]";
 
 interface SearchPageClientProps {
   siteConfig: SiteConfig;
@@ -38,6 +40,10 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
   );
 
   const playerRef = useRef<YouTubePlayerHandle | null>(null);
+  const resultsFocusTargetRef = useRef<HTMLDivElement | null>(null);
+  const emptyStateFocusTargetRef = useRef<HTMLDivElement | null>(null);
+  const errorFocusTargetRef = useRef<HTMLDivElement | null>(null);
+  const pendingFocusQueryRef = useRef<string | null>(null);
 
   const [searchInput, setSearchInput] = useState(query);
   const [playbackRate, setPlaybackRate] = useState<number>(1);
@@ -89,6 +95,42 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
     setSearchInput(query);
     search(query);
   }, [query, search]);
+
+  useEffect(() => {
+    if (!query) {
+      pendingFocusQueryRef.current = null;
+      return;
+    }
+
+    pendingFocusQueryRef.current = query;
+  }, [query]);
+
+  useEffect(() => {
+    if (!query || isLoading || keyword !== query || pendingFocusQueryRef.current !== query) {
+      return;
+    }
+
+    const focusTarget = error
+      ? errorFocusTargetRef.current
+      : selectedResult
+        ? resultsFocusTargetRef.current
+        : keyword.length > 0 && results.length === 0
+          ? emptyStateFocusTargetRef.current
+          : null;
+
+    if (!focusTarget) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      focusTarget.focus({ preventScroll: true });
+      pendingFocusQueryRef.current = null;
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [error, isLoading, keyword, query, results.length, selectedResult]);
 
   const handlePreviousResult = useCallback(() => {
     if (selectedIndex <= 0) {
@@ -179,36 +221,60 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
 
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-[var(--space-gap-group)] px-[var(--space-layout-screen)] pt-[var(--space-gap-group)]">
         {error ? (
-          <Card>
-            <CardContent>
-              <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
-                {error}
-              </p>
-            </CardContent>
-          </Card>
+          <section
+            ref={errorFocusTargetRef}
+            tabIndex={-1}
+            className={FOCUS_TARGET_CLASSNAME}
+            data-testid="search-error-focus-target"
+            aria-label="Search error"
+          >
+            <Card>
+              <CardContent>
+                <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-13)] text-[var(--text-secondary)]">
+                  {error}
+                </p>
+              </CardContent>
+            </Card>
+          </section>
         ) : null}
 
         {!isLoading && !error && keyword.length > 0 && results.length === 0 ? (
-          <Card data-testid="search-empty-state">
-            <CardContent>
-              <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-16)] text-[var(--text-secondary)]">
-                {siteConfig.copy.searchEmptyState}
-              </p>
-            </CardContent>
-          </Card>
+          <section
+            ref={emptyStateFocusTargetRef}
+            tabIndex={-1}
+            className={FOCUS_TARGET_CLASSNAME}
+            data-testid="search-empty-state-focus-target"
+            aria-label={`No search results for ${keyword}`}
+          >
+            <Card data-testid="search-empty-state">
+              <CardContent>
+                <p className="font-[family-name:var(--font-family-sans)] text-[length:var(--font-size-16)] text-[var(--text-secondary)]">
+                  {siteConfig.copy.searchEmptyState}
+                </p>
+              </CardContent>
+            </Card>
+          </section>
         ) : null}
 
         {selectedResult ? (
           <>
-            <SearchResultNavigation
-              keyword={keyword}
-              currentIndex={selectedIndex}
-              totalCount={results.length}
-              onPrevious={handlePreviousResult}
-              onNext={handleNextResult}
-              previousLabel={siteConfig.copy.searchResultPreviousLabel}
-              nextLabel={siteConfig.copy.searchResultNextLabel}
-            />
+            <section
+              ref={resultsFocusTargetRef}
+              tabIndex={-1}
+              className={FOCUS_TARGET_CLASSNAME}
+              data-testid="search-results-focus-target"
+              aria-label={`Search results for ${keyword}`}
+            >
+              <SearchResultNavigation
+                keyword={keyword}
+                currentIndex={selectedIndex}
+                totalCount={results.length}
+                onPrevious={handlePreviousResult}
+                onNext={handleNextResult}
+                previousLabel={siteConfig.copy.searchResultPreviousLabel}
+                nextLabel={siteConfig.copy.searchResultNextLabel}
+              />
+            </section>
 
             <div className="-mx-[var(--space-layout-screen)] w-[calc(100%+var(--space-layout-screen)+var(--space-layout-screen))] lg:mx-0 lg:w-full">
               <YouTubePlayer
