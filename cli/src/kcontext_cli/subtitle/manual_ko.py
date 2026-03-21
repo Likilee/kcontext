@@ -22,11 +22,7 @@ def is_manual_korean_track_code(language_code: object) -> bool:
 
 def find_manual_korean_track_key(tracks: Mapping[str, object]) -> str | None:
     """Return the best matching uploader-provided Korean track key from a mapping."""
-    candidates = [
-        key
-        for key in tracks
-        if is_manual_korean_track_code(key)
-    ]
+    candidates = [key for key in tracks if is_manual_korean_track_code(key)]
     if not candidates:
         return None
 

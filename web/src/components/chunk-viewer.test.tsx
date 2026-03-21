@@ -33,6 +33,7 @@ describe("ChunkViewer", () => {
           text: null,
           keyword: "",
           isLoading: false,
+          loadingAriaLabel: "Loading subtitles",
           ...props,
         }),
       );
