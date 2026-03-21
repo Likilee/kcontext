@@ -24,6 +24,7 @@ export function TopNavigation({
   isSearchLoading,
   onLogoClick,
 }: TopNavigationProps) {
+  const shouldUseMobileSimpleLogo = mode === "search";
   const logoButton = (
     <button
       type="button"
@@ -31,15 +32,21 @@ export function TopNavigation({
       className="shrink-0 cursor-pointer"
       aria-label={siteConfig.copy.homeAriaLabel}
     >
-      <BrandLogo
-        siteConfig={siteConfig}
-        variant="simple"
-        className="h-[calc(var(--font-size-20)+var(--space-gap-item))] w-auto sm:hidden"
-      />
+      {shouldUseMobileSimpleLogo ? (
+        <BrandLogo
+          siteConfig={siteConfig}
+          variant="simple"
+          className="h-[calc(var(--font-size-20)+var(--space-gap-item))] w-auto sm:hidden"
+        />
+      ) : null}
       <BrandLogo
         siteConfig={siteConfig}
         variant="horizontal"
-        className="hidden h-[calc(var(--font-size-20)+var(--space-gap-item))] w-auto sm:block lg:h-[calc(var(--font-size-28)+var(--space-gap-item))]"
+        className={
+          shouldUseMobileSimpleLogo
+            ? "hidden h-[calc(var(--font-size-20)+var(--space-gap-item))] w-auto sm:block lg:h-[calc(var(--font-size-28)+var(--space-gap-item))]"
+            : "h-[calc(var(--font-size-20)+var(--space-gap-item))] w-auto lg:h-[calc(var(--font-size-28)+var(--space-gap-item))]"
+        }
       />
     </button>
   );
