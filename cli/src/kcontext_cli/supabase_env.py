@@ -18,6 +18,5 @@ def resolve_local_supabase_service_role_key() -> str:
             return value
 
     raise ValueError(
-        "Missing required environment variable: SUPABASE_SECRET_KEY or "
-        "SUPABASE_SERVICE_ROLE_KEY"
+        "Missing required environment variable: SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY"
     )
