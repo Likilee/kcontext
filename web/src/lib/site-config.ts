@@ -51,6 +51,7 @@ export interface SiteConfig {
   readonly baseUrl: string;
   readonly brandAssets: {
     readonly horizontalLogoPath: string;
+    readonly simpleLogoPath: string;
     readonly verticalLogoPath: string;
   };
   readonly copy: SiteCopy;
@@ -89,6 +90,7 @@ const BASE_SITE_CONFIG: SiteConfigBase = {
   baseUrl: "https://tubelang.com",
   brandAssets: {
     horizontalLogoPath: "/brand/tubelang-ko-horizontal.png",
+    simpleLogoPath: "/brand/tubelang-simple.png",
     verticalLogoPath: "/brand/tubelang-ko-vertical.png",
   },
 };

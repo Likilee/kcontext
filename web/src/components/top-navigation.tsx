@@ -33,8 +33,13 @@ export function TopNavigation({
     >
       <BrandLogo
         siteConfig={siteConfig}
+        variant="simple"
+        className="h-[calc(var(--font-size-20)+var(--space-gap-item))] w-auto sm:hidden"
+      />
+      <BrandLogo
+        siteConfig={siteConfig}
         variant="horizontal"
-        className="h-[calc(var(--font-size-20)+var(--space-gap-item))] w-auto lg:h-[calc(var(--font-size-28)+var(--space-gap-item))]"
+        className="hidden h-[calc(var(--font-size-20)+var(--space-gap-item))] w-auto sm:block lg:h-[calc(var(--font-size-28)+var(--space-gap-item))]"
       />
     </button>
   );
