@@ -1,15 +1,24 @@
-import { act, createElement, forwardRef, type ReactNode } from "react";
+import { act, createElement, forwardRef, type ReactNode, useImperativeHandle } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getSiteConfig } from "@/lib/site-config";
 import { SearchPageClient } from "./search-page-client";
 
 interface MockPlayerProps {
+  playbackRate: number;
+  startTime: number;
+  videoId: string;
   onReady?: () => void;
   onUnavailable?: () => void;
 }
 
+interface MockSearchResultNavigationProps {
+  onNext: () => void;
+  onPrevious: () => void;
+}
+
 const capturedPlayerProps: MockPlayerProps[] = [];
+const loadVideoMock = vi.fn();
 const useSearchMock = vi.fn();
 const useTranscriptLoaderMock = vi.fn();
 const useSubtitleSyncMock = vi.fn();
@@ -44,7 +53,30 @@ vi.mock("@/components/player-controls", () => ({
 }));
 
 vi.mock("@/components/search-result-navigation", () => ({
-  SearchResultNavigation: () => createElement("div", { "data-testid": "search-result-navigation" }),
+  SearchResultNavigation: (props: MockSearchResultNavigationProps) => {
+    return createElement("div", { "data-testid": "search-result-navigation" }, [
+      createElement(
+        "button",
+        {
+          key: "previous",
+          type: "button",
+          "data-testid": "search-result-navigation-previous",
+          onClick: props.onPrevious,
+        },
+        "previous",
+      ),
+      createElement(
+        "button",
+        {
+          key: "next",
+          type: "button",
+          "data-testid": "search-result-navigation-next",
+          onClick: props.onNext,
+        },
+        "next",
+      ),
+    ]);
+  },
 }));
 
 vi.mock("@/components/top-navigation", () => ({
@@ -58,6 +90,13 @@ vi.mock("@/components/ui/card", () => ({
 
 vi.mock("@/components/youtube-player", () => ({
   YouTubePlayer: forwardRef<unknown, MockPlayerProps>(function MockYouTubePlayer(props, _ref) {
+    useImperativeHandle(_ref, () => ({
+      getCurrentTime: () => 0,
+      loadVideo: loadVideoMock,
+      seekBy: vi.fn(),
+      seekTo: vi.fn(),
+      setPlaybackRate: vi.fn(),
+    }));
     capturedPlayerProps.push(props);
     return createElement("div", { "data-testid": "youtube-player" });
   }),
@@ -98,7 +137,10 @@ function renderSearchPageClient() {
 beforeEach(() => {
   const selectedResult = {
     videoId: "test-video",
+    title: "테스트 영상",
+    channelName: "테스트 채널",
     startTime: 12,
+    matchedText: "행복해요",
   };
 
   searchParamsGetMock.mockImplementation((key: string) => (key === "q" ? "행복해요" : null));
@@ -131,6 +173,7 @@ afterEach(() => {
 
   roots.length = 0;
   capturedPlayerProps.length = 0;
+  loadVideoMock.mockReset();
   pushMock.mockReset();
   searchParamsGetMock.mockReset();
   useSearchMock.mockReset();
@@ -154,5 +197,48 @@ describe("SearchPageClient", () => {
     const secondProps = capturedPlayerProps.at(-1);
     expect(secondProps?.onReady).toBe(firstProps.onReady);
     expect(secondProps?.onUnavailable).toBe(firstProps.onUnavailable);
+  });
+
+  it("loads the next result within the same user gesture before selecting it", () => {
+    const firstResult = {
+      videoId: "video-1",
+      title: "첫 영상",
+      channelName: "채널",
+      startTime: 12,
+      matchedText: "첫 문장",
+    };
+    const secondResult = {
+      videoId: "video-2",
+      title: "둘째 영상",
+      channelName: "채널",
+      startTime: 34,
+      matchedText: "둘째 문장",
+    };
+    const selectResultMock = vi.fn();
+
+    useSearchMock.mockReturnValue({
+      results: [firstResult, secondResult],
+      isLoading: false,
+      error: null,
+      search: vi.fn(),
+      selectedResult: firstResult,
+      selectResult: selectResultMock,
+      keyword: "행복해요",
+    });
+
+    loadVideoMock.mockReturnValue(true);
+    renderSearchPageClient();
+
+    const nextButton = document.querySelector('[data-testid="search-result-navigation-next"]');
+    if (!(nextButton instanceof HTMLButtonElement)) {
+      throw new Error("Expected next navigation button to render.");
+    }
+
+    act(() => {
+      nextButton.click();
+    });
+
+    expect(loadVideoMock).toHaveBeenCalledWith("video-2", 33.3, 1);
+    expect(selectResultMock).toHaveBeenCalledWith(secondResult);
   });
 });

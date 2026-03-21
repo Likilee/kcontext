@@ -13,10 +13,13 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 interface MockPlayer {
   destroy: () => void;
   getCurrentTime: () => number;
+  isMuted: () => boolean;
   loadVideoById: (videoId: string, startTime?: number) => void;
+  mute: () => void;
   playVideo: () => void;
   seekTo: (seconds: number, allowSeekAhead?: boolean) => void;
   setPlaybackRate: (rate: number) => void;
+  unMute: () => void;
 }
 
 interface MockPlayerOptions {
@@ -25,6 +28,7 @@ interface MockPlayerOptions {
     start?: number;
   };
   events?: {
+    onAutoplayBlocked?: () => void;
     onError?: () => void;
     onReady?: () => void;
     onStateChange?: (event: { data: number }) => void;
@@ -76,6 +80,7 @@ function installPlayerConstructor(playerConstructor: MockPlayerConstructor) {
 
 function createReadyPlayer(options: MockPlayerOptions): MockPlayer {
   let currentTime = options.playerVars?.start ?? 0;
+  let isMuted = false;
 
   queueMicrotask(() => {
     options.events?.onReady?.();
@@ -84,14 +89,21 @@ function createReadyPlayer(options: MockPlayerOptions): MockPlayer {
   return {
     destroy: vi.fn(),
     getCurrentTime: vi.fn(() => currentTime),
+    isMuted: vi.fn(() => isMuted),
     loadVideoById: vi.fn((_videoId: string, startTime?: number) => {
       currentTime = startTime ?? currentTime;
+    }),
+    mute: vi.fn(() => {
+      isMuted = true;
     }),
     playVideo: vi.fn(),
     seekTo: vi.fn((seconds: number) => {
       currentTime = seconds;
     }),
     setPlaybackRate: vi.fn(),
+    unMute: vi.fn(() => {
+      isMuted = false;
+    }),
   };
 }
 
@@ -105,6 +117,27 @@ function createReadyPlayerConstructor(): MockPlayerConstructor {
   return function MockPlayer(_mountTarget: MockPlayerMountTarget, options: MockPlayerOptions) {
     return createReadyPlayer(options);
   } as unknown as MockPlayerConstructor;
+}
+
+function createInspectablePlayerConstructor() {
+  const events: MockPlayerOptions["events"][] = [];
+  const players: MockPlayer[] = [];
+
+  const playerConstructor = function MockPlayer(
+    _mountTarget: MockPlayerMountTarget,
+    options: MockPlayerOptions,
+  ) {
+    events.push(options.events);
+    const player = createReadyPlayer(options);
+    players.push(player);
+    return player;
+  } as unknown as MockPlayerConstructor;
+
+  return {
+    events,
+    playerConstructor,
+    players,
+  };
 }
 
 function createRetryingPlayerConstructor() {
@@ -383,6 +416,103 @@ describe("YouTubePlayer", () => {
       ).toBeNull();
       expect(onReady).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it("reuses the existing player instance when video props change", async () => {
+    const onReady = vi.fn();
+    const { events, playerConstructor, players } = createInspectablePlayerConstructor();
+
+    installPlayerConstructor(playerConstructor);
+    const { rerender } = renderPlayer({ onReady });
+
+    await waitFor(() => {
+      expect(onReady).toHaveBeenCalledTimes(1);
+      expect(players).toHaveLength(1);
+    });
+
+    rerender({
+      videoId: "video-2",
+      startTime: 24,
+      playbackRate: 1.25,
+    });
+
+    await waitFor(() => {
+      expect(players).toHaveLength(1);
+      expect(players[0]?.loadVideoById).toHaveBeenCalledWith("video-2", 24);
+      expect(players[0]?.setPlaybackRate).toHaveBeenCalledWith(1.25);
+      expect(players[0]?.playVideo).toHaveBeenCalled();
+      expect(events).toHaveLength(1);
+    });
+  });
+
+  it("deduplicates a user-gesture load before the matching prop rerender", async () => {
+    const { playerConstructor, players } = createInspectablePlayerConstructor();
+    const ref = createRef<YouTubePlayerHandle>();
+
+    installPlayerConstructor(playerConstructor);
+    const { rerender } = renderPlayer({}, ref);
+
+    await act(async () => {
+      await flushMicrotasks();
+    });
+
+    await waitFor(() => {
+      expect(players).toHaveLength(1);
+      expect(ref.current).not.toBeNull();
+    });
+
+    act(() => {
+      expect(ref.current?.loadVideo("video-2", 18, 1.25)).toBe(true);
+    });
+
+    expect(players[0]?.loadVideoById).toHaveBeenCalledTimes(1);
+    expect(players[0]?.loadVideoById).toHaveBeenLastCalledWith("video-2", 18);
+
+    rerender({
+      videoId: "video-2",
+      startTime: 18,
+      playbackRate: 1.25,
+    });
+
+    expect(players[0]?.loadVideoById).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries blocked autoplay muted after prior playback and restores audio on the next user gesture", async () => {
+    const { events, playerConstructor, players } = createInspectablePlayerConstructor();
+    const ref = createRef<YouTubePlayerHandle>();
+
+    installPlayerConstructor(playerConstructor);
+    renderPlayer({}, ref);
+
+    await act(async () => {
+      await flushMicrotasks();
+    });
+
+    await waitFor(() => {
+      expect(players).toHaveLength(1);
+      expect(ref.current).not.toBeNull();
+      expect(events[0]?.onStateChange).toBeDefined();
+      expect(events[0]?.onAutoplayBlocked).toBeDefined();
+    });
+
+    act(() => {
+      events[0]?.onStateChange?.({ data: 1 });
+    });
+
+    act(() => {
+      events[0]?.onAutoplayBlocked?.();
+    });
+
+    expect(players[0]?.mute).toHaveBeenCalledTimes(1);
+    expect(players[0]?.playVideo).toHaveBeenCalledTimes(2);
+    expect(players[0]?.isMuted()).toBe(true);
+
+    act(() => {
+      ref.current?.seekBy(5);
+    });
+
+    expect(players[0]?.unMute).toHaveBeenCalledTimes(1);
+    expect(players[0]?.isMuted()).toBe(false);
   });
 
   it("keeps rerenders stable when the YouTube iframe API replaces its mount node", async () => {
