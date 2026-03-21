@@ -84,6 +84,7 @@ jq -nr \
   "== Actor State ==\n" +
   "next actor: \($state.next_actor)\n" +
   "reason: \($state.reason)\n" +
+  "has conflicts: \(if $state.has_conflicts then "yes" else "no" end)\n" +
   "codex review on head: \(if $state.has_codex_review_on_head then "yes" else "no" end)\n" +
   "bootstrap mode: \(if $state.bootstrap_mode then "yes" else "no" end)\n" +
   "contract sync suggested: \(if $state.contract_sync_suggested then "yes" else "no" end)\n" +

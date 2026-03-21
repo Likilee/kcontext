@@ -5,6 +5,7 @@
 - Check whether the PR links a representative issue with `Closes #...` or `Refs #...`.
 - Check whether the PR scope still matches the linked issue.
 - Check whether newer human PR/issue feedback has already changed the effective contract.
+- Check whether the branch is conflicted with `main`; if so, prefer follow-up conflict resolution over another review cycle.
 - Check whether the PR summary and verification are specific enough to audit.
 - Do not re-review a head commit that already has a Codex review marker unless new human input arrived.
 

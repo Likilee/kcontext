@@ -39,9 +39,10 @@ You can also target another repository with `--repo owner/name`.
 1. Use `pr-action-state.sh` first and only review PRs whose `next_actor` is `codex_review`.
 2. Check that the PR links a representative issue with `Closes #...` or `Refs #...`.
 3. Check whether the linked issue still matches the latest human GitHub feedback.
-4. Inspect checks, review state, linked issues, changed files, and unresolved human review threads.
-5. Review the code and tests with repo-specific architecture rules in mind.
-6. Respond with findings first in Korean by default. If there are no findings, say that explicitly and note any residual risk.
+4. Inspect checks, review state, mergeability, linked issues, changed files, and unresolved human review threads.
+5. If the PR has merge conflicts, hand it to follow-up conflict resolution before spending another review round on the same head.
+6. Review the code and tests with repo-specific architecture rules in mind.
+7. Respond with findings first in Korean by default. If there are no findings, say that explicitly and note any residual risk.
 
 If review or spot-checking in a Codex worktree needs env-backed commands such as local API checks, transcript fetches, sync flows, or E2E verification, bootstrap env first:
 
@@ -61,6 +62,7 @@ Use `docs/codex-worktree-bootstrap.md` if the expected `.env` files are absent.
 - Barrel files
 - Token/design-system violations in frontend changes
 - Missing tests around behavior changes
+- Merge conflicts against `main` that should be resolved before another review pass
 - Review threads that still imply unresolved risk
 - Human feedback that changes the issue or PR contract
 - Re-review loops on the same head commit

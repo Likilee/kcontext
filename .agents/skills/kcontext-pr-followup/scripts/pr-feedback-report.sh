@@ -55,6 +55,7 @@ jq -nr \
   "next actor: \($state.next_actor)\n" +
   "reason: \($state.reason)\n" +
   "review decision: \($state.pr.review_decision // "NONE")\n" +
+  "has conflicts: \(if $state.has_conflicts then "yes" else "no" end)\n" +
   "branch: \($state.pr.head_ref) -> \($state.pr.base_ref)\n" +
   "linked issue: " +
     (if $state.linked_issue == null then "none" else "#\($state.linked_issue.number) \($state.linked_issue.title)" end) + "\n" +

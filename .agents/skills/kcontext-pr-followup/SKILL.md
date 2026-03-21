@@ -27,10 +27,11 @@ The report highlights only the human inputs that landed after the last Codex act
 1. Pull `pr-action-state.sh` and `pr-feedback-report.sh`.
 2. Work only on PRs whose `next_actor` is `codex_followup`.
 3. Separate actionable human requests from Codex-authored comments, acknowledgements, or stale input.
-4. If the latest human input changes the contract, sync the issue and PR before touching code.
-5. Update code only where the feedback is valid and in scope.
-6. Re-run the relevant verification from the issue and PR.
-7. Prepare a concise response summary that maps fixes back to review points.
+4. If the PR is in conflict with the base branch, resolve the conflict first before reviewing smaller follow-up items.
+5. If the latest human input changes the contract, sync the issue and PR before touching code.
+6. Update code only where the feedback is valid and in scope.
+7. Re-run the relevant verification from the issue and PR.
+8. Prepare a concise response summary that maps fixes back to review points.
 
 If the follow-up requires env-backed verification from a Codex worktree, run this first:
 
@@ -43,10 +44,17 @@ Use `docs/codex-worktree-bootstrap.md` when the worktree is missing repo-local e
 ## Prioritize Feedback
 
 - Address `CHANGES_REQUESTED` reviews first.
+- If the PR is `CONFLICTING` or `DIRTY`, resolve the base-branch conflict before polishing or adding another review round.
 - Address unresolved review threads before stale or already resolved threads.
 - Treat human GitHub input without a Codex marker as the higher-priority signal, even if it comes from the same `Likilee` account.
 - If a reviewer suggestion conflicts with repo architecture or design-system rules, explain that conflict instead of applying it blindly.
 - If feedback expands scope materially, move that change back into the issue workflow first.
+
+When resolving conflicts:
+
+- Prefer `git fetch origin` + `git merge --no-edit origin/main` over rebase so you can push without force.
+- Resolve only the conflict scope needed to make the PR mergeable and keep the linked issue scope intact.
+- Re-run the verification that covers the conflicted areas before pushing.
 
 ## Close The Loop
 

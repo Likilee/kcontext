@@ -68,7 +68,7 @@ while IFS= read -r pr_number; do
       [(.checks[]? | bucket) | select(. == $name)] | length;
     "#\(.pr.number) \(.pr.title)\n" +
     "  next_actor: \(.next_actor) | reason: \(.reason)\n" +
-    "  review: \(.pr.review_decision // "NONE") | branch: \(.pr.head_ref) -> \(.pr.base_ref)\n" +
+    "  review: \(.pr.review_decision // "NONE") | mergeable: \(.pr.mergeable // "UNKNOWN") | branch: \(.pr.head_ref) -> \(.pr.base_ref)\n" +
     "  linked issue: " +
       (if .linked_issue == null then "none" else "#\(.linked_issue.number) \(.linked_issue.title)" end) + "\n" +
     "  actionable human inputs since codex: \(.human_inputs_since_codex | length) | unresolved human threads: \(.open_human_threads | length) | contract sync: \(if .contract_sync_suggested then "yes" else "no" end)\n" +

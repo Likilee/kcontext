@@ -495,6 +495,7 @@ contract_sync_suggested = any(item.get("contract_signal") for item in human_acti
 )
 
 latest_human_input_at = latest_ts(all_human_inputs)
+has_conflicts = pr.get("mergeable") == "CONFLICTING" or pr.get("mergeStateStatus") == "DIRTY"
 
 if pr.get("state") != "OPEN":
     next_actor = "done_for_now"
@@ -505,6 +506,9 @@ elif pr.get("isDraft"):
 elif issue_is_blocked:
     next_actor = "blocked"
     reason = "Linked issue is explicitly blocked."
+elif has_conflicts:
+    next_actor = "codex_followup"
+    reason = "Open pull request has merge conflicts against the base branch."
 elif open_human_threads or human_action_required:
     next_actor = "codex_followup"
     if open_human_threads:
@@ -531,6 +535,8 @@ result = {
         "head_sha": head_sha,
         "base_ref": pr["baseRefName"],
         "review_decision": pr.get("reviewDecision"),
+        "mergeable": pr.get("mergeable"),
+        "merge_state_status": pr.get("mergeStateStatus"),
         "updated_at": pr.get("updatedAt"),
     },
     "linked_issue": None
@@ -545,6 +551,7 @@ result = {
     "reason": reason,
     "bootstrap_mode": last_codex_action_at is None,
     "issue_blocked": issue_is_blocked,
+    "has_conflicts": has_conflicts,
     "has_codex_review_on_head": has_codex_review_on_head,
     "last_codex_action_at": None if last_codex_action_at is None else last_codex_action_at.isoformat(),
     "latest_human_input_at": None if latest_human_input_at is None else latest_human_input_at.isoformat(),
@@ -570,6 +577,7 @@ print(f"next_actor: {next_actor}")
 print(f"reason: {reason}")
 print(f"head: {head_sha[:7]} | branch: {pr['headRefName']} -> {pr['baseRefName']}")
 print(f"linked_issue: {issue_text}")
+print(f"has_conflicts: {'yes' if has_conflicts else 'no'}")
 print(f"codex_review_on_head: {'yes' if has_codex_review_on_head else 'no'}")
 print(f"bootstrap_mode: {'yes' if last_codex_action_at is None else 'no'}")
 print(f"human_inputs_since_codex: {len(human_action_required)}")
