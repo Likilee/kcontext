@@ -49,3 +49,5 @@ Load full option list from [`references/channel-pipeline-options.md`](references
 - If proxy startup fails: run `cd cli && ./scripts/proxy-up.sh` and inspect Docker daemon status.
 - If YouTube blocking persists: rerun or change proxy endpoint via `KCONTEXT_YOUTUBE_PROXY_URL` / `--proxy-url`.
 - If `push` fails: verify DB credentials and Supabase service role key in `cli/.env`.
+- If Decodo Web Scraping API `youtube_subtitles` starts returning `613` for Korean subtitle backlog runs, prefer the scraper path with `DECODO_SCRAPER_API_GEO=Korea` before spending time on JS rendering experiments. Local validation showed `geo=Korea` recovering targets that still failed or timed out with default geo and `headless=html`.
+- If the residential proxy fallback returns `407 Proxy Authentication Required`, treat that as a separate proxy credential problem. Do not assume it explains scraper API `613` failures.

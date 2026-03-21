@@ -11,6 +11,7 @@ import json
 import os
 import sqlite3
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -39,6 +40,7 @@ class SyncConfig:
     state_db: Path
     batch_size: int
     max_videos: int
+    storage_concurrency: int
     dry_run: bool
     status: bool
     resync_all: bool
@@ -89,6 +91,11 @@ def parse_args() -> SyncConfig:
     parser.add_argument("--state-db", default=DEFAULT_STATE_DB)
     parser.add_argument("--batch-size", type=int, default=50)
     parser.add_argument("--max-videos", type=int, default=200)
+    parser.add_argument(
+        "--storage-concurrency",
+        type=int,
+        default=int(os.getenv("SYNC_STORAGE_CONCURRENCY", "12")),
+    )
     parser.add_argument("--storage-mode", choices=("auto", "s3", "rest"), default="auto")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--status", action="store_true")
@@ -130,6 +137,7 @@ def parse_args() -> SyncConfig:
         state_db=Path(args.state_db),
         batch_size=args.batch_size,
         max_videos=args.max_videos,
+        storage_concurrency=args.storage_concurrency,
         dry_run=bool(args.dry_run),
         status=bool(args.status),
         resync_all=bool(args.resync_all),
@@ -612,15 +620,49 @@ def sync_batch_db(
         upsert_remote_db_copy(remote_conn, videos, subtitles)
 
 
-def mark_synced(state_conn: sqlite3.Connection, video_id: str, run_id: str) -> None:
-    state_conn.execute(
+def mark_synced_many(state_conn: sqlite3.Connection, video_ids: list[str], run_id: str) -> None:
+    if not video_ids:
+        return
+    synced_at = utc_now_iso()
+    state_conn.executemany(
         """
         INSERT OR REPLACE INTO synced_video (video_id, synced_at, run_id)
         VALUES (?, ?, ?)
         """,
-        (video_id, utc_now_iso(), run_id),
+        [(video_id, synced_at, run_id) for video_id in video_ids],
     )
     state_conn.commit()
+
+
+def sync_storage_object(config: SyncConfig, storage_mode: str, video_id: str) -> None:
+    payload = download_local_storage_json(config, video_id)
+    if storage_mode == "s3":
+        upload_remote_storage_s3(config, video_id, payload)
+    else:
+        upload_remote_storage_rest(config, video_id, payload)
+
+
+def sync_storage_batch(config: SyncConfig, storage_mode: str, video_ids: list[str]) -> None:
+    if not video_ids:
+        return
+
+    max_workers = max(1, min(config.storage_concurrency, len(video_ids)))
+    if max_workers == 1:
+        for video_id in video_ids:
+            sync_storage_object(config, storage_mode, video_id)
+        return
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_video_id = {
+            executor.submit(sync_storage_object, config, storage_mode, video_id): video_id
+            for video_id in video_ids
+        }
+        for future in as_completed(future_to_video_id):
+            video_id = future_to_video_id[future]
+            try:
+                future.result()
+            except Exception as exc:
+                raise RuntimeError(f"Storage sync failed for {video_id}: {exc}") from exc
 
 
 def truncate_error_summary(failures: list[dict[str, str]], max_chars: int = 2000) -> str:
@@ -764,22 +806,11 @@ def sync(config: SyncConfig, state_db_abs: Path, lock_file: Path, report_dir: Pa
             batch_strategy = choose_db_strategy(len(videos), len(subtitles))
             db_strategy = batch_strategy
 
-            payloads: list[tuple[str, bytes]] = []
-            for video_id in batch_ids:
-                payloads.append((video_id, download_local_storage_json(config, video_id)))
-
-            for video_id, payload in payloads:
-                if storage_mode == "s3":
-                    upload_remote_storage_s3(config, video_id, payload)
-                else:
-                    upload_remote_storage_rest(config, video_id, payload)
-
+            sync_storage_batch(config, storage_mode, batch_ids)
             sync_batch_db(remote_conn, videos, subtitles, batch_strategy)
-
-            for video_id in batch_ids:
-                mark_synced(state_conn, video_id, run_id)
-                success_count += 1
-                synced_video_ids.append(video_id)
+            mark_synced_many(state_conn, batch_ids, run_id)
+            success_count += len(batch_ids)
+            synced_video_ids.extend(batch_ids)
 
         finished_at = utc_now_iso()
         result = SyncResult(

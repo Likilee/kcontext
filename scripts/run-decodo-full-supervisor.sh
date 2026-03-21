@@ -17,8 +17,9 @@ INGEST_MAX_VIDEOS=5000
 HEALTHCHECK_INTERVAL_SECONDS=300
 STALL_THRESHOLD_SECONDS=900
 RATE_LIMIT_COOLDOWN_SECONDS=300
-REMOTE_BATCH_SIZE=25
-REMOTE_MAX_VIDEOS=150
+REMOTE_BATCH_SIZE=100
+REMOTE_MAX_VIDEOS=500
+REMOTE_STORAGE_CONCURRENCY=12
 REMOTE_STORAGE_MODE="auto"
 REMOTE_DB_PASSWORD="${KCONTEXT_REMOTE_DB_PASSWORD:-}"
 
@@ -41,7 +42,8 @@ Options:
   --stall-threshold-seconds <n>         Restart ingest after no progress for this long (default: 900)
   --rate-limit-cooldown-seconds <n>     Wait before retry after rate limiting (default: 300)
   --remote-batch-size <n>               Direct remote sync batch size (default: 25)
-  --remote-max-videos <n>               Direct remote sync max videos per run (default: 150)
+  --remote-max-videos <n>               Direct remote sync max videos per run (default: 500)
+  --remote-storage-concurrency <n>      Parallel storage transfers per remote batch (default: 12)
   --remote-storage-mode <mode>          auto | s3 | rest (default: auto)
   -h, --help                            Show help
 
@@ -96,6 +98,10 @@ while [[ $# -gt 0 ]]; do
       REMOTE_MAX_VIDEOS="$2"
       shift 2
       ;;
+    --remote-storage-concurrency)
+      REMOTE_STORAGE_CONCURRENCY="$2"
+      shift 2
+      ;;
     --remote-storage-mode)
       REMOTE_STORAGE_MODE="$2"
       shift 2
@@ -119,7 +125,8 @@ for pair in \
   "STALL_THRESHOLD_SECONDS:$STALL_THRESHOLD_SECONDS" \
   "RATE_LIMIT_COOLDOWN_SECONDS:$RATE_LIMIT_COOLDOWN_SECONDS" \
   "REMOTE_BATCH_SIZE:$REMOTE_BATCH_SIZE" \
-  "REMOTE_MAX_VIDEOS:$REMOTE_MAX_VIDEOS"
+  "REMOTE_MAX_VIDEOS:$REMOTE_MAX_VIDEOS" \
+  "REMOTE_STORAGE_CONCURRENCY:$REMOTE_STORAGE_CONCURRENCY"
 do
   name="${pair%%:*}"
   value="${pair#*:}"
@@ -344,7 +351,7 @@ run_remote_batch() {
   local max_videos="$1"
   REMOTE_DB_URL_FILLED="$REMOTE_DB_URL_FILLED" \
   REMOTE_ENV_FILE_LOCAL="$REMOTE_ENV_FILE" \
-  python3 - "$DIRECT_SYNC_STATE_DB" "$REMOTE_STORAGE_MODE" "$DIRECT_SYNC_WORKER" "$REMOTE_BATCH_SIZE" "$max_videos" <<'PY'
+  python3 - "$DIRECT_SYNC_STATE_DB" "$REMOTE_STORAGE_MODE" "$DIRECT_SYNC_WORKER" "$REMOTE_BATCH_SIZE" "$max_videos" "$REMOTE_STORAGE_CONCURRENCY" <<'PY'
 import os
 import subprocess
 import sys
@@ -355,6 +362,7 @@ storage_mode = sys.argv[2]
 worker = sys.argv[3]
 batch_size = sys.argv[4]
 max_videos = sys.argv[5]
+storage_concurrency = sys.argv[6]
 env_file = os.environ["REMOTE_ENV_FILE_LOCAL"]
 remote_db_url = os.environ["REMOTE_DB_URL_FILLED"]
 
@@ -383,6 +391,8 @@ proc = subprocess.run(
         batch_size,
         "--max-videos",
         max_videos,
+        "--storage-concurrency",
+        storage_concurrency,
     ],
     capture_output=True,
     text=True,

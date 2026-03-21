@@ -15,6 +15,7 @@ subtitle pipeline contract, adds a metadata sidecar, and does not depend on the 
 1. Copy `.env.decodo.example` to `.env.decodo`
 2. Fill `DECODO_SCRAPER_API_BASIC_TOKEN`
 3. Keep `DECODO_SCRAPER_API_URL` at the default unless Decodo gives you a different endpoint
+4. For Korean manual subtitle backlog runs, start with `DECODO_SCRAPER_API_GEO=Korea`
 
 ## Commands
 
@@ -93,3 +94,10 @@ Backfill metadata storage artifacts and upload them:
 - `api_unreachable`: network or DNS error to the scraper API
 - `api_unexpected_schema`: target response shape changed or required fields are missing
 - repeated non-fatal per-video failures: quarantined into `skipped_ids.txt` after 3 attempts by the parallel runner/supervisor
+
+## 613 Troubleshooting
+
+- If `youtube_subtitles` or `youtube_metadata` returns `status_code=613`, first retry with `DECODO_SCRAPER_API_GEO=Korea` for Korean subtitle backlog runs.
+- Keep JavaScript rendering disabled for this path unless you are explicitly debugging a specific target. Local validation showed `headless=html` turning the same target into read timeouts instead of a successful payload.
+- If `DECODO_SCRAPER_API_GEO=Korea` succeeds for both subtitle and metadata targets, the current parser and normalization code can consume the response without further format changes.
+- If `613` persists even with `DECODO_SCRAPER_API_GEO=Korea`, collect the failing `task_id`, target name, and video ID before escalating to Decodo support.

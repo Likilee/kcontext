@@ -1,8 +1,20 @@
+import json
+import os
+
 import pytest
 
 from kcontext_cli.fetch_backends import decodo_scraper_backend
 from kcontext_cli.fetch_backends.base import FetchBackendError
-from kcontext_cli.network.decodo_scraper_api import DecodoScraperApiError, _classify_api_failure
+from kcontext_cli.network.decodo_scraper_api import (
+    DECODO_SCRAPER_API_BASIC_TOKEN_ENV_VAR,
+    DECODO_SCRAPER_API_GEO_ENV_VAR,
+    DECODO_SCRAPER_API_URL_ENV_VAR,
+    DecodoScraperApiConfig,
+    DecodoScraperApiError,
+    _classify_api_failure,
+    post_scrape_request,
+    resolve_decodo_scraper_api_config,
+)
 
 MOCK_SUBTITLES_PAYLOAD = {
     "results": [
@@ -204,6 +216,66 @@ def test_decodo_scraper_surfaces_decodo_target_failure(mocker) -> None:
     assert exc_info.value.error_class == "api_target_failed"
     assert "status_code=613" in str(exc_info.value)
     assert "task_id=7437926550256772097" in str(exc_info.value)
+
+
+def test_resolve_decodo_scraper_api_config_reads_optional_geo(mocker) -> None:
+    mocker.patch.dict(
+        os.environ,
+        {
+            DECODO_SCRAPER_API_URL_ENV_VAR: "https://scraper-api.example.test/v2/scrape",
+            DECODO_SCRAPER_API_BASIC_TOKEN_ENV_VAR: "token-123",
+            DECODO_SCRAPER_API_GEO_ENV_VAR: "Korea",
+        },
+        clear=False,
+    )
+
+    config = resolve_decodo_scraper_api_config()
+
+    assert config == DecodoScraperApiConfig(
+        api_url="https://scraper-api.example.test/v2/scrape",
+        basic_token="token-123",
+        geo="Korea",
+    )
+
+
+def test_post_scrape_request_includes_geo_in_payload(mocker) -> None:
+    captured_request_data: list[dict[str, object]] = []
+
+    class _FakeResponse:
+        def read(self) -> bytes:
+            return json.dumps({"results": []}, ensure_ascii=False).encode("utf-8")
+
+        def __enter__(self) -> "_FakeResponse":
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+    def _fake_urlopen(request, timeout=60):
+        assert timeout == 60
+        captured_request_data.append(json.loads(request.data.decode("utf-8")))
+        return _FakeResponse()
+
+    mocker.patch("urllib.request.urlopen", side_effect=_fake_urlopen)
+
+    payload = post_scrape_request(
+        config=DecodoScraperApiConfig(
+            api_url="https://scraper-api.example.test/v2/scrape",
+            basic_token="token-123",
+            geo="Korea",
+        ),
+        target="youtube_subtitles",
+        query="test_abc123",
+    )
+
+    assert payload == {"results": []}
+    assert captured_request_data == [
+        {
+            "target": "youtube_subtitles",
+            "query": "test_abc123",
+            "geo": "Korea",
+        }
+    ]
 
 
 def test_classify_api_failure_for_decodo_root_failed_status() -> None:

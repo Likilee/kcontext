@@ -7,6 +7,7 @@ STATE_DB="$ROOT_DIR/cli/.state/direct_remote_sync_filtered.sqlite"
 ENV_FILE="$ROOT_DIR/.env.remote-sync"
 BATCH_SIZE=50
 MAX_VIDEOS=200
+STORAGE_CONCURRENCY=12
 STORAGE_MODE="auto"
 STATUS_ONLY=0
 DRY_RUN=0
@@ -21,6 +22,8 @@ Options:
   --env-file <path>      Remote env file (default: $ROOT_DIR/.env.remote-sync)
   --batch-size <n>       Videos per batch (default: 50)
   --max-videos <n>       Max videos per run (default: 200)
+  --storage-concurrency <n>
+                         Parallel storage transfers per batch (default: 12)
   --storage-mode <mode>  auto | s3 | rest (default: auto)
   --status               Print local/state/remote counts only
   --dry-run              Show pending IDs only
@@ -45,6 +48,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --max-videos)
       MAX_VIDEOS="$2"
+      shift 2
+      ;;
+    --storage-concurrency)
+      STORAGE_CONCURRENCY="$2"
       shift 2
       ;;
     --storage-mode)
@@ -135,6 +142,7 @@ CMD=(
   --state-db "$STATE_DB"
   --batch-size "$BATCH_SIZE"
   --max-videos "$MAX_VIDEOS"
+  --storage-concurrency "$STORAGE_CONCURRENCY"
   --storage-mode "$STORAGE_MODE"
 )
 

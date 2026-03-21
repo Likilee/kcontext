@@ -14,6 +14,7 @@ load_dotenv()
 
 DECODO_SCRAPER_API_URL_ENV_VAR = "DECODO_SCRAPER_API_URL"
 DECODO_SCRAPER_API_BASIC_TOKEN_ENV_VAR = "DECODO_SCRAPER_API_BASIC_TOKEN"
+DECODO_SCRAPER_API_GEO_ENV_VAR = "DECODO_SCRAPER_API_GEO"
 DEFAULT_DECODO_SCRAPER_API_URL = "https://scraper-api.decodo.com/v2/scrape"
 
 
@@ -30,18 +31,20 @@ class DecodoScraperApiError(Exception):
 class DecodoScraperApiConfig:
     api_url: str
     basic_token: str
+    geo: str | None = None
 
 
 def resolve_decodo_scraper_api_config() -> DecodoScraperApiConfig:
     api_url = os.getenv(DECODO_SCRAPER_API_URL_ENV_VAR, DEFAULT_DECODO_SCRAPER_API_URL).strip()
     basic_token = os.getenv(DECODO_SCRAPER_API_BASIC_TOKEN_ENV_VAR, "").strip()
+    geo = os.getenv(DECODO_SCRAPER_API_GEO_ENV_VAR, "").strip() or None
     if not basic_token:
         raise ValueError(
             "Decodo scraper backend requires DECODO_SCRAPER_API_BASIC_TOKEN to be set."
         )
     if not api_url:
         raise ValueError("Decodo scraper backend requires a non-empty API URL.")
-    return DecodoScraperApiConfig(api_url=api_url, basic_token=basic_token)
+    return DecodoScraperApiConfig(api_url=api_url, basic_token=basic_token, geo=geo)
 
 
 def post_scrape_request(
@@ -51,6 +54,8 @@ def post_scrape_request(
     query: str,
 ) -> dict:
     payload = {"target": target, "query": query}
+    if config.geo:
+        payload["geo"] = config.geo
     request = urllib.request.Request(
         config.api_url,
         data=json.dumps(payload).encode("utf-8"),
