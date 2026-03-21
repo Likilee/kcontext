@@ -11,6 +11,7 @@ from kcontext_cli.audio_language import (
     AUDIO_LANGUAGE_CODE_OPTION_HELP,
     resolve_audio_language_code,
 )
+from kcontext_cli.supabase_env import resolve_local_supabase_service_role_key
 
 load_dotenv()
 
@@ -20,7 +21,6 @@ DB_USER = os.getenv("DB_USER", "postgres")
 DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
 DB_NAME = os.getenv("DB_NAME", "postgres")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "http://127.0.0.1:54321")
-SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY", "")
 STORAGE_JSON_OPTION = typer.Option(..., "-s", "--storage", help="Path to _storage.json file")
 VIDEO_CSV_OPTION = typer.Option(..., "-vc", "--video-csv", help="Path to _video.csv file")
 SUBTITLE_CSV_OPTION = typer.Option(..., "-sc", "--subtitle-csv", help="Path to _subtitle.csv file")
@@ -51,7 +51,7 @@ def push_data(
 
     typer.echo(f"Uploading {storage_json.name} to Storage...", err=True)
     try:
-        supabase = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
+        supabase = create_client(SUPABASE_URL, resolve_local_supabase_service_role_key())
         with open(storage_json, "rb") as file_obj:
             supabase.storage.from_("subtitles").upload(
                 path=f"{video_id}.json",
@@ -62,6 +62,9 @@ def push_data(
                     "upsert": "true",
                 },
             )
+    except ValueError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
     except Exception as exc:
         typer.echo(f"Error: Storage upload failed: {exc}", err=True)
         raise typer.Exit(code=1) from exc

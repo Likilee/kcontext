@@ -40,7 +40,8 @@ cd ../cli
 cp -n .env.example .env
 ```
 
-`cli/.env`의 `SUPABASE_SECRET_KEY`는 아래 값으로 채운다.
+`cli/.env`의 local Supabase storage/admin key는 아래 값으로 채운다.
+`SUPABASE_SECRET_KEY` 또는 `SUPABASE_SERVICE_ROLE_KEY` 중 하나를 사용하면 된다.
 
 ```bash
 cd ../supabase

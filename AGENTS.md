@@ -54,6 +54,11 @@ Violations block commits (lefthook) and CI.
 - Stateless, pure-function design (ADR 3 from docs/cli-architecture.md)
 - Each command: explicit input file → explicit output file
 - No implicit folder dependencies between commands
+- Default Decodo scraper manual CSV operating path is `./scripts/run-decodo-full-supervisor.sh`
+- Use `./scripts/run-manual-csv-ingest-parallel.sh` for local-only parallel ingest or quarantine inspection
+- Use `./scripts/run-manual-csv-ingest-via-decodo-scraper.sh` only for smoke tests or debugging
+- The parallel runner/supervisor quarantines a `video_id` into `skipped_ids.txt` after 3 failed attempts
+- Local storage upload commands should work with either `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY`
 
 ## File Conventions
 - **TypeScript files**: `kebab-case.ts` / `kebab-case.tsx`

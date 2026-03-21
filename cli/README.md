@@ -133,6 +133,29 @@ python3 ./scripts/check_playable.py
 원본 `/Users/kihoon/Documents/Project/dozboon/products/kcontext/docs/manual_ko_subtitle_videos.csv` 가
 filtered CSV보다 더 최신이면 manual ingest는 중단되고 `check_playable.py` 재실행을 요구합니다.
 
+Decodo Web Scraping API 기반 manual CSV 기본 운영 경로:
+
+```bash
+cd /Users/kihoon/Documents/Project/dozboon/products/kcontext
+
+# .env.decodo, cli/.env, .env.remote-sync 준비 후 실행
+export KCONTEXT_REMOTE_DB_PASSWORD='<remote-db-password>'
+./scripts/run-decodo-full-supervisor.sh \
+  --ingest-concurrency 12 \
+  --ingest-max-videos 5000
+```
+
+운영 경로 구분:
+
+- `./scripts/run-decodo-full-supervisor.sh`: 기본 운영 경로. local parallel ingest + remote sync까지 관리
+- `./scripts/run-manual-csv-ingest-parallel.sh`: local-only parallel ingest 또는 quarantine 상태 점검용
+- `./scripts/run-manual-csv-ingest-via-decodo-scraper.sh`: 소량 smoke/debug용 단일 runner
+
+병렬 ingest/supervisor는 동일 `video_id`가 `failed_attempts.tsv` 기준 `3회` 실패하면
+`skipped_ids.txt`로 격리하고 다음 영상으로 진행합니다.
+
+로컬 storage upload 키는 `SUPABASE_SECRET_KEY` 또는 `SUPABASE_SERVICE_ROLE_KEY` 중 하나를 사용합니다.
+
 임베드 불가 영상 정리:
 
 ```bash
