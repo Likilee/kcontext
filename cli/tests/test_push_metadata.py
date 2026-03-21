@@ -1,14 +1,29 @@
 """Tests for the push-metadata command."""
 
 import json
+import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
 from typer.testing import CliRunner
 
 from kcontext_cli.main import app
 
 runner = CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def local_supabase_env() -> object:
+    with patch.dict(
+        os.environ,
+        {
+            "SUPABASE_SECRET_KEY": "test-secret-key",
+            "SUPABASE_SERVICE_ROLE_KEY": "",
+        },
+        clear=False,
+    ):
+        yield
 
 
 def create_metadata_artifact(tmp_path: Path, video_id: str = "test_vid01") -> Path:
@@ -56,6 +71,30 @@ def test_push_metadata_uploads_to_video_metadata_bucket(tmp_path: Path) -> None:
         "content-type": "application/json",
         "upsert": "true",
     }
+
+
+def test_push_metadata_accepts_supabase_service_role_key_fallback(tmp_path: Path) -> None:
+    metadata_storage = create_metadata_artifact(tmp_path)
+    mock_supabase = MagicMock()
+
+    with (
+        patch.dict(
+            os.environ,
+            {
+                "SUPABASE_SECRET_KEY": "",
+                "SUPABASE_SERVICE_ROLE_KEY": "service-role-test-key",
+            },
+            clear=False,
+        ),
+        patch(
+            "kcontext_cli.commands.push_metadata.create_client",
+            return_value=mock_supabase,
+        ) as create_client,
+    ):
+        result = runner.invoke(app, ["push-metadata", "-m", str(metadata_storage)])
+
+    assert result.exit_code == 0
+    assert create_client.call_args.args[1] == "service-role-test-key"
 
 
 def test_push_metadata_rejects_missing_video_id(tmp_path: Path) -> None:

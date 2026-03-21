@@ -1,12 +1,27 @@
+import os
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
 from typer.testing import CliRunner
 
 from kcontext_cli.main import app
 
 runner = CliRunner()
 DEFAULT_AUDIO_LANGUAGE_CODE = "ko"
+
+
+@pytest.fixture(autouse=True)
+def local_supabase_env() -> object:
+    with patch.dict(
+        os.environ,
+        {
+            "SUPABASE_SECRET_KEY": "test-secret-key",
+            "SUPABASE_SERVICE_ROLE_KEY": "",
+        },
+        clear=False,
+    ):
+        yield
 
 
 def create_artifact_files(tmp_path: Path, video_id: str = "test_vid01") -> tuple[Path, Path, Path]:
@@ -71,6 +86,45 @@ def test_push_uploads_storage_json(tmp_path: Path) -> None:
         "content-type": "application/json",
         "upsert": "true",
     }
+
+
+def test_push_accepts_supabase_service_role_key_fallback(tmp_path: Path) -> None:
+    storage, video_csv, subtitle_csv = create_artifact_files(tmp_path)
+    mock_supabase = MagicMock()
+    mock_conn, _ = create_db_mocks()
+
+    with (
+        patch.dict(
+            os.environ,
+            {
+                "SUPABASE_SECRET_KEY": "",
+                "SUPABASE_SERVICE_ROLE_KEY": "service-role-test-key",
+            },
+            clear=False,
+        ),
+        patch(
+            "kcontext_cli.commands.push.create_client",
+            return_value=mock_supabase,
+        ) as create_client,
+        patch("kcontext_cli.commands.push.psycopg2.connect", return_value=mock_conn),
+    ):
+        result = runner.invoke(
+            app,
+            [
+                "push",
+                "-s",
+                str(storage),
+                "-vc",
+                str(video_csv),
+                "-sc",
+                str(subtitle_csv),
+                "--default-audio-language-code",
+                DEFAULT_AUDIO_LANGUAGE_CODE,
+            ],
+        )
+
+    assert result.exit_code == 0
+    assert create_client.call_args.args[1] == "service-role-test-key"
 
 
 def test_push_upserts_video_metadata(tmp_path: Path) -> None:

@@ -10,10 +10,11 @@ import typer
 from dotenv import load_dotenv
 from supabase import create_client
 
+from kcontext_cli.supabase_env import resolve_local_supabase_service_role_key
+
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "http://127.0.0.1:54321")
-SUPABASE_SECRET_KEY = os.getenv("SUPABASE_SECRET_KEY", "")
 METADATA_STORAGE_BUCKET = "video-metadata"
 METADATA_CACHE_CONTROL = "public, max-age=86400, stale-while-revalidate=604800"
 METADATA_STORAGE_OPTION = typer.Option(
@@ -45,7 +46,7 @@ def push_metadata(
 
     typer.echo(f"Uploading {metadata_storage.name} to Storage...", err=True)
     try:
-        supabase = create_client(SUPABASE_URL, SUPABASE_SECRET_KEY)
+        supabase = create_client(SUPABASE_URL, resolve_local_supabase_service_role_key())
         with open(metadata_storage, "rb") as file_obj:
             supabase.storage.from_(METADATA_STORAGE_BUCKET).upload(
                 path=f"{video_id}.json",
@@ -56,6 +57,9 @@ def push_metadata(
                     "upsert": "true",
                 },
             )
+    except ValueError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
     except Exception as exc:
         typer.echo(f"Error: Metadata storage upload failed: {exc}", err=True)
         raise typer.Exit(code=1) from exc

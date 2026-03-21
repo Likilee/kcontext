@@ -36,15 +36,41 @@ uv run tubelang fetch DucXv5xjhW4 -o /tmp/DucXv5xjhW4_raw.json \
   --default-audio-language-code ko
 ```
 
-Resume manual CSV ingest through Decodo scraper:
+Default manual CSV ingest supervisor through Decodo scraper:
+
+Prerequisites:
+
+1. `.env.decodo` with `DECODO_SCRAPER_API_BASIC_TOKEN`
+2. `cli/.env` with local Supabase storage/admin key
+   - `SUPABASE_SECRET_KEY` or `SUPABASE_SERVICE_ROLE_KEY`
+3. `.env.remote-sync` plus `KCONTEXT_REMOTE_DB_PASSWORD`
 
 ```bash
-./scripts/run-manual-csv-ingest-via-decodo-scraper.sh --max-videos-per-run 3
+export KCONTEXT_REMOTE_DB_PASSWORD='<remote-db-password>'
+./scripts/run-decodo-full-supervisor.sh \
+  --ingest-concurrency 12 \
+  --ingest-max-videos 5000
 ```
 
 Manual CSV ingest now uses `docs/manual_ko_subtitle_videos_filtered.csv` by default.
 If you update `docs/manual_ko_subtitle_videos.csv`, re-run `python3 ./scripts/check_playable.py`
 before restarting ingest.
+
+The supervisor wraps the parallel runner for local ingest and quarantines a `video_id` into
+`skipped_ids.txt` after `3` failed attempts recorded in `failed_attempts.tsv`, then continues
+with the remaining IDs before remote sync.
+
+For local-only parallel ingest or quarantine inspection:
+
+```bash
+./scripts/run-manual-csv-ingest-parallel.sh --max-videos 20 --concurrency 4
+```
+
+For single-batch smoke tests or debugging only:
+
+```bash
+./scripts/run-manual-csv-ingest-via-decodo-scraper.sh --max-videos-per-run 3
+```
 
 Backfill metadata storage artifacts and upload them:
 
@@ -66,3 +92,4 @@ Backfill metadata storage artifacts and upload them:
 - `api_rate_limited`: Decodo scraper API rate limited the request
 - `api_unreachable`: network or DNS error to the scraper API
 - `api_unexpected_schema`: target response shape changed or required fields are missing
+- repeated non-fatal per-video failures: quarantined into `skipped_ids.txt` after 3 attempts by the parallel runner/supervisor
