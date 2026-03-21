@@ -78,13 +78,20 @@ function installPlayerConstructor(playerConstructor: MockPlayerConstructor) {
   };
 }
 
-function createReadyPlayer(options: MockPlayerOptions): MockPlayer {
+function createReadyPlayer(
+  options: MockPlayerOptions,
+  config: {
+    autoReady?: boolean;
+  } = {},
+): MockPlayer {
   let currentTime = options.playerVars?.start ?? 0;
   let isMuted = false;
 
-  queueMicrotask(() => {
-    options.events?.onReady?.();
-  });
+  if (config.autoReady !== false) {
+    queueMicrotask(() => {
+      options.events?.onReady?.();
+    });
+  }
 
   return {
     destroy: vi.fn(),
@@ -129,6 +136,27 @@ function createInspectablePlayerConstructor() {
   ) {
     events.push(options.events);
     const player = createReadyPlayer(options);
+    players.push(player);
+    return player;
+  } as unknown as MockPlayerConstructor;
+
+  return {
+    events,
+    playerConstructor,
+    players,
+  };
+}
+
+function createDeferredReadyPlayerConstructor() {
+  const events: MockPlayerOptions["events"][] = [];
+  const players: MockPlayer[] = [];
+
+  const playerConstructor = function MockPlayer(
+    _mountTarget: MockPlayerMountTarget,
+    options: MockPlayerOptions,
+  ) {
+    events.push(options.events);
+    const player = createReadyPlayer(options, { autoReady: false });
     players.push(player);
     return player;
   } as unknown as MockPlayerConstructor;
@@ -418,6 +446,35 @@ describe("YouTubePlayer", () => {
     });
   });
 
+  it("recovers from fallback when a different request is selected", async () => {
+    const onUnavailable = vi.fn();
+    const { playerConstructor, players } = createInspectablePlayerConstructor();
+
+    installPlayerConstructor(createThrowingPlayerConstructor("player init failed"));
+    const { container, rerender } = renderPlayer({ onUnavailable });
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-testid="youtube-player-fallback"]')).not.toBeNull();
+      expect(onUnavailable).toHaveBeenCalledTimes(1);
+    });
+
+    installPlayerConstructor(playerConstructor);
+    rerender({
+      videoId: "video-2",
+      startTime: 24,
+      playbackRate: 1.25,
+    });
+
+    await act(async () => {
+      await flushMicrotasks();
+    });
+
+    await waitFor(() => {
+      expect(container.querySelector('[data-testid="youtube-player-fallback"]')).toBeNull();
+      expect(players).toHaveLength(1);
+    });
+  });
+
   it("reuses the existing player instance when video props change", async () => {
     const onReady = vi.fn();
     const { events, playerConstructor, players } = createInspectablePlayerConstructor();
@@ -475,6 +532,35 @@ describe("YouTubePlayer", () => {
     });
 
     expect(players[0]?.loadVideoById).toHaveBeenCalledTimes(1);
+  });
+
+  it("applies the latest user-gesture request when the initial onReady arrives late", async () => {
+    const onReady = vi.fn();
+    const { events, playerConstructor, players } = createDeferredReadyPlayerConstructor();
+    const ref = createRef<YouTubePlayerHandle>();
+
+    installPlayerConstructor(playerConstructor);
+    renderPlayer({ onReady, startTime: 4 }, ref);
+
+    await waitFor(() => {
+      expect(players).toHaveLength(1);
+      expect(events[0]?.onReady).toBeDefined();
+      expect(ref.current).not.toBeNull();
+    });
+
+    act(() => {
+      expect(ref.current?.loadVideo("video-2", 18, 1.25)).toBe(true);
+    });
+
+    expect(players[0]?.loadVideoById).toHaveBeenCalledWith("video-2", 18);
+
+    act(() => {
+      events[0]?.onReady?.();
+    });
+
+    expect(players[0]?.seekTo).toHaveBeenLastCalledWith(18, true);
+    expect(players[0]?.setPlaybackRate).toHaveBeenLastCalledWith(1.25);
+    expect(onReady).toHaveBeenCalledTimes(1);
   });
 
   it("retries blocked autoplay muted after prior playback and restores audio on the next user gesture", async () => {
