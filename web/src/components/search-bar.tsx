@@ -124,6 +124,7 @@ export function SearchBar({
 
   const isHero = variant === "hero";
   const showClearButton = value.trim().length > 0 && !isLoading;
+  const showSubmitButton = !showClearButton;
 
   return (
     <form onSubmit={handleSubmit} className="relative w-full">
@@ -137,8 +138,8 @@ export function SearchBar({
         className={cn(
           "[&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden [&::-webkit-search-results-button]:hidden [&::-webkit-search-results-decoration]:hidden",
           isHero
-            ? "min-h-[calc(var(--space-layout-section)+var(--space-inset-squish-y))] pr-[calc(var(--space-layout-section)*2)] text-[length:var(--font-size-18)]"
-            : "h-[calc(var(--space-layout-section)-var(--space-gap-item))] py-[calc(var(--space-inset-squish-y)-var(--space-gap-micro))] pr-[calc(var(--space-layout-section)*2)] text-[length:var(--font-size-16)]",
+            ? "min-h-[calc(var(--space-layout-section)+var(--space-inset-squish-y))] pr-[calc(var(--space-layout-section)+var(--space-inset-base))] text-[length:var(--font-size-18)]"
+            : "h-[calc(var(--space-layout-section)-var(--space-gap-item))] py-[calc(var(--space-inset-squish-y)-var(--space-gap-micro))] pr-[calc(var(--space-layout-section)+var(--space-inset-base))] text-[length:var(--font-size-16)]",
         )}
         data-tubelang-search-input="true"
         autoComplete="off"
@@ -152,7 +153,7 @@ export function SearchBar({
           size="icon"
           onClick={() => onChange("")}
           className={cn(
-            "absolute right-[calc(var(--space-layout-section)+var(--space-gap-micro))] top-1/2 -translate-y-1/2",
+            "absolute right-[var(--space-gap-micro)] top-1/2 -translate-y-1/2",
             isHero
               ? ""
               : "min-h-[calc(var(--space-layout-section)-var(--space-gap-item))] min-w-[calc(var(--space-layout-section)-var(--space-gap-item))]",
@@ -176,37 +177,39 @@ export function SearchBar({
         </Button>
       ) : null}
 
-      <Button
-        type="submit"
-        variant="ghost"
-        size="icon"
-        className={cn(
-          "absolute right-[var(--space-gap-micro)] top-1/2 -translate-y-1/2",
-          isHero
-            ? ""
-            : "min-h-[calc(var(--space-layout-section)-var(--space-gap-item))] min-w-[calc(var(--space-layout-section)-var(--space-gap-item))]",
-        )}
-        aria-label={submitAriaLabel}
-      >
-        {isLoading ? (
-          <span className="size-5 animate-spin rounded-full border-2 border-[var(--text-secondary)] border-t-transparent" />
-        ) : (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="size-5"
-            aria-hidden="true"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-        )}
-      </Button>
+      {showSubmitButton ? (
+        <Button
+          type="submit"
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "absolute right-[var(--space-gap-micro)] top-1/2 -translate-y-1/2",
+            isHero
+              ? ""
+              : "min-h-[calc(var(--space-layout-section)-var(--space-gap-item))] min-w-[calc(var(--space-layout-section)-var(--space-gap-item))]",
+          )}
+          aria-label={submitAriaLabel}
+        >
+          {isLoading ? (
+            <span className="size-5 animate-spin rounded-full border-2 border-[var(--text-secondary)] border-t-transparent" />
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="size-5"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          )}
+        </Button>
+      ) : null}
     </form>
   );
 }
