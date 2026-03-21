@@ -76,11 +76,21 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
     const playerMountHostRef = useRef<HTMLDivElement | null>(null);
     const autoplayMutedRetryAttemptedRef = useRef(false);
     const hasPlaybackStartedRef = useRef(false);
+    const lastFailedRequestSignatureRef = useRef<string | null>(null);
     const lastLoadedRequestSignatureRef = useRef<string | null>(null);
+    const latestRequestedLoadRef = useRef<PlayerLoadRequest | null>(null);
+    const latestRequestedLoadSignatureRef = useRef<string | null>(null);
+    const onReadyRef = useRef(onReady);
+    const onStateChangeRef = useRef(onStateChange);
+    const onUnavailableRef = useRef(onUnavailable);
     const shouldRestoreAudioOnUserGestureRef = useRef(false);
     const [apiReady, setApiReady] = useState(false);
     const [playerError, setPlayerError] = useState<string | null>(null);
     const [retryCount, setRetryCount] = useState(0);
+
+    onReadyRef.current = onReady;
+    onStateChangeRef.current = onStateChange;
+    onUnavailableRef.current = onUnavailable;
 
     const clearPlayerMountHost = useCallback(() => {
       const host = playerMountHostRef.current;
@@ -116,15 +126,19 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       autoplayMutedRetryAttemptedRef.current = false;
       hasPlaybackStartedRef.current = false;
       lastLoadedRequestSignatureRef.current = null;
+      latestRequestedLoadRef.current = null;
+      latestRequestedLoadSignatureRef.current = null;
       shouldRestoreAudioOnUserGestureRef.current = false;
       clearPlayerMountHost();
     }, [clearPlayerMountHost]);
 
     const markPlayerUnavailable = useCallback(() => {
+      const failedRequestSignature = latestRequestedLoadSignatureRef.current;
       destroyPlayer();
+      lastFailedRequestSignatureRef.current = failedRequestSignature;
       setPlayerError(PLAYER_FALLBACK_TITLE);
-      onUnavailable?.();
-    }, [destroyPlayer, onUnavailable]);
+      onUnavailableRef.current?.();
+    }, [destroyPlayer]);
 
     useEffect(() => {
       if (typeof window.YT !== "undefined" && typeof window.YT.Player === "function") {
@@ -246,6 +260,10 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
           triggeredByUserGesture?: boolean;
         },
       ): boolean => {
+        const requestSignature = getPlayerLoadRequestSignature(request);
+        latestRequestedLoadRef.current = request;
+        latestRequestedLoadSignatureRef.current = requestSignature;
+
         const player = playerRef.current;
         if (!player || typeof player.loadVideoById !== "function") {
           return false;
@@ -263,7 +281,8 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
           player.playVideo();
         }
 
-        lastLoadedRequestSignatureRef.current = getPlayerLoadRequestSignature(request);
+        lastFailedRequestSignatureRef.current = null;
+        lastLoadedRequestSignatureRef.current = requestSignature;
         setPlayerError(null);
         return true;
       },
@@ -371,7 +390,18 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
         playbackRate,
       };
       const nextLoadRequestSignature = getPlayerLoadRequestSignature(nextLoadRequest);
+      latestRequestedLoadRef.current = nextLoadRequest;
+      latestRequestedLoadSignatureRef.current = nextLoadRequestSignature;
       const player = playerRef.current;
+
+      if (playerError) {
+        if (lastFailedRequestSignatureRef.current === nextLoadRequestSignature) {
+          return;
+        }
+
+        setPlayerError(null);
+        return;
+      }
 
       if (player && typeof player.loadVideoById === "function") {
         if (lastLoadedRequestSignatureRef.current === nextLoadRequestSignature) {
@@ -382,7 +412,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
         try {
           loadVideoIntoExistingPlayer(nextLoadRequest);
           setPlayerError(null);
-          onReady?.();
+          onReadyRef.current?.();
         } catch {
           markPlayerUnavailable();
         }
@@ -418,19 +448,24 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
                 return;
               }
 
+              const readyRequest = latestRequestedLoadRef.current ?? nextLoadRequest;
+              const readyRequestSignature =
+                latestRequestedLoadSignatureRef.current ?? nextLoadRequestSignature;
+
               try {
                 if (typeof readyPlayer.seekTo === "function") {
-                  readyPlayer.seekTo(safeStartTime, true);
+                  readyPlayer.seekTo(readyRequest.startTime, true);
                 }
                 if (typeof readyPlayer.setPlaybackRate === "function") {
-                  readyPlayer.setPlaybackRate(playbackRate);
+                  readyPlayer.setPlaybackRate(readyRequest.playbackRate);
                 }
                 if (typeof readyPlayer.playVideo === "function") {
                   readyPlayer.playVideo();
                 }
-                lastLoadedRequestSignatureRef.current = nextLoadRequestSignature;
+                lastFailedRequestSignatureRef.current = null;
+                lastLoadedRequestSignatureRef.current = readyRequestSignature;
                 setPlayerError(null);
-                onReady?.();
+                onReadyRef.current?.();
               } catch {
                 markPlayerUnavailable();
               }
@@ -451,7 +486,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
                 }
               }
 
-              onStateChange?.(event.data);
+              onStateChangeRef.current?.(event.data);
             },
           },
         });
@@ -464,8 +499,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       markPlayerUnavailable,
       handleAutoplayBlocked,
       loadVideoIntoExistingPlayer,
-      onReady,
-      onStateChange,
+      playerError,
       playbackRate,
       startTime,
       videoId,
@@ -487,6 +521,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
 
     const handleRetry = () => {
       destroyPlayer();
+      lastFailedRequestSignatureRef.current = null;
       setApiReady(typeof window.YT !== "undefined" && typeof window.YT.Player === "function");
       setPlayerError(null);
       setRetryCount((current) => current + 1);
