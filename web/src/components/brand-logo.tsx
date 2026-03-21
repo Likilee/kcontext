@@ -7,6 +7,11 @@ const HORIZONTAL_LOGO_DIMENSIONS = {
   height: 144,
 } as const;
 
+const SIMPLE_LOGO_DIMENSIONS = {
+  width: 123,
+  height: 144,
+} as const;
+
 const VERTICAL_LOGO_DIMENSIONS = {
   width: 512,
   height: 512,
@@ -14,25 +19,41 @@ const VERTICAL_LOGO_DIMENSIONS = {
 
 interface BrandLogoProps {
   siteConfig: SiteConfig;
-  variant: "horizontal" | "vertical";
+  variant: "horizontal" | "simple" | "vertical";
   className?: string;
 }
 
 export function BrandLogo({ siteConfig, variant, className }: BrandLogoProps) {
-  const logo =
-    variant === "horizontal"
-      ? {
-          src: siteConfig.brandAssets.horizontalLogoPath,
-          ...HORIZONTAL_LOGO_DIMENSIONS,
-        }
-      : {
-          src: siteConfig.brandAssets.verticalLogoPath,
-          ...VERTICAL_LOGO_DIMENSIONS,
-        };
-  const sizes =
-    variant === "horizontal"
-      ? "(max-width: 1024px) 184px, 232px"
-      : "(max-width: 768px) 240px, 320px";
+  let logo: {
+    src: string;
+    width: number;
+    height: number;
+  };
+  let sizes: string;
+
+  switch (variant) {
+    case "horizontal":
+      logo = {
+        src: siteConfig.brandAssets.horizontalLogoPath,
+        ...HORIZONTAL_LOGO_DIMENSIONS,
+      };
+      sizes = "(max-width: 1024px) 184px, 232px";
+      break;
+    case "simple":
+      logo = {
+        src: siteConfig.brandAssets.simpleLogoPath,
+        ...SIMPLE_LOGO_DIMENSIONS,
+      };
+      sizes = "32px";
+      break;
+    case "vertical":
+      logo = {
+        src: siteConfig.brandAssets.verticalLogoPath,
+        ...VERTICAL_LOGO_DIMENSIONS,
+      };
+      sizes = "(max-width: 768px) 240px, 320px";
+      break;
+  }
 
   return (
     <Image
