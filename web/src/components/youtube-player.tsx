@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 const PLAYER_FALLBACK_TITLE = "Video playback is temporarily unavailable.";
 const PLAYER_FALLBACK_DESCRIPTION =
   "You can keep reading the transcript context below and retry the player.";
+const PLAYER_STATE_PLAYING = 1;
 const YOUTUBE_IFRAME_API_SRC = "https://www.youtube.com/iframe_api";
 const YOUTUBE_IFRAME_API_ATTRIBUTE = "data-youtube-iframe-api";
 const YOUTUBE_IFRAME_API_STATUS_ATTRIBUTE = "data-youtube-iframe-api-status";
@@ -15,6 +16,7 @@ type YoutubeIframeApiScriptStatus = "error" | "loading" | "ready" | "stale";
 
 export interface YouTubePlayerHandle {
   getCurrentTime: () => number;
+  loadVideo: (videoId: string, startTime: number, playbackRate: number) => boolean;
   seekTo: (seconds: number) => void;
   seekBy: (seconds: number) => void;
   setPlaybackRate: (rate: number) => void;
@@ -27,6 +29,20 @@ interface YouTubePlayerProps {
   onReady?: () => void;
   onStateChange?: (state: number) => void;
   onUnavailable?: () => void;
+}
+
+interface PlayerLoadRequest {
+  playbackRate: number;
+  startTime: number;
+  videoId: string;
+}
+
+function getPlayerLoadRequestSignature({
+  playbackRate,
+  startTime,
+  videoId,
+}: PlayerLoadRequest): string {
+  return `${videoId}:${startTime}:${playbackRate}`;
 }
 
 function getYoutubeIframeApiScript(): HTMLScriptElement | null {
@@ -58,6 +74,10 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
   ) {
     const playerRef = useRef<YT.Player | null>(null);
     const playerMountHostRef = useRef<HTMLDivElement | null>(null);
+    const autoplayMutedRetryAttemptedRef = useRef(false);
+    const hasPlaybackStartedRef = useRef(false);
+    const lastLoadedRequestSignatureRef = useRef<string | null>(null);
+    const shouldRestoreAudioOnUserGestureRef = useRef(false);
     const [apiReady, setApiReady] = useState(false);
     const [playerError, setPlayerError] = useState<string | null>(null);
     const [retryCount, setRetryCount] = useState(0);
@@ -93,6 +113,10 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
         // ignore cleanup errors
       }
       playerRef.current = null;
+      autoplayMutedRetryAttemptedRef.current = false;
+      hasPlaybackStartedRef.current = false;
+      lastLoadedRequestSignatureRef.current = null;
+      shouldRestoreAudioOnUserGestureRef.current = false;
       clearPlayerMountHost();
     }, [clearPlayerMountHost]);
 
@@ -195,8 +219,98 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       }
     };
 
+    const restoreAudioAfterUserGesture = useCallback((player: YT.Player) => {
+      if (!shouldRestoreAudioOnUserGestureRef.current) {
+        return;
+      }
+
+      if (typeof player.isMuted === "function" && !player.isMuted()) {
+        shouldRestoreAudioOnUserGestureRef.current = false;
+        autoplayMutedRetryAttemptedRef.current = false;
+        return;
+      }
+
+      if (typeof player.unMute !== "function") {
+        return;
+      }
+
+      player.unMute();
+      shouldRestoreAudioOnUserGestureRef.current = false;
+      autoplayMutedRetryAttemptedRef.current = false;
+    }, []);
+
+    const loadVideoIntoExistingPlayer = useCallback(
+      (
+        request: PlayerLoadRequest,
+        options?: {
+          triggeredByUserGesture?: boolean;
+        },
+      ): boolean => {
+        const player = playerRef.current;
+        if (!player || typeof player.loadVideoById !== "function") {
+          return false;
+        }
+
+        if (options?.triggeredByUserGesture) {
+          restoreAudioAfterUserGesture(player);
+        }
+
+        player.loadVideoById(request.videoId, request.startTime);
+        if (typeof player.setPlaybackRate === "function") {
+          player.setPlaybackRate(request.playbackRate);
+        }
+        if (typeof player.playVideo === "function") {
+          player.playVideo();
+        }
+
+        lastLoadedRequestSignatureRef.current = getPlayerLoadRequestSignature(request);
+        setPlayerError(null);
+        return true;
+      },
+      [restoreAudioAfterUserGesture],
+    );
+
+    const handleAutoplayBlocked = useCallback(() => {
+      const player = playerRef.current;
+      if (!player) {
+        return;
+      }
+
+      if (!hasPlaybackStartedRef.current || autoplayMutedRetryAttemptedRef.current) {
+        return;
+      }
+
+      if (typeof player.mute !== "function" || typeof player.playVideo !== "function") {
+        return;
+      }
+
+      try {
+        player.mute();
+        shouldRestoreAudioOnUserGestureRef.current = true;
+        autoplayMutedRetryAttemptedRef.current = true;
+        player.playVideo();
+      } catch {
+        markPlayerUnavailable();
+      }
+    }, [markPlayerUnavailable]);
+
     useImperativeHandle(ref, () => ({
       getCurrentTime: getSafeCurrentTime,
+      loadVideo: (nextVideoId: string, nextStartTime: number, nextPlaybackRate: number) => {
+        try {
+          return loadVideoIntoExistingPlayer(
+            {
+              videoId: nextVideoId,
+              startTime: Math.max(0, nextStartTime),
+              playbackRate: nextPlaybackRate,
+            },
+            { triggeredByUserGesture: true },
+          );
+        } catch {
+          markPlayerUnavailable();
+          return false;
+        }
+      },
       seekTo: (seconds: number) => {
         const player = playerRef.current;
         if (!player || typeof player.seekTo !== "function") {
@@ -204,6 +318,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
         }
 
         try {
+          restoreAudioAfterUserGesture(player);
           player.seekTo(Math.max(0, seconds), true);
         } catch {
           markPlayerUnavailable();
@@ -216,6 +331,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
         }
 
         try {
+          restoreAudioAfterUserGesture(player);
           const current = getSafeCurrentTime();
           player.seekTo(Math.max(0, current + seconds), true);
         } catch {
@@ -229,6 +345,7 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
         }
 
         try {
+          restoreAudioAfterUserGesture(player);
           player.setPlaybackRate(rate);
         } catch {
           markPlayerUnavailable();
@@ -248,17 +365,22 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       }
 
       const safeStartTime = Math.max(0, startTime ?? 0);
+      const nextLoadRequest: PlayerLoadRequest = {
+        videoId,
+        startTime: safeStartTime,
+        playbackRate,
+      };
+      const nextLoadRequestSignature = getPlayerLoadRequestSignature(nextLoadRequest);
       const player = playerRef.current;
 
       if (player && typeof player.loadVideoById === "function") {
+        if (lastLoadedRequestSignatureRef.current === nextLoadRequestSignature) {
+          setPlayerError(null);
+          return;
+        }
+
         try {
-          player.loadVideoById(videoId, safeStartTime);
-          if (typeof player.setPlaybackRate === "function") {
-            player.setPlaybackRate(playbackRate);
-          }
-          if (typeof player.playVideo === "function") {
-            player.playVideo();
-          }
+          loadVideoIntoExistingPlayer(nextLoadRequest);
           setPlayerError(null);
           onReady?.();
         } catch {
@@ -306,13 +428,31 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
                 if (typeof readyPlayer.playVideo === "function") {
                   readyPlayer.playVideo();
                 }
+                lastLoadedRequestSignatureRef.current = nextLoadRequestSignature;
                 setPlayerError(null);
                 onReady?.();
               } catch {
                 markPlayerUnavailable();
               }
             },
-            onStateChange: (event: { data: number }) => onStateChange?.(event.data),
+            onAutoplayBlocked: handleAutoplayBlocked,
+            onStateChange: (event: { data: number }) => {
+              if (event.data === PLAYER_STATE_PLAYING) {
+                hasPlaybackStartedRef.current = true;
+                autoplayMutedRetryAttemptedRef.current = false;
+
+                const currentPlayer = playerRef.current;
+                if (
+                  currentPlayer &&
+                  typeof currentPlayer.isMuted === "function" &&
+                  !currentPlayer.isMuted()
+                ) {
+                  shouldRestoreAudioOnUserGestureRef.current = false;
+                }
+              }
+
+              onStateChange?.(event.data);
+            },
           },
         });
       } catch {
@@ -322,6 +462,8 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       apiReady,
       createPlayerMountElement,
       markPlayerUnavailable,
+      handleAutoplayBlocked,
+      loadVideoIntoExistingPlayer,
       onReady,
       onStateChange,
       playbackRate,
@@ -336,11 +478,12 @@ export const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>
       }
 
       try {
+        restoreAudioAfterUserGesture(player);
         player.setPlaybackRate(playbackRate);
       } catch {
         markPlayerUnavailable();
       }
-    }, [markPlayerUnavailable, playbackRate]);
+    }, [markPlayerUnavailable, playbackRate, restoreAudioAfterUserGesture]);
 
     const handleRetry = () => {
       destroyPlayer();

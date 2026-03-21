@@ -8,6 +8,9 @@ declare namespace YT {
     getPlaybackRate(): number;
     playVideo(): void;
     pauseVideo(): void;
+    mute(): void;
+    unMute(): void;
+    isMuted(): boolean;
     getPlayerState(): number;
     destroy(): void;
   }
@@ -16,6 +19,7 @@ declare namespace YT {
     videoId?: string;
     playerVars?: Record<string, number | string>;
     events?: {
+      onAutoplayBlocked?: () => void;
       onReady?: () => void;
       onStateChange?: (event: { data: number }) => void;
     };

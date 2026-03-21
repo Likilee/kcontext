@@ -142,8 +142,19 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
       return;
     }
 
+    const nextPlayerKey = `${previousResult.videoId}:${previousResult.startTime}`;
+    const nextStartTime = Math.max(0, previousResult.startTime - PRE_ROLL_SECONDS);
+
+    setReadyPlayerKey(null);
+    const loadedWithinGesture =
+      playerRef.current?.loadVideo(previousResult.videoId, nextStartTime, playbackRate) ?? false;
+
     selectResult(previousResult);
-  }, [results, selectResult, selectedIndex]);
+
+    if (loadedWithinGesture) {
+      setReadyPlayerKey(nextPlayerKey);
+    }
+  }, [playbackRate, results, selectResult, selectedIndex]);
 
   const handleNextResult = useCallback(() => {
     if (selectedIndex < 0 || selectedIndex >= results.length - 1) {
@@ -155,8 +166,19 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
       return;
     }
 
+    const nextPlayerKey = `${nextResult.videoId}:${nextResult.startTime}`;
+    const nextStartTime = Math.max(0, nextResult.startTime - PRE_ROLL_SECONDS);
+
+    setReadyPlayerKey(null);
+    const loadedWithinGesture =
+      playerRef.current?.loadVideo(nextResult.videoId, nextStartTime, playbackRate) ?? false;
+
     selectResult(nextResult);
-  }, [results, selectResult, selectedIndex]);
+
+    if (loadedWithinGesture) {
+      setReadyPlayerKey(nextPlayerKey);
+    }
+  }, [playbackRate, results, selectResult, selectedIndex]);
 
   const handleReplayContext = useCallback(() => {
     if (!selectedResult || !playerRef.current) {
@@ -278,7 +300,6 @@ export function SearchPageClient({ siteConfig }: SearchPageClientProps) {
 
             <div className="-mx-[var(--space-layout-screen)] w-[calc(100%+var(--space-layout-screen)+var(--space-layout-screen))] lg:mx-0 lg:w-full">
               <YouTubePlayer
-                key={selectedPlayerKey ?? "no-selected-video"}
                 ref={playerRef}
                 videoId={selectedResult.videoId}
                 startTime={playerStartTime}
