@@ -116,9 +116,12 @@ test.describe("Tubelang smoke E2E", () => {
 
     const globalSearchInput = page.locator("#global-search-input");
     const resultsFocusTarget = page.getByTestId("search-results-focus-target");
+    const submitSearchButton = page.getByRole("button", { name: "Submit search" });
+    const clearSearchButton = page.getByRole("button", { name: "Clear search input" });
     await expect(page).toHaveURL("/ko/search?q=%EA%B9%80%EC%B9%98%EC%B0%8C%EA%B0%9C");
     await expect(resultsFocusTarget).toBeFocused();
     await expect(globalSearchInput).not.toBeFocused();
+    await expect(submitSearchButton).toHaveCount(0);
 
     await page.keyboard.press("Shift+Tab");
     await expect(page.getByTestId("ui-language-btn-ko")).toBeFocused();
@@ -127,10 +130,7 @@ test.describe("Tubelang smoke E2E", () => {
     await expect(page.getByTestId("ui-language-btn-en")).toBeFocused();
 
     await page.keyboard.press("Shift+Tab");
-    await expect(page.getByRole("button", { name: "Submit search" })).toBeFocused();
-
-    await page.keyboard.press("Shift+Tab");
-    await expect(page.getByRole("button", { name: "Clear search input" })).toBeFocused();
+    await expect(clearSearchButton).toBeFocused();
 
     await page.keyboard.press("Shift+Tab");
     await expect(globalSearchInput).toBeFocused();
